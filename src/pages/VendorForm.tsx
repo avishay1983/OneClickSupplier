@@ -290,6 +290,22 @@ export default function VendorForm() {
         }
       }
 
+      // Send confirmation email with status link
+      const statusLink = `${window.location.origin}/vendor-status/${token}`;
+      try {
+        await supabase.functions.invoke('send-vendor-confirmation', {
+          body: {
+            vendorName: request.vendor_name,
+            vendorEmail: request.vendor_email,
+            statusLink: statusLink,
+          },
+        });
+        console.log('Confirmation email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't fail the submission if email fails
+      }
+
       setSubmitted(true);
       toast({
         title: 'הטופס נשלח בהצלחה',
@@ -332,15 +348,25 @@ export default function VendorForm() {
   }
 
   if (submitted) {
+    const statusLink = `/vendor-status/${token}`;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center">
           <CardContent className="pt-8 pb-6">
             <CheckCircle className="h-16 w-16 mx-auto text-success mb-4" />
             <h2 className="text-xl font-bold mb-2">הטופס נשלח בהצלחה!</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               תודה על מילוי הטופס. הפרטים שלך נקלטו במערכת ויטופלו בהקדם.
             </p>
+            <p className="text-muted-foreground mb-4">
+              שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
+            </p>
+            <a 
+              href={statusLink}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              מעקב סטטוס הבקשה
+            </a>
           </CardContent>
         </Card>
       </div>
