@@ -207,9 +207,9 @@ export function ViewDocumentsDialog({
                 <div className="space-y-6">
                   {/* Basic Info */}
                   <div className="rounded-lg border p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Building className="h-5 w-5 text-primary" />
+                    <div className="flex items-center justify-end gap-2 mb-3">
                       <h3 className="font-semibold">פרטי חברה</h3>
+                      <Building className="h-5 w-5 text-primary" />
                     </div>
                     <div className="space-y-1">
                       <InfoRow label="שם הספק" value={vendorData.vendor_name} fieldKey="vendor_name" />
@@ -224,7 +224,7 @@ export function ViewDocumentsDialog({
                   {/* Address */}
                   {(vendorData.street || vendorData.city) && (
                     <div className="rounded-lg border p-4">
-                      <h3 className="font-semibold mb-3 text-right">כתובת</h3>
+                      <h3 className="font-semibold mb-3 text-right w-full">כתובת</h3>
                       <div className="space-y-1">
                         <InfoRow label="רחוב" value={vendorData.street} fieldKey="street" />
                         <InfoRow label="מספר" value={vendorData.street_number} fieldKey="street_number" />
@@ -238,9 +238,9 @@ export function ViewDocumentsDialog({
                   {/* Contacts */}
                   {(vendorData.accounting_contact_name || vendorData.sales_contact_name) && (
                     <div className="rounded-lg border p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Phone className="h-5 w-5 text-primary" />
+                      <div className="flex items-center justify-end gap-2 mb-3">
                         <h3 className="font-semibold">אנשי קשר</h3>
+                        <Phone className="h-5 w-5 text-primary" />
                       </div>
                       <div className="space-y-1">
                         <InfoRow label="איש קשר הנה״ח" value={vendorData.accounting_contact_name} fieldKey="accounting_contact_name" />
@@ -254,9 +254,9 @@ export function ViewDocumentsDialog({
                   {/* Bank Details */}
                   {vendorData.bank_name && (
                     <div className="rounded-lg border p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <CreditCard className="h-5 w-5 text-primary" />
+                      <div className="flex items-center justify-end gap-2 mb-3">
                         <h3 className="font-semibold">פרטי בנק</h3>
+                        <CreditCard className="h-5 w-5 text-primary" />
                       </div>
                       <div className="space-y-1">
                         <InfoRow label="שם הבנק" value={vendorData.bank_name} fieldKey="bank_name" />
