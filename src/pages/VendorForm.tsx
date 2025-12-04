@@ -146,6 +146,11 @@ export default function VendorForm() {
 
     if (!formData.company_id.trim()) {
       newErrors.company_id = 'ח.פ / עוסק מורשה הוא שדה חובה';
+    } else {
+      const companyIdDigits = formData.company_id.replace(/\D/g, '');
+      if (!/^\d{9}$/.test(companyIdDigits)) {
+        newErrors.company_id = 'ח.פ / עוסק מורשה חייב להכיל 9 ספרות';
+      }
     }
 
     if (!formData.mobile.trim()) {
