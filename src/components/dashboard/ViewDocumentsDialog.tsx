@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, ExternalLink, Loader2, User, Building, CreditCard, Phone } from 'lucide-react';
+import { FileText, Download, ExternalLink, Loader2, User, Building, CreditCard, Phone, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VendorDocument, VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
@@ -23,6 +23,7 @@ export function ViewDocumentsDialog({
   const [documents, setDocuments] = useState<VendorDocument[]>([]);
   const [vendorData, setVendorData] = useState<VendorRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && vendorRequestId) {
@@ -96,11 +97,36 @@ export function ViewDocumentsDialog({
     }
   };
 
-  const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
+  const copyToClipboard = async (value: string, fieldKey: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(fieldKey);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להעתיק',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const InfoRow = ({ label, value, fieldKey }: { label: string; value: string | null | undefined; fieldKey: string }) => (
     value ? (
-      <div className="flex flex-row-reverse justify-between py-2 border-b border-border/50 last:border-0">
+      <div 
+        className="flex flex-row-reverse justify-between py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors group"
+        onClick={() => copyToClipboard(value, fieldKey)}
+        title="לחץ להעתקה"
+      >
         <span className="text-muted-foreground text-right">{label}</span>
-        <span className="font-medium text-left" dir="ltr">{value}</span>
+        <div className="flex items-center gap-2">
+          {copiedField === fieldKey ? (
+            <Check className="h-3 w-3 text-success" />
+          ) : (
+            <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+          <span className="font-medium text-left" dir="ltr">{value}</span>
+        </div>
       </div>
     ) : null
   );
@@ -186,12 +212,12 @@ export function ViewDocumentsDialog({
                       <h3 className="font-semibold">פרטי חברה</h3>
                     </div>
                     <div className="space-y-1">
-                      <InfoRow label="שם הספק" value={vendorData.vendor_name} />
-                      <InfoRow label="אימייל" value={vendorData.vendor_email} />
-                      <InfoRow label="ח.פ / עוסק מורשה" value={vendorData.company_id} />
-                      <InfoRow label="טלפון" value={vendorData.phone} />
-                      <InfoRow label="נייד" value={vendorData.mobile} />
-                      <InfoRow label="פקס" value={vendorData.fax} />
+                      <InfoRow label="שם הספק" value={vendorData.vendor_name} fieldKey="vendor_name" />
+                      <InfoRow label="אימייל" value={vendorData.vendor_email} fieldKey="vendor_email" />
+                      <InfoRow label="ח.פ / עוסק מורשה" value={vendorData.company_id} fieldKey="company_id" />
+                      <InfoRow label="טלפון" value={vendorData.phone} fieldKey="phone" />
+                      <InfoRow label="נייד" value={vendorData.mobile} fieldKey="mobile" />
+                      <InfoRow label="פקס" value={vendorData.fax} fieldKey="fax" />
                     </div>
                   </div>
 
@@ -200,11 +226,11 @@ export function ViewDocumentsDialog({
                     <div className="rounded-lg border p-4">
                       <h3 className="font-semibold mb-3">כתובת</h3>
                       <div className="space-y-1">
-                        <InfoRow label="רחוב" value={vendorData.street} />
-                        <InfoRow label="מספר" value={vendorData.street_number} />
-                        <InfoRow label="עיר" value={vendorData.city} />
-                        <InfoRow label="מיקוד" value={vendorData.postal_code} />
-                        <InfoRow label="ת.ד" value={vendorData.po_box} />
+                        <InfoRow label="רחוב" value={vendorData.street} fieldKey="street" />
+                        <InfoRow label="מספר" value={vendorData.street_number} fieldKey="street_number" />
+                        <InfoRow label="עיר" value={vendorData.city} fieldKey="city" />
+                        <InfoRow label="מיקוד" value={vendorData.postal_code} fieldKey="postal_code" />
+                        <InfoRow label="ת.ד" value={vendorData.po_box} fieldKey="po_box" />
                       </div>
                     </div>
                   )}
@@ -217,10 +243,10 @@ export function ViewDocumentsDialog({
                         <h3 className="font-semibold">אנשי קשר</h3>
                       </div>
                       <div className="space-y-1">
-                        <InfoRow label="איש קשר הנה״ח" value={vendorData.accounting_contact_name} />
-                        <InfoRow label="טלפון הנה״ח" value={vendorData.accounting_contact_phone} />
-                        <InfoRow label="איש קשר מכירות" value={vendorData.sales_contact_name} />
-                        <InfoRow label="טלפון מכירות" value={vendorData.sales_contact_phone} />
+                        <InfoRow label="איש קשר הנה״ח" value={vendorData.accounting_contact_name} fieldKey="accounting_contact_name" />
+                        <InfoRow label="טלפון הנה״ח" value={vendorData.accounting_contact_phone} fieldKey="accounting_contact_phone" />
+                        <InfoRow label="איש קשר מכירות" value={vendorData.sales_contact_name} fieldKey="sales_contact_name" />
+                        <InfoRow label="טלפון מכירות" value={vendorData.sales_contact_phone} fieldKey="sales_contact_phone" />
                       </div>
                     </div>
                   )}
@@ -233,11 +259,11 @@ export function ViewDocumentsDialog({
                         <h3 className="font-semibold">פרטי בנק</h3>
                       </div>
                       <div className="space-y-1">
-                        <InfoRow label="שם הבנק" value={vendorData.bank_name} />
-                        <InfoRow label="סניף" value={vendorData.bank_branch} />
-                        <InfoRow label="מספר חשבון" value={vendorData.bank_account_number} />
-                        <InfoRow label="שיטת תשלום" value={vendorData.payment_method ? PAYMENT_METHOD_LABELS[vendorData.payment_method] : null} />
-                        <InfoRow label="תנאי תשלום" value={vendorData.payment_terms} />
+                        <InfoRow label="שם הבנק" value={vendorData.bank_name} fieldKey="bank_name" />
+                        <InfoRow label="סניף" value={vendorData.bank_branch} fieldKey="bank_branch" />
+                        <InfoRow label="מספר חשבון" value={vendorData.bank_account_number} fieldKey="bank_account_number" />
+                        <InfoRow label="שיטת תשלום" value={vendorData.payment_method ? PAYMENT_METHOD_LABELS[vendorData.payment_method] : null} fieldKey="payment_method" />
+                        <InfoRow label="תנאי תשלום" value={vendorData.payment_terms} fieldKey="payment_terms" />
                       </div>
                     </div>
                   )}
