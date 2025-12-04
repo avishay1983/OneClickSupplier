@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileUploadZone } from '@/components/vendor/FileUploadZone';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
+import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
+import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } from '@/data/israelBanks';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -178,14 +180,19 @@ export default function VendorForm() {
 
     if (!formData.bank_name.trim()) {
       newErrors.bank_name = 'שם הבנק הוא שדה חובה';
+    } else if (!BANK_NAMES.includes(formData.bank_name)) {
+      newErrors.bank_name = 'יש לבחור בנק מהרשימה';
     }
 
     if (!formData.bank_branch.trim()) {
       newErrors.bank_branch = 'מספר סניף הוא שדה חובה';
+    } else if (!validateBankBranch(formData.bank_branch)) {
+      newErrors.bank_branch = 'מספר סניף חייב להכיל 3-4 ספרות';
     }
 
-    if (!formData.bank_account_number.trim()) {
-      newErrors.bank_account_number = 'מספר חשבון הוא שדה חובה';
+    const accountValidation = validateBankAccount(formData.bank_account_number, formData.bank_name);
+    if (!accountValidation.valid) {
+      newErrors.bank_account_number = accountValidation.message || 'מספר חשבון לא תקין';
     }
 
     if (!formData.payment_method) {
@@ -511,11 +518,11 @@ export default function VendorForm() {
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="bank_name">שם הבנק *</Label>
-                <Input
+                <BankAutocomplete
                   id="bank_name"
                   value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                  placeholder="שם הבנק"
+                  onChange={(value) => setFormData({ ...formData, bank_name: value })}
+                  placeholder="בחר בנק"
                 />
                 {errors.bank_name && <p className="text-sm text-destructive">{errors.bank_name}</p>}
               </div>
@@ -525,7 +532,8 @@ export default function VendorForm() {
                   id="bank_branch"
                   value={formData.bank_branch}
                   onChange={(e) => setFormData({ ...formData, bank_branch: e.target.value })}
-                  placeholder="מספר סניף"
+                  placeholder="מספר סניף (3-4 ספרות)"
+                  className="ltr text-right"
                 />
                 {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
               </div>
@@ -536,6 +544,7 @@ export default function VendorForm() {
                   value={formData.bank_account_number}
                   onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
                   placeholder="מספר חשבון"
+                  className="ltr text-right"
                 />
                 {errors.bank_account_number && <p className="text-sm text-destructive">{errors.bank_account_number}</p>}
               </div>
