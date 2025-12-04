@@ -104,16 +104,8 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "קוד אימות לטופס ספק",
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
-          <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0;">
-            <div style="text-align: right;">
-              <span style="font-size: 20px; font-weight: bold; color: white;">ביטוח ישיר</span>
-              <span style="margin-right: 10px;">
-                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">&#9679;</span>
-                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">&#9679;</span>
-                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">&#9679;</span>
-                <span style="color: #e74c3c; font-size: 12px;">&#9679;</span>
-              </span>
-            </div>
+          <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+            <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
           </div>
           <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
           <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
