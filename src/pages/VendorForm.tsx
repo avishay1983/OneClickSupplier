@@ -10,7 +10,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
@@ -473,12 +473,14 @@ export default function VendorForm() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <div className="mx-auto bg-primary rounded-lg p-3 w-fit mb-4">
-              <Building2 className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <CardTitle className="text-xl">אימות כניסה</CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">
+          <CardHeader className="text-center bg-[#1a2b5f] rounded-t-lg">
+            <img 
+              src="/images/bituach-yashir-logo.png" 
+              alt="ביטוח ישיר" 
+              className="h-12 w-auto mx-auto mb-4"
+            />
+            <CardTitle className="text-xl text-white">אימות כניסה</CardTitle>
+            <p className="text-sm text-white/70 mt-2">
               {request?.vendor_name}
             </p>
           </CardHeader>
@@ -560,15 +562,17 @@ export default function VendorForm() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary rounded-lg p-2">
-              <Building2 className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">טופס הקמת ספק</h1>
-              <p className="text-sm text-muted-foreground">{request?.vendor_name}</p>
+      <header className="bg-[#1a2b5f] border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <img 
+              src="/images/bituach-yashir-logo.png" 
+              alt="ביטוח ישיר" 
+              className="h-10 w-auto"
+            />
+            <div className="border-r border-white/20 pr-4">
+              <h1 className="text-xl font-bold text-white">טופס הקמת ספק</h1>
+              <p className="text-sm text-white/70">{request?.vendor_name}</p>
             </div>
           </div>
         </div>

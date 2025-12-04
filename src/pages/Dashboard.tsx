@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2, AlertTriangle } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData } from '@/components/dashboard/NewRequestDialog';
 import { VendorRequest } from '@/types/vendor';
@@ -111,16 +111,18 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b shadow-sm">
+      <header className="bg-[#1a2b5f] border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary rounded-lg p-2">
-                <Building2 className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">מערכת הקמת ספקים</h1>
-                <p className="text-sm text-muted-foreground">ניהול בקשות הקמת ספק חדש</p>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/images/bituach-yashir-logo.png" 
+                alt="ביטוח ישיר" 
+                className="h-10 w-auto"
+              />
+              <div className="border-r border-white/20 pr-4">
+                <h1 className="text-xl font-bold text-white">מערכת הקמת ספקים</h1>
+                <p className="text-sm text-white/70">ניהול בקשות הקמת ספק חדש</p>
               </div>
             </div>
           </div>
