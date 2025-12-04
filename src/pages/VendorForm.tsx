@@ -12,12 +12,13 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Mail } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } from '@/data/israelBanks';
 import { getBranchesByBank } from '@/data/bankBranches';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -35,7 +36,14 @@ export default function VendorForm() {
   const [submitted, setSubmitted] = useState(false);
   const [linkExpired, setLinkExpired] = useState(false);
   
-  // OTP verification removed - secure token is sufficient
+  // OTP verification states
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   
   const [files, setFiles] = useState<Record<DocumentType, File | null>>({
     bookkeeping_cert: null,
@@ -72,6 +80,84 @@ export default function VendorForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const sendOtp = async () => {
+    if (!token) return;
+    
+    setIsSendingOtp(true);
+    setOtpError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-vendor-otp', {
+        body: { token },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.error) {
+        if (data.error === 'expired') {
+          setLinkExpired(true);
+        } else {
+          setOtpError(data.message || 'שגיאה בשליחת קוד אימות');
+        }
+        return;
+      }
+      
+      setOtpSent(true);
+      setMaskedEmail(data.maskedEmail);
+      toast({
+        title: 'קוד אימות נשלח',
+        description: `קוד אימות נשלח לכתובת ${data.maskedEmail}`,
+      });
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setOtpError('שגיאה בשליחת קוד אימות');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    if (!token || otpValue.length !== 6) return;
+    
+    setIsVerifyingOtp(true);
+    setOtpError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-vendor-otp', {
+        body: { token, otp: otpValue },
+      });
+      
+      if (error) throw error;
+      
+      if (data?.error) {
+        if (data.error === 'expired') {
+          setLinkExpired(true);
+        } else if (data.error === 'otp_expired') {
+          setOtpError('קוד האימות פג תוקף, יש לבקש קוד חדש');
+          setOtpSent(false);
+          setOtpValue('');
+        } else if (data.error === 'invalid_otp') {
+          setOtpError('קוד אימות שגוי');
+          setOtpValue('');
+        } else {
+          setOtpError(data.message || 'שגיאה באימות');
+        }
+        return;
+      }
+      
+      setOtpVerified(true);
+      toast({
+        title: 'אימות הצליח',
+        description: 'ניתן להמשיך למילוי הטופס',
+      });
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setOtpError('שגיאה באימות');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   useEffect(() => {
     const fetchRequest = async () => {
       if (!token) return;
@@ -99,6 +185,11 @@ export default function VendorForm() {
             setLinkExpired(true);
             setIsLoading(false);
             return;
+          }
+          
+          // Check if OTP already verified
+          if (data.otp_verified) {
+            setOtpVerified(true);
           }
           
           if (data.status === 'submitted' || data.status === 'approved') {
@@ -383,6 +474,93 @@ export default function VendorForm() {
             <p className="text-muted-foreground">
               הקישור אינו תקף יותר. אנא פנה לאיש הקשר שלך בחברה לקבלת קישור חדש.
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // OTP Verification Screen
+  if (!otpVerified) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <img 
+                src="/images/bituach-yashir-logo.png" 
+                alt="ביטוח ישיר" 
+                className="h-12 w-auto mx-auto"
+              />
+            </div>
+            <CardTitle className="text-xl">אימות זהות</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!otpSent ? (
+              <>
+                <div className="text-center">
+                  <Mail className="h-12 w-12 mx-auto text-primary mb-4" />
+                  <p className="text-muted-foreground mb-2">
+                    שלום {request?.vendor_name},
+                  </p>
+                  <p className="text-muted-foreground">
+                    על מנת להמשיך למילוי הטופס, יש לאמת את כתובת המייל שלך.
+                  </p>
+                </div>
+                <Button
+                  onClick={sendOtp}
+                  disabled={isSendingOtp}
+                  className="w-full"
+                >
+                  {isSendingOtp ? 'שולח...' : 'שלח קוד אימות'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-center">
+                  <p className="text-muted-foreground mb-2">
+                    קוד אימות נשלח לכתובת
+                  </p>
+                  <p className="font-medium text-foreground ltr">
+                    {maskedEmail}
+                  </p>
+                </div>
+                <div className="flex justify-center" dir="ltr">
+                  <InputOTP
+                    maxLength={6}
+                    value={otpValue}
+                    onChange={setOtpValue}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                {otpError && (
+                  <p className="text-sm text-destructive text-center">{otpError}</p>
+                )}
+                <Button
+                  onClick={verifyOtp}
+                  disabled={isVerifyingOtp || otpValue.length !== 6}
+                  className="w-full"
+                >
+                  {isVerifyingOtp ? 'מאמת...' : 'אמת קוד'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={sendOtp}
+                  disabled={isSendingOtp}
+                  className="w-full"
+                >
+                  {isSendingOtp ? 'שולח...' : 'שלח קוד חדש'}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
