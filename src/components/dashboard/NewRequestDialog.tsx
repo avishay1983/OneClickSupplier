@@ -316,6 +316,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   <Label htmlFor="vendor_name">שם הספק *</Label>
                   <Input
                     id="vendor_name"
+                    className="text-right"
                     value={formData.vendor_name}
                     onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
                     placeholder="הכנס שם ספק"
@@ -330,7 +331,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   <Input
                     id="vendor_email"
                     type="email"
-                    className="ltr text-right"
+                    className="text-right"
+                    dir="ltr"
                     value={formData.vendor_email}
                     onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })}
                     placeholder="vendor@example.com"
@@ -345,6 +347,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   <Input
                     id="expected_spending"
                     type="number"
+                    className="text-right"
                     value={formData.expected_spending || ''}
                     onChange={(e) => setFormData({ 
                       ...formData, 
@@ -358,6 +361,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   <Label htmlFor="approver_name">שם המאשר</Label>
                   <Input
                     id="approver_name"
+                    className="text-right"
                     value={formData.approver_name}
                     onChange={(e) => setFormData({ ...formData, approver_name: e.target.value })}
                     placeholder="הכנס שם מאשר"
@@ -370,7 +374,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     value={String(formData.expires_in_days)}
                     onValueChange={(value) => setFormData({ ...formData, expires_in_days: Number(value) })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-right">
                       <SelectValue placeholder="בחר תוקף" />
                     </SelectTrigger>
                     <SelectContent>
@@ -387,7 +391,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     <Checkbox
                       id="quote_received"
                       checked={formData.quote_received}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setFormData({ ...formData, quote_received: checked as boolean })
                       }
                     />
