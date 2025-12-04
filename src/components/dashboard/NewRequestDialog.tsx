@@ -313,7 +313,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="vendor_name">שם הספק *</Label>
+                  <Label htmlFor="vendor_name" className="block text-right">שם הספק *</Label>
                   <Input
                     id="vendor_name"
                     className="text-right"
@@ -322,12 +322,12 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     placeholder="הכנס שם ספק"
                   />
                   {errors.vendor_name && (
-                    <p className="text-sm text-destructive">{errors.vendor_name}</p>
+                    <p className="text-sm text-destructive text-right">{errors.vendor_name}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="vendor_email">אימייל הספק *</Label>
+                  <Label htmlFor="vendor_email" className="block text-right">אימייל הספק *</Label>
                   <Input
                     id="vendor_email"
                     type="email"
@@ -338,12 +338,12 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     placeholder="vendor@example.com"
                   />
                   {errors.vendor_email && (
-                    <p className="text-sm text-destructive">{errors.vendor_email}</p>
+                    <p className="text-sm text-destructive text-right">{errors.vendor_email}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expected_spending">סכום הוצאה צפויה (₪)</Label>
+                  <Label htmlFor="expected_spending" className="block text-right">סכום הוצאה צפויה (₪)</Label>
                   <Input
                     id="expected_spending"
                     type="number"
@@ -358,7 +358,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="approver_name">שם המאשר</Label>
+                  <Label htmlFor="approver_name" className="block text-right">שם המאשר</Label>
                   <Input
                     id="approver_name"
                     className="text-right"
@@ -369,7 +369,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expires_in_days">תוקף הקישור</Label>
+                  <Label htmlFor="expires_in_days" className="block text-right">תוקף הקישור</Label>
                   <Select
                     value={String(formData.expires_in_days)}
                     onValueChange={(value) => setFormData({ ...formData, expires_in_days: Number(value) })}
@@ -387,7 +387,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="quote_received" className="cursor-pointer">קיימת הצעת מחיר</Label>
                     <Checkbox
                       id="quote_received"
                       checked={formData.quote_received}
@@ -395,10 +396,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, quote_received: checked as boolean })
                       }
                     />
-                    <Label htmlFor="quote_received" className="cursor-pointer">קיימת הצעת מחיר</Label>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="contract_signed" className="cursor-pointer">קיים הסכם</Label>
                     <Checkbox
                       id="contract_signed"
                       checked={formData.contract_signed}
@@ -406,10 +407,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, contract_signed: checked as boolean })
                       }
                     />
-                    <Label htmlFor="contract_signed" className="cursor-pointer">קיים הסכם</Label>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="legal_approved" className="cursor-pointer">אושר משפטית</Label>
                     <Checkbox
                       id="legal_approved"
                       checked={formData.legal_approved}
@@ -417,10 +418,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, legal_approved: checked as boolean })
                       }
                     />
-                    <Label htmlFor="legal_approved" className="cursor-pointer">אושר משפטית</Label>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="is_consultant" className="cursor-pointer">ספק יועץ</Label>
                     <Checkbox
                       id="is_consultant"
                       checked={formData.is_consultant}
@@ -428,10 +429,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, is_consultant: checked as boolean })
                       }
                     />
-                    <Label htmlFor="is_consultant" className="cursor-pointer">ספק יועץ</Label>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="is_sensitive" className="cursor-pointer">ספק רגיש</Label>
                     <Checkbox
                       id="is_sensitive"
                       checked={formData.is_sensitive}
@@ -439,17 +440,16 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, is_sensitive: checked as boolean })
                       }
                     />
-                    <Label htmlFor="is_sensitive" className="cursor-pointer">ספק רגיש</Label>
                   </div>
                 </div>
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  ביטול
-                </Button>
+              <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? 'יוצר...' : 'צור בקשה וקבל קישור'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  ביטול
                 </Button>
               </DialogFooter>
             </form>
