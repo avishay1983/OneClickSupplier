@@ -150,6 +150,22 @@ export default function VendorForm() {
       newErrors.company_id = 'ח.פ / עוסק מורשה הוא שדה חובה';
     }
 
+    if (!formData.mobile.trim()) {
+      newErrors.mobile = 'טלפון נייד הוא שדה חובה';
+    }
+
+    // Address validation: either street or po_box, city is always required
+    const hasStreet = formData.street.trim();
+    const hasPOBox = formData.po_box.trim();
+    
+    if (!hasStreet && !hasPOBox) {
+      newErrors.address = 'יש למלא רחוב או ת.ד';
+    }
+    
+    if (!formData.city.trim()) {
+      newErrors.city = 'עיר היא שדה חובה';
+    }
+
     if (!formData.bank_name.trim()) {
       newErrors.bank_name = 'שם הבנק הוא שדה חובה';
     }
@@ -347,7 +363,7 @@ export default function VendorForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mobile">נייד</Label>
+                <Label htmlFor="mobile">נייד *</Label>
                 <Input
                   id="mobile"
                   value={formData.mobile}
@@ -355,6 +371,7 @@ export default function VendorForm() {
                   placeholder="טלפון נייד"
                   className="ltr text-right"
                 />
+                {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fax">פקס</Label>
@@ -373,52 +390,57 @@ export default function VendorForm() {
           <Card>
             <CardHeader>
               <CardTitle>כתובת</CardTitle>
+              <p className="text-sm text-muted-foreground">יש למלא רחוב או ת.ד, עיר היא שדה חובה</p>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="street">רחוב</Label>
-                <Input
-                  id="street"
-                  value={formData.street}
-                  onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                  placeholder="שם הרחוב"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="street_number">מספר</Label>
-                <Input
-                  id="street_number"
-                  value={formData.street_number}
-                  onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
-                  placeholder="מספר בית"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">עיר</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  placeholder="עיר"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postal_code">מיקוד</Label>
-                <Input
-                  id="postal_code"
-                  value={formData.postal_code}
-                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                  placeholder="מיקוד"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="po_box">ת.ד</Label>
-                <Input
-                  id="po_box"
-                  value={formData.po_box}
-                  onChange={(e) => setFormData({ ...formData, po_box: e.target.value })}
-                  placeholder="תא דואר"
-                />
+            <CardContent className="space-y-4">
+              {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="street">רחוב</Label>
+                  <Input
+                    id="street"
+                    value={formData.street}
+                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                    placeholder="שם הרחוב"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="street_number">מספר</Label>
+                  <Input
+                    id="street_number"
+                    value={formData.street_number}
+                    onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
+                    placeholder="מספר בית"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">עיר *</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="עיר"
+                  />
+                  {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postal_code">מיקוד</Label>
+                  <Input
+                    id="postal_code"
+                    value={formData.postal_code}
+                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                    placeholder="מיקוד"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="po_box">ת.ד</Label>
+                  <Input
+                    id="po_box"
+                    value={formData.po_box}
+                    onChange={(e) => setFormData({ ...formData, po_box: e.target.value })}
+                    placeholder="תא דואר"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
