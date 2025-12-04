@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUploadZone } from '@/components/vendor/FileUploadZone';
+import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -395,11 +396,11 @@ export default function VendorForm() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="city">עיר *</Label>
-                  <Input
+                  <CityAutocomplete
                     id="city"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="עיר"
+                    onChange={(value) => setFormData({ ...formData, city: value })}
+                    placeholder="הקלד שם עיר"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
