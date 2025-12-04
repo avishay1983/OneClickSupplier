@@ -45,11 +45,11 @@ const handler = async (req: Request): Promise<Response> => {
           <div class="header" style="background: #1a2b5f;">
             <div style="text-align: right; margin-bottom: 15px;">
               <span style="font-size: 20px; font-weight: bold; color: white;">ביטוח ישיר</span>
-              <span style="margin-right: 10px; letter-spacing: 4px;">
-                <span style="color: #e63946; font-size: 14px;">●</span>
-                <span style="color: #f4a261; font-size: 14px;">●</span>
-                <span style="color: #2a9d8f; font-size: 14px;">●</span>
-                <span style="color: #e63946; font-size: 14px;">●</span>
+              <span style="margin-right: 10px;">
+                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">●</span>
+                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">●</span>
+                <span style="color: #e74c3c; font-size: 12px; margin-left: 3px;">●</span>
+                <span style="color: #e74c3c; font-size: 12px;">●</span>
               </span>
             </div>
             <h1 style="margin: 0; text-align: center;">בקשה להקמת ספק</h1>
