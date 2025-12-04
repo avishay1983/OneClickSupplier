@@ -33,14 +33,7 @@ export default function VendorForm() {
   const [submitted, setSubmitted] = useState(false);
   const [linkExpired, setLinkExpired] = useState(false);
   
-  // OTP verification states
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [maskedEmail, setMaskedEmail] = useState('');
+  // OTP verification removed - secure token is sufficient
   
   const [files, setFiles] = useState<Record<DocumentType, File | null>>({
     bookkeeping_cert: null,
@@ -112,11 +105,6 @@ export default function VendorForm() {
           } else {
             setRequest(data as VendorRequest);
             
-            // Check if already verified (and not resent)
-            if (data.otp_verified && data.status !== 'resent') {
-              setOtpVerified(true);
-            }
-            
             // Pre-fill form with existing data
             setFormData({
               company_id: data.company_id || '',
@@ -170,101 +158,6 @@ export default function VendorForm() {
 
     fetchRequest();
   }, [token]);
-
-  // Send OTP function
-  const handleSendOtp = async () => {
-    if (!token) return;
-    
-    setIsSendingOtp(true);
-    setOtpError('');
-    
-    try {
-      const response = await supabase.functions.invoke('send-vendor-otp', {
-        body: { token },
-      });
-      
-      if (response.error) throw response.error;
-      
-      const data = response.data;
-      
-      if (data.error === 'expired') {
-        setLinkExpired(true);
-        return;
-      }
-      
-      if (data.verified) {
-        setOtpVerified(true);
-        return;
-      }
-      
-      if (data.success) {
-        setOtpSent(true);
-        setMaskedEmail(data.email || '');
-        toast({
-          title: "קוד אימות נשלח",
-          description: `קוד נשלח לכתובת ${data.email}`,
-        });
-      }
-    } catch (error: any) {
-      console.error('Error sending OTP:', error);
-      setOtpError('שגיאה בשליחת קוד האימות. אנא נסה שוב.');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  // Verify OTP function
-  const handleVerifyOtp = async () => {
-    if (!token || !otpCode) return;
-    
-    if (otpCode.length !== 6) {
-      setOtpError('קוד האימות חייב להכיל 6 ספרות');
-      return;
-    }
-    
-    setIsVerifyingOtp(true);
-    setOtpError('');
-    
-    try {
-      const response = await supabase.functions.invoke('verify-vendor-otp', {
-        body: { token, otp: otpCode },
-      });
-      
-      if (response.error) throw response.error;
-      
-      const data = response.data;
-      
-      if (data.error === 'expired') {
-        setLinkExpired(true);
-        return;
-      }
-      
-      if (data.error === 'otp_expired') {
-        setOtpError('קוד האימות פג תוקף. יש לבקש קוד חדש.');
-        setOtpSent(false);
-        setOtpCode('');
-        return;
-      }
-      
-      if (data.error === 'invalid_otp') {
-        setOtpError('קוד אימות שגוי');
-        return;
-      }
-      
-      if (data.success) {
-        setOtpVerified(true);
-        toast({
-          title: "אימות בוצע בהצלחה",
-          description: "כעת תוכל למלא את הטופס",
-        });
-      }
-    } catch (error: any) {
-      console.error('Error verifying OTP:', error);
-      setOtpError('שגיאה באימות הקוד. אנא נסה שוב.');
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -462,97 +355,6 @@ export default function VendorForm() {
             <p className="text-muted-foreground">
               הקישור אינו תקף יותר. אנא פנה לאיש הקשר שלך בחברה לקבלת קישור חדש.
             </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // OTP Verification Screen
-  if (!otpVerified) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center bg-[#1a2b5f] rounded-t-lg">
-            <img 
-              src="/images/bituach-yashir-logo.png" 
-              alt="ביטוח ישיר" 
-              className="h-12 w-auto mx-auto mb-4"
-            />
-            <CardTitle className="text-xl text-white">אימות כניסה</CardTitle>
-            <p className="text-sm text-white/70 mt-2">
-              {request?.vendor_name}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!otpSent ? (
-              <>
-                <p className="text-center text-muted-foreground">
-                  לצורך אבטחה, יש לאמת את הכניסה באמצעות קוד שיישלח לכתובת המייל שלך.
-                </p>
-                <Button 
-                  onClick={handleSendOtp} 
-                  disabled={isSendingOtp}
-                  className="w-full"
-                >
-                  {isSendingOtp ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      שולח קוד...
-                    </>
-                  ) : (
-                    'שלח קוד אימות'
-                  )}
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-center text-muted-foreground">
-                  קוד אימות נשלח לכתובת: <span className="font-medium ltr inline-block">{maskedEmail}</span>
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor="otp">הזן קוד אימות (6 ספרות)</Label>
-                  <Input
-                    id="otp"
-                    value={otpCode}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setOtpCode(value);
-                      setOtpError('');
-                    }}
-                    placeholder="000000"
-                    className="text-center text-2xl tracking-widest ltr"
-                    maxLength={6}
-                  />
-                  {otpError && <p className="text-sm text-destructive">{otpError}</p>}
-                </div>
-                <Button 
-                  onClick={handleVerifyOtp} 
-                  disabled={isVerifyingOtp || otpCode.length !== 6}
-                  className="w-full"
-                >
-                  {isVerifyingOtp ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      מאמת...
-                    </>
-                  ) : (
-                    'אמת קוד'
-                  )}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    setOtpSent(false);
-                    setOtpCode('');
-                    setOtpError('');
-                  }}
-                  className="w-full"
-                >
-                  שלח קוד חדש
-                </Button>
-              </>
-            )}
           </CardContent>
         </Card>
       </div>
