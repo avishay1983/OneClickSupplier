@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import VendorForm from "./pages/VendorForm";
+import VendorStatus from "./pages/VendorStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/vendor/:token" element={<VendorForm />} />
+          <Route path="/vendor-status/:token" element={<VendorStatus />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
