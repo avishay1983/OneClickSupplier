@@ -9,9 +9,14 @@ import { FileUploadZone } from '@/components/vendor/FileUploadZone';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
+import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
+
+interface ExistingDocument {
+  file_name: string;
+  file_path: string;
+}
 
 export default function VendorForm() {
   const { token } = useParams<{ token: string }>();
@@ -22,6 +27,13 @@ export default function VendorForm() {
   const [submitted, setSubmitted] = useState(false);
   
   const [files, setFiles] = useState<Record<DocumentType, File | null>>({
+    bookkeeping_cert: null,
+    tax_cert: null,
+    bank_confirmation: null,
+    invoice_screenshot: null,
+  });
+
+  const [existingDocuments, setExistingDocuments] = useState<Record<DocumentType, ExistingDocument | null>>({
     bookkeeping_cert: null,
     tax_cert: null,
     bank_confirmation: null,
@@ -97,6 +109,28 @@ export default function VendorForm() {
             bank_account_number: data.bank_account_number || '',
             payment_method: data.payment_method || '',
           });
+
+          // Fetch existing documents
+          const { data: docs, error: docsError } = await supabase
+            .from('vendor_documents')
+            .select('*')
+            .eq('vendor_request_id', data.id);
+
+          if (!docsError && docs) {
+            const existingDocs: Record<DocumentType, ExistingDocument | null> = {
+              bookkeeping_cert: null,
+              tax_cert: null,
+              bank_confirmation: null,
+              invoice_screenshot: null,
+            };
+            docs.forEach((doc: VendorDocument) => {
+              existingDocs[doc.document_type as DocumentType] = {
+                file_name: doc.file_name,
+                file_path: doc.file_path,
+              };
+            });
+            setExistingDocuments(existingDocs);
+          }
         }
       } catch (error) {
         console.error('Error fetching request:', error);
@@ -132,10 +166,10 @@ export default function VendorForm() {
       newErrors.payment_method = 'יש לבחור שיטת תשלום';
     }
 
-    // Check required files
+    // Check required files - allow existing documents or new uploads
     const requiredDocs: DocumentType[] = ['bookkeeping_cert', 'tax_cert', 'bank_confirmation', 'invoice_screenshot'];
     requiredDocs.forEach(doc => {
-      if (!files[doc]) {
+      if (!files[doc] && !existingDocuments[doc]) {
         newErrors[doc] = `יש להעלות ${DOCUMENT_TYPE_LABELS[doc]}`;
       }
     });
@@ -163,9 +197,24 @@ export default function VendorForm() {
 
       if (updateError) throw updateError;
 
-      // Upload files
+      // Upload files - only process new files
       for (const [docType, file] of Object.entries(files)) {
         if (file) {
+          const existingDoc = existingDocuments[docType as DocumentType];
+          
+          // Delete existing file and record if replacing
+          if (existingDoc) {
+            await supabase.storage
+              .from('vendor_documents')
+              .remove([existingDoc.file_path]);
+            
+            await supabase
+              .from('vendor_documents')
+              .delete()
+              .eq('vendor_request_id', request.id)
+              .eq('document_type', docType);
+          }
+          
           const filePath = `${request.id}/${docType}/${file.name}`;
           
           const { error: uploadError } = await supabase.storage
@@ -516,6 +565,7 @@ export default function VendorForm() {
                     selectedFile={files[docType]}
                     onFileSelect={(file) => setFiles({ ...files, [docType]: file })}
                     onRemove={() => setFiles({ ...files, [docType]: null })}
+                    existingDocument={existingDocuments[docType]}
                   />
                   {errors[docType] && <p className="text-sm text-destructive mt-1">{errors[docType]}</p>}
                 </div>

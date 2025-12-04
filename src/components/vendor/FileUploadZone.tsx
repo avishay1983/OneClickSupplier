@@ -3,12 +3,18 @@ import { Upload, X, File, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+interface ExistingDocument {
+  file_name: string;
+  file_path: string;
+}
+
 interface FileUploadZoneProps {
   label: string;
   documentType: string;
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
   onRemove: () => void;
+  existingDocument?: ExistingDocument | null;
 }
 
 export function FileUploadZone({ 
@@ -16,7 +22,8 @@ export function FileUploadZone({
   documentType, 
   onFileSelect, 
   selectedFile,
-  onRemove 
+  onRemove,
+  existingDocument
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -47,6 +54,7 @@ export function FileUploadZone({
     }
   }, [onFileSelect]);
 
+  // Show selected new file
   if (selectedFile) {
     return (
       <div className="border rounded-lg p-4 bg-success/10 border-success/30">
@@ -70,6 +78,43 @@ export function FileUploadZone({
           >
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show existing document from database
+  if (existingDocument) {
+    return (
+      <div className="border rounded-lg p-4 bg-primary/10 border-primary/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-primary" />
+            <div>
+              <p className="font-medium text-sm">{label}</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <File className="h-3 w-3" />
+                {existingDocument.file_name}
+                <span className="text-xs text-primary">(קיים)</span>
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => document.getElementById(`file-${documentType}`)?.click()}
+            className="text-xs"
+          >
+            החלף קובץ
+          </Button>
+          <input
+            id={`file-${documentType}`}
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={handleFileInput}
+          />
         </div>
       </div>
     );
