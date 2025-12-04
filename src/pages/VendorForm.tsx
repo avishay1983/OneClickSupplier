@@ -382,7 +382,10 @@ export default function VendorForm() {
             {request?.expires_at && (
               <div className="flex items-center gap-2 text-white/80 text-sm">
                 <Clock className="h-4 w-4" />
-                <span>תוקף הקישור: {format(new Date(request.expires_at), 'dd/MM/yyyy', { locale: he })}</span>
+                <div className="text-left">
+                  <span>תוקף הקישור: {format(new Date(request.expires_at), 'dd/MM/yyyy', { locale: he })}</span>
+                  <p className="text-xs text-white/60">לאחר תאריך זה הקישור לא יהיה זמין</p>
+                </div>
               </div>
             )}
           </div>
