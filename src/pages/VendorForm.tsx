@@ -152,6 +152,11 @@ export default function VendorForm() {
 
     if (!formData.mobile.trim()) {
       newErrors.mobile = 'טלפון נייד הוא שדה חובה';
+    } else {
+      const mobileDigits = formData.mobile.replace(/\D/g, '');
+      if (!/^05\d{8}$/.test(mobileDigits)) {
+        newErrors.mobile = 'מספר נייד לא תקין (10 ספרות, מתחיל ב-05)';
+      }
     }
 
     // Address validation: either street or po_box, city is always required
