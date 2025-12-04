@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +12,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
@@ -366,15 +368,23 @@ export default function VendorForm() {
       {/* Header */}
       <header className="bg-[#1a2b5f] border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/images/bituach-yashir-logo.png" 
-              alt="ביטוח ישיר" 
-              className="h-10 w-auto"
-            />
-            <div className="border-r border-white/20 pr-4">
-              <h1 className="text-xl font-bold text-white">טופס הקמת ספק</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <img 
+                src="/images/bituach-yashir-logo.png" 
+                alt="ביטוח ישיר" 
+                className="h-10 w-auto"
+              />
+              <div className="border-r border-white/20 pr-4">
+                <h1 className="text-xl font-bold text-white">טופס הקמת ספק</h1>
+              </div>
             </div>
+            {request?.expires_at && (
+              <div className="flex items-center gap-2 text-white/80 text-sm">
+                <Clock className="h-4 w-4" />
+                <span>תוקף הקישור: {format(new Date(request.expires_at), 'dd/MM/yyyy', { locale: he })}</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
