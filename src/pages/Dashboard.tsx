@@ -67,10 +67,37 @@ export default function Dashboard() {
 
     if (error) throw error;
 
-    toast({
-      title: 'הבקשה נוצרה בהצלחה',
-      description: 'הקישור המאובטח מוכן לשליחה לספק',
-    });
+    // Send email to vendor
+    const secureLink = `${window.location.origin}/vendor/${secureToken}`;
+    try {
+      const { error: emailError } = await supabase.functions.invoke('send-vendor-email', {
+        body: {
+          vendorName: data.vendor_name,
+          vendorEmail: data.vendor_email,
+          secureLink,
+        },
+      });
+
+      if (emailError) {
+        console.error('Email error:', emailError);
+        toast({
+          title: 'הבקשה נוצרה',
+          description: 'הבקשה נוצרה אך שליחת המייל נכשלה. ניתן להעתיק את הקישור ידנית.',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'הבקשה נוצרה בהצלחה',
+          description: 'הקישור המאובטח נשלח לספק במייל',
+        });
+      }
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+      toast({
+        title: 'הבקשה נוצרה',
+        description: 'הבקשה נוצרה אך שליחת המייל נכשלה. ניתן להעתיק את הקישור ידנית.',
+      });
+    }
 
     fetchRequests();
   };

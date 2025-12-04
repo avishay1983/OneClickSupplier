@@ -1,1 +1,4 @@
 project_id = "ijyqtemnhlbamxmgjuzp"
+
+[functions.send-vendor-email]
+verify_jwt = false
