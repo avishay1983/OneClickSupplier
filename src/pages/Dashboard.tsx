@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
-import { NewRequestDialog, NewRequestData } from '@/components/dashboard/NewRequestDialog';
+import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { VendorRequest } from '@/types/vendor';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -108,6 +108,79 @@ export default function Dashboard() {
     fetchRequests();
   };
 
+  const handleBulkCreateRequests = async (vendors: BulkVendorData[]) => {
+    if (!isSupabaseConfigured) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש להפעיל את Lovable Cloud כדי ליצור בקשות',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const vendor of vendors) {
+      try {
+        const secureToken = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + (vendor.expires_in_days || 7));
+
+        const { error } = await supabase
+          .from('vendor_requests')
+          .insert({
+            vendor_name: vendor.vendor_name,
+            vendor_email: vendor.vendor_email,
+            secure_token: secureToken,
+            status: 'with_vendor',
+            payment_terms: 'שוטף + 60',
+            expires_at: expiresAt.toISOString(),
+          });
+
+        if (error) {
+          console.error('Error creating request:', error);
+          failCount++;
+          continue;
+        }
+
+        // Send email to vendor
+        const secureLink = `${window.location.origin}/vendor/${secureToken}`;
+        try {
+          await supabase.functions.invoke('send-vendor-email', {
+            body: {
+              vendorName: vendor.vendor_name,
+              vendorEmail: vendor.vendor_email,
+              secureLink,
+            },
+          });
+          successCount++;
+        } catch (emailErr) {
+          console.error('Email send error:', emailErr);
+          successCount++; // Request was created, just email failed
+        }
+      } catch (err) {
+        console.error('Error processing vendor:', err);
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast({
+        title: 'הבקשות נוצרו בהצלחה',
+        description: `${successCount} קישורים נשלחו לספקים${failCount > 0 ? `. ${failCount} נכשלו.` : ''}`,
+      });
+    } else {
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן ליצור את הבקשות',
+        variant: 'destructive',
+      });
+    }
+
+    fetchRequests();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -160,6 +233,7 @@ export default function Dashboard() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleCreateRequest}
+        onBulkSubmit={handleBulkCreateRequests}
       />
     </div>
   );
