@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus, Building2, AlertTriangle } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData } from '@/components/dashboard/NewRequestDialog';
 import { VendorRequest } from '@/types/vendor';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function Dashboard() {
   const [requests, setRequests] = useState<VendorRequest[]>([]);
@@ -13,6 +14,11 @@ export default function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const fetchRequests = async () => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -21,7 +27,7 @@ export default function Dashboard() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      setRequests((data as VendorRequest[]) || []);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast({
@@ -39,6 +45,15 @@ export default function Dashboard() {
   }, []);
 
   const handleCreateRequest = async (data: NewRequestData) => {
+    if (!isSupabaseConfigured) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש להפעיל את Lovable Cloud כדי ליצור בקשות',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     const secureToken = crypto.randomUUID();
     
     const { error } = await supabase
@@ -81,12 +96,23 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {!isSupabaseConfigured && (
+          <Alert className="mb-6 border-warning bg-warning/10">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <AlertTitle className="text-warning">נדרשת הגדרת מסד נתונים</AlertTitle>
+            <AlertDescription>
+              כדי להשתמש במערכת, יש להפעיל את Lovable Cloud דרך לשונית "Cloud" בצד ימין של המסך.
+              לאחר ההפעלה, צור טבלה בשם "vendor_requests" עם השדות הנדרשים.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
             <p className="text-muted-foreground">צפה ונהל בקשות הקמת ספקים</p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
             <Plus className="h-4 w-4" />
             בקשה חדשה
           </Button>
