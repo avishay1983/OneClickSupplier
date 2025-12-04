@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, FileText } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2 } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VendorRequestsTableProps {
   requests: VendorRequest[];
@@ -41,6 +42,7 @@ const getStatusClass = (status: VendorStatus) => {
 export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
   const copyLink = (token: string) => {
     const link = `${window.location.origin}/vendor/${token}`;
@@ -58,6 +60,36 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const viewDocuments = (request: VendorRequest) => {
     setSelectedRequest(request);
     setDocumentsDialogOpen(true);
+  };
+
+  const resendEmail = async (request: VendorRequest) => {
+    setSendingEmailId(request.id);
+    try {
+      const secureLink = `${window.location.origin}/vendor/${request.secure_token}`;
+      const { error } = await supabase.functions.invoke('send-vendor-email', {
+        body: {
+          vendorName: request.vendor_name,
+          vendorEmail: request.vendor_email,
+          secureLink,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'המייל נשלח בהצלחה',
+        description: `הקישור נשלח ל-${request.vendor_email}`,
+      });
+    } catch (error) {
+      console.error('Error resending email:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את המייל',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingEmailId(null);
+    }
   };
 
   if (isLoading) {
@@ -115,6 +147,19 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                       title="צפה במסמכים"
                     >
                       <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => resendEmail(request)}
+                      disabled={sendingEmailId === request.id}
+                      title="שלח מייל שוב"
+                    >
+                      {sendingEmailId === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
