@@ -107,12 +107,11 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0;">
             <div style="text-align: right;">
               <span style="font-size: 20px; font-weight: bold; color: white;">ביטוח ישיר</span>
-              <span style="margin-right: 8px;">
-                <span style="color: #e63946; font-size: 10px;">&#9679;</span>
-                <span style="color: #e63946; font-size: 12px;">&#9679;</span>
+              <span style="margin-right: 10px; letter-spacing: 4px;">
                 <span style="color: #e63946; font-size: 14px;">&#9679;</span>
-                <span style="color: #e63946; font-size: 16px;">&#9679;</span>
-                <span style="color: #e63946; font-size: 18px;">&#9679;</span>
+                <span style="color: #f4a261; font-size: 14px;">&#9679;</span>
+                <span style="color: #2a9d8f; font-size: 14px;">&#9679;</span>
+                <span style="color: #e63946; font-size: 14px;">&#9679;</span>
               </span>
             </div>
           </div>
