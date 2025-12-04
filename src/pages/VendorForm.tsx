@@ -44,7 +44,6 @@ export default function VendorForm() {
     company_id: '',
     phone: '',
     mobile: '',
-    fax: '',
     street: '',
     street_number: '',
     city: '',
@@ -94,7 +93,6 @@ export default function VendorForm() {
             company_id: data.company_id || '',
             phone: data.phone || '',
             mobile: data.mobile || '',
-            fax: data.fax || '',
             street: data.street || '',
             street_number: data.street_number || '',
             city: data.city || '',
@@ -377,16 +375,6 @@ export default function VendorForm() {
                   className="ltr text-right"
                 />
                 {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fax">פקס</Label>
-                <Input
-                  id="fax"
-                  value={formData.fax}
-                  onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
-                  placeholder="מספר פקס"
-                  className="ltr text-right"
-                />
               </div>
             </CardContent>
           </Card>
