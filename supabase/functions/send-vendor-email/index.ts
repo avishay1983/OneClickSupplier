@@ -30,12 +30,14 @@ const handler = async (req: Request): Promise<Response> => {
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; direction: rtl; text-align: right; }
+          body { font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 8px; }
           .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-          .content { background: white; padding: 30px; border-radius: 0 0 8px 8px; }
-          .button { display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 20px 0; font-weight: bold; }
-          .footer { margin-top: 20px; font-size: 12px; color: #666; }
+          .content { background: white; padding: 30px; border-radius: 0 0 8px 8px; text-align: right; }
+          .button-container { text-align: center; margin: 25px 0; }
+          .button { display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; }
+          .footer { margin-top: 20px; font-size: 12px; color: #666; text-align: right; }
+          p { text-align: right; margin: 12px 0; }
         </style>
       </head>
       <body>
@@ -45,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>שלום ${vendorName},</p>
             <p>התקבלה בקשה להקמתך כספק במערכת שלנו.</p>
             <p>על מנת להשלים את תהליך ההקמה, אנא לחץ על הכפתור הבא ומלא את הפרטים הנדרשים:</p>
-            <p style="text-align: center;"><a href="${secureLink}" class="button">מילוי טופס ספק</a></p>
+            <div class="button-container"><a href="${secureLink}" class="button">מילוי טופס ספק</a></div>
             <p>הקישור הזה הוא אישי ומאובטח. אנא אל תשתף אותו עם אחרים.</p>
             <p>במידה ויש לך שאלות, אנא פנה לאיש הקשר שלך בחברה.</p>
             <p class="footer">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>

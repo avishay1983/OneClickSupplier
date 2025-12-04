@@ -103,15 +103,15 @@ const handler = async (req: Request): Promise<Response> => {
       to: [vendorRequest.vendor_email],
       subject: "קוד אימות לטופס ספק",
       html: `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #1a365d;">קוד אימות</h1>
-          <p>שלום ${vendorRequest.vendor_name},</p>
-          <p>קוד האימות שלך להיכנס לטופס הספק הוא:</p>
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
+          <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
+          <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
+          <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
           <div style="background-color: #f0f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
           </div>
-          <p style="color: #718096;">הקוד תקף ל-10 דקות בלבד.</p>
-          <p>אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
+          <p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
+          <p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
         </div>
       `,
     });
