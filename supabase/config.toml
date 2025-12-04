@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.search-streets]
 verify_jwt = false
+
+[functions.send-vendor-otp]
+verify_jwt = false
+
+[functions.verify-vendor-otp]
+verify_jwt = false

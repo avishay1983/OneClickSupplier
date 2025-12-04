@@ -79,10 +79,18 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
       if (error) throw error;
       if (data && !data.success) throw new Error(data.error || 'Failed to send email');
 
-      // Only update status if email was sent successfully
+      // Only update status if email was sent successfully - also reset OTP and extend expiration
+      const newExpiresAt = new Date();
+      newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+      
       const { error: updateError } = await supabase
         .from('vendor_requests')
-        .update({ status: 'resent' })
+        .update({ 
+          status: 'resent',
+          otp_verified: false,
+          otp_code: null,
+          expires_at: newExpiresAt.toISOString(),
+        })
         .eq('id', request.id);
 
       if (updateError) {
