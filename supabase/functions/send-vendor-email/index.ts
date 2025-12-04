@@ -43,8 +43,8 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header" style="background: #1a2b5f;">
-            <div style="text-align: center; margin-bottom: 15px;">
-              <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
+            <div style="text-align: right; margin-bottom: 15px;">
+              <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
             </div>
             <h1 style="margin: 0; text-align: center;">בקשה להקמת ספק</h1>
           </div>
