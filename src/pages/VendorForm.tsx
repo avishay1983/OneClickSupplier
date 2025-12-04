@@ -9,6 +9,7 @@ import { FileUploadZone } from '@/components/vendor/FileUploadZone';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -528,12 +529,12 @@ export default function VendorForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bank_branch">סניף *</Label>
-                <Input
+                <BranchAutocomplete
                   id="bank_branch"
                   value={formData.bank_branch}
-                  onChange={(e) => setFormData({ ...formData, bank_branch: e.target.value })}
-                  placeholder="מספר סניף (3-4 ספרות)"
-                  className="ltr text-right"
+                  onChange={(value) => setFormData({ ...formData, bank_branch: value })}
+                  bankName={formData.bank_name}
+                  placeholder="בחר או הקלד מספר סניף"
                 />
                 {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
               </div>
