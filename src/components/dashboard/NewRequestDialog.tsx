@@ -299,8 +299,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       onOpenChange(isOpen);
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">בקשה חדשה להקמת ספק</DialogTitle>
+        <DialogHeader className="text-right">
+          <DialogTitle className="text-xl text-right">בקשה חדשה להקמת ספק</DialogTitle>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
