@@ -7,12 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUploadZone } from '@/components/vendor/FileUploadZone';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
-import { z } from 'zod';
-
-const emailSchema = z.string().email();
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -57,6 +54,12 @@ export default function VendorForm() {
     const fetchRequest = async () => {
       if (!token) return;
       
+      if (!isSupabaseConfigured) {
+        setNotFound(true);
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('vendor_requests')
@@ -70,9 +73,9 @@ export default function VendorForm() {
           setNotFound(true);
         } else if (data.status === 'submitted' || data.status === 'approved') {
           setSubmitted(true);
-          setRequest(data);
+          setRequest(data as VendorRequest);
         } else {
-          setRequest(data);
+          setRequest(data as VendorRequest);
           // Pre-fill form with existing data
           setFormData({
             company_id: data.company_id || '',
