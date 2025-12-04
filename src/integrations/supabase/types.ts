@@ -14,7 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      vendor_documents: {
+        Row: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_path: string
+          id: string
+          uploaded_at: string
+          vendor_request_id: string
+        }
+        Insert: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_path: string
+          id?: string
+          uploaded_at?: string
+          vendor_request_id: string
+        }
+        Update: {
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string
+          file_path?: string
+          id?: string
+          uploaded_at?: string
+          vendor_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_documents_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_requests: {
+        Row: {
+          accounting_contact_name: string | null
+          accounting_contact_phone: string | null
+          approver_name: string | null
+          bank_account_number: string | null
+          bank_branch: string | null
+          bank_name: string | null
+          city: string | null
+          company_id: string | null
+          contract_signed: boolean | null
+          created_at: string
+          expected_spending: number | null
+          fax: string | null
+          id: string
+          is_consultant: boolean | null
+          is_sensitive: boolean | null
+          legal_approved: boolean | null
+          mobile: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_terms: string | null
+          phone: string | null
+          po_box: string | null
+          postal_code: string | null
+          quote_received: boolean | null
+          sales_contact_name: string | null
+          sales_contact_phone: string | null
+          secure_token: string
+          status: Database["public"]["Enums"]["vendor_status"]
+          street: string | null
+          street_number: string | null
+          updated_at: string
+          vendor_email: string
+          vendor_name: string
+        }
+        Insert: {
+          accounting_contact_name?: string | null
+          accounting_contact_phone?: string | null
+          approver_name?: string | null
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_id?: string | null
+          contract_signed?: boolean | null
+          created_at?: string
+          expected_spending?: number | null
+          fax?: string | null
+          id?: string
+          is_consultant?: boolean | null
+          is_sensitive?: boolean | null
+          legal_approved?: boolean | null
+          mobile?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_terms?: string | null
+          phone?: string | null
+          po_box?: string | null
+          postal_code?: string | null
+          quote_received?: boolean | null
+          sales_contact_name?: string | null
+          sales_contact_phone?: string | null
+          secure_token?: string
+          status?: Database["public"]["Enums"]["vendor_status"]
+          street?: string | null
+          street_number?: string | null
+          updated_at?: string
+          vendor_email: string
+          vendor_name: string
+        }
+        Update: {
+          accounting_contact_name?: string | null
+          accounting_contact_phone?: string | null
+          approver_name?: string | null
+          bank_account_number?: string | null
+          bank_branch?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_id?: string | null
+          contract_signed?: boolean | null
+          created_at?: string
+          expected_spending?: number | null
+          fax?: string | null
+          id?: string
+          is_consultant?: boolean | null
+          is_sensitive?: boolean | null
+          legal_approved?: boolean | null
+          mobile?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_terms?: string | null
+          phone?: string | null
+          po_box?: string | null
+          postal_code?: string | null
+          quote_received?: boolean | null
+          sales_contact_name?: string | null
+          sales_contact_phone?: string | null
+          secure_token?: string
+          status?: Database["public"]["Enums"]["vendor_status"]
+          street?: string | null
+          street_number?: string | null
+          updated_at?: string
+          vendor_email?: string
+          vendor_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +162,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      document_type:
+        | "bookkeeping_cert"
+        | "tax_cert"
+        | "bank_confirmation"
+        | "invoice_screenshot"
+      payment_method: "check" | "invoice" | "transfer"
+      vendor_status: "pending" | "with_vendor" | "submitted" | "approved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +295,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      document_type: [
+        "bookkeeping_cert",
+        "tax_cert",
+        "bank_confirmation",
+        "invoice_screenshot",
+      ],
+      payment_method: ["check", "invoice", "transfer"],
+      vendor_status: ["pending", "with_vendor", "submitted", "approved"],
+    },
   },
 } as const
