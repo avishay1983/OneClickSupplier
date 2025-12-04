@@ -374,7 +374,6 @@ export default function VendorForm() {
             />
             <div className="border-r border-white/20 pr-4">
               <h1 className="text-xl font-bold text-white">טופס הקמת ספק</h1>
-              <p className="text-sm text-white/70">{request?.vendor_name}</p>
             </div>
           </div>
         </div>
