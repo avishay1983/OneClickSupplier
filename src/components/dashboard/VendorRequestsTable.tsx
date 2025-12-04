@@ -65,16 +65,10 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const resendEmail = async (request: VendorRequest) => {
     setSendingEmailId(request.id);
     try {
-      // Update status to 'resent' so the form is editable again
-      const { error: updateError } = await supabase
-        .from('vendor_requests')
-        .update({ status: 'resent' })
-        .eq('id', request.id);
-
-      if (updateError) throw updateError;
-
       const secureLink = `${window.location.origin}/vendor/${request.secure_token}`;
-      const { error } = await supabase.functions.invoke('send-vendor-email', {
+      
+      // First send the email
+      const { data, error } = await supabase.functions.invoke('send-vendor-email', {
         body: {
           vendorName: request.vendor_name,
           vendorEmail: request.vendor_email,
@@ -83,6 +77,17 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
       });
 
       if (error) throw error;
+      if (data && !data.success) throw new Error(data.error || 'Failed to send email');
+
+      // Only update status if email was sent successfully
+      const { error: updateError } = await supabase
+        .from('vendor_requests')
+        .update({ status: 'resent' })
+        .eq('id', request.id);
+
+      if (updateError) {
+        console.error('Status update error:', updateError);
+      }
 
       toast({
         title: 'המייל נשלח בהצלחה',
@@ -91,11 +96,11 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
 
       // Refresh the page to show updated status
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error resending email:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא ניתן לשלוח את המייל',
+        title: 'שגיאה בשליחת המייל',
+        description: error.message || 'לא ניתן לשלוח את המייל',
         variant: 'destructive',
       });
     } finally {
