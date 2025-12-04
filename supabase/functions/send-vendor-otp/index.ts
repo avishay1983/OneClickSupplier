@@ -104,6 +104,19 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "קוד אימות לטופס ספק",
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
+          <div style="text-align: center; margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0;">
+            <div style="display: inline-flex; justify-content: center; align-items: center; gap: 10px;">
+              <div style="display: inline-grid; grid-template-columns: repeat(3, 12px); gap: 6px;">
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; background: transparent; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%; display: inline-block;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%; display: inline-block;"></span>
+              </div>
+              <div style="font-size: 24px; font-weight: bold; color: white;">ביטוח ישיר</div>
+            </div>
+          </div>
           <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
           <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
           <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
