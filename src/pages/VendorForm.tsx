@@ -522,7 +522,7 @@ export default function VendorForm() {
                 <BankAutocomplete
                   id="bank_name"
                   value={formData.bank_name}
-                  onChange={(value) => setFormData({ ...formData, bank_name: value })}
+                  onChange={(value) => setFormData({ ...formData, bank_name: value, bank_branch: '', bank_account_number: '' })}
                   placeholder="בחר בנק"
                 />
                 {errors.bank_name && <p className="text-sm text-destructive">{errors.bank_name}</p>}
