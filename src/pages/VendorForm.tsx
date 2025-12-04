@@ -44,7 +44,7 @@ export default function VendorForm() {
     sales_contact_phone: '',
     bank_name: '',
     bank_branch: '',
-    bank_account: '',
+    bank_account_number: '',
     payment_method: '' as 'check' | 'invoice' | 'transfer' | '',
   });
 
@@ -93,7 +93,7 @@ export default function VendorForm() {
             sales_contact_phone: data.sales_contact_phone || '',
             bank_name: data.bank_name || '',
             bank_branch: data.bank_branch || '',
-            bank_account: data.bank_account || '',
+            bank_account_number: data.bank_account_number || '',
             payment_method: data.payment_method || '',
           });
         }
@@ -123,8 +123,8 @@ export default function VendorForm() {
       newErrors.bank_branch = 'מספר סניף הוא שדה חובה';
     }
 
-    if (!formData.bank_account.trim()) {
-      newErrors.bank_account = 'מספר חשבון הוא שדה חובה';
+    if (!formData.bank_account_number.trim()) {
+      newErrors.bank_account_number = 'מספר חשבון הוא שדה חובה';
     }
 
     if (!formData.payment_method) {
@@ -457,14 +457,14 @@ export default function VendorForm() {
                 {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bank_account">מספר חשבון *</Label>
+                <Label htmlFor="bank_account_number">מספר חשבון *</Label>
                 <Input
-                  id="bank_account"
-                  value={formData.bank_account}
-                  onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })}
+                  id="bank_account_number"
+                  value={formData.bank_account_number}
+                  onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
                   placeholder="מספר חשבון"
                 />
-                {errors.bank_account && <p className="text-sm text-destructive">{errors.bank_account}</p>}
+                {errors.bank_account_number && <p className="text-sm text-destructive">{errors.bank_account_number}</p>}
               </div>
             </CardContent>
           </Card>

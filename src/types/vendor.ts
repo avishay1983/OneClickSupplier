@@ -11,8 +11,8 @@ export interface VendorRequest {
   vendor_name: string;
   vendor_email: string;
   expected_spending: number | null;
-  has_quote: boolean;
-  has_agreement: boolean;
+  quote_received: boolean;
+  contract_signed: boolean;
   legal_approved: boolean;
   approver_name: string | null;
   is_consultant: boolean;
@@ -38,7 +38,7 @@ export interface VendorRequest {
   // Bank details
   bank_name: string | null;
   bank_branch: string | null;
-  bank_account: string | null;
+  bank_account_number: string | null;
   
   // Payment
   payment_method: 'check' | 'invoice' | 'transfer' | null;

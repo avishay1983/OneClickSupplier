@@ -17,8 +17,8 @@ export interface NewRequestData {
   vendor_name: string;
   vendor_email: string;
   expected_spending: number | null;
-  has_quote: boolean;
-  has_agreement: boolean;
+  quote_received: boolean;
+  contract_signed: boolean;
   legal_approved: boolean;
   approver_name: string;
   is_consultant: boolean;
@@ -33,8 +33,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
     vendor_name: '',
     vendor_email: '',
     expected_spending: null,
-    has_quote: false,
-    has_agreement: false,
+    quote_received: false,
+    contract_signed: false,
     legal_approved: false,
     approver_name: '',
     is_consultant: false,
@@ -65,8 +65,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
         vendor_name: '',
         vendor_email: '',
         expected_spending: null,
-        has_quote: false,
-        has_agreement: false,
+        quote_received: false,
+        contract_signed: false,
         legal_approved: false,
         approver_name: '',
         is_consultant: false,
@@ -148,24 +148,24 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="has_quote"
-                  checked={formData.has_quote}
+                  id="quote_received"
+                  checked={formData.quote_received}
                   onCheckedChange={(checked) => 
-                    setFormData({ ...formData, has_quote: checked as boolean })
+                    setFormData({ ...formData, quote_received: checked as boolean })
                   }
                 />
-                <Label htmlFor="has_quote" className="cursor-pointer">קיימת הצעת מחיר</Label>
+                <Label htmlFor="quote_received" className="cursor-pointer">קיימת הצעת מחיר</Label>
               </div>
 
               <div className="flex items-center gap-2">
                 <Checkbox
-                  id="has_agreement"
-                  checked={formData.has_agreement}
+                  id="contract_signed"
+                  checked={formData.contract_signed}
                   onCheckedChange={(checked) => 
-                    setFormData({ ...formData, has_agreement: checked as boolean })
+                    setFormData({ ...formData, contract_signed: checked as boolean })
                   }
                 />
-                <Label htmlFor="has_agreement" className="cursor-pointer">קיים הסכם</Label>
+                <Label htmlFor="contract_signed" className="cursor-pointer">קיים הסכם</Label>
               </div>
 
               <div className="flex items-center gap-2">

@@ -1,29 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = "https://ijyqtemnhlbamxmgjuzp.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqeXF0ZW1uaGxiYW14bWdqdXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MzY2NzksImV4cCI6MjA4MDQxMjY3OX0.CL7HrCHStxINVWS9SqATBdp__QMeD59gxXVkI1KaxqQ";
 
-// Create a mock client for when Supabase is not configured
-const createMockClient = () => ({
-  from: () => ({
-    select: () => Promise.resolve({ data: [], error: null }),
-    insert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-    update: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-    delete: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-    eq: () => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-    }),
-  }),
-  storage: {
-    from: () => ({
-      upload: () => Promise.resolve({ data: null, error: { message: 'Storage not configured' } }),
-    }),
-  },
-});
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : createMockClient() as unknown as SupabaseClient;
-
-export const isSupabaseConfigured = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+export const isSupabaseConfigured = true;
