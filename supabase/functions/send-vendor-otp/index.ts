@@ -104,8 +104,8 @@ const handler = async (req: Request): Promise<Response> => {
       subject: "קוד אימות לטופס ספק",
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
-          <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-            <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
+          <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
+            <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
           </div>
           <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
           <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
