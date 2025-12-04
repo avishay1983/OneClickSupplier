@@ -1,7 +1,17 @@
 import { useCallback, useState } from 'react';
-import { Upload, X, File, CheckCircle } from 'lucide-react';
+import { Upload, X, File, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+
+const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
 
 interface ExistingDocument {
   file_name: string;
@@ -26,6 +36,28 @@ export function FileUploadZone({
   existingDocument
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const validateFile = (file: File): boolean => {
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isValidExtension = ALLOWED_EXTENSIONS.includes(extension);
+    const isValidMime = ALLOWED_MIME_TYPES.includes(file.type);
+    
+    if (!isValidExtension && !isValidMime) {
+      const errorMsg = `פורמט קובץ לא נתמך: ${extension || file.type}. פורמטים מותרים: PDF, JPG, PNG, DOC, DOCX`;
+      setError(errorMsg);
+      toast({
+        title: "שגיאה בהעלאת קובץ",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    setError(null);
+    return true;
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -42,14 +74,14 @@ export function FileUploadZone({
     setIsDragging(false);
     
     const file = e.dataTransfer.files[0];
-    if (file) {
+    if (file && validateFile(file)) {
       onFileSelect(file);
     }
   }, [onFileSelect]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && validateFile(file)) {
       onFileSelect(file);
     }
   }, [onFileSelect]);
@@ -121,30 +153,43 @@ export function FileUploadZone({
   }
 
   return (
-    <div
-      className={cn(
-        "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
-        isDragging 
-          ? "border-primary bg-primary/5" 
-          : "border-border hover:border-primary/50 hover:bg-muted/50"
+    <div>
+      <div
+        className={cn(
+          "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
+          error
+            ? "border-destructive bg-destructive/5"
+            : isDragging 
+              ? "border-primary bg-primary/5" 
+              : "border-border hover:border-primary/50 hover:bg-muted/50"
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById(`file-${documentType}`)?.click()}
+      >
+        <input
+          id={`file-${documentType}`}
+          type="file"
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          onChange={handleFileInput}
+        />
+        <Upload className={cn("h-8 w-8 mx-auto mb-2", error ? "text-destructive" : "text-muted-foreground")} />
+        <p className="font-medium text-sm mb-1">{label}</p>
+        <p className="text-xs text-muted-foreground">
+          גרור קובץ לכאן או לחץ לבחירה
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          (PDF, JPG, PNG, DOC, DOCX)
+        </p>
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 mt-2 text-destructive text-xs">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
+        </div>
       )}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => document.getElementById(`file-${documentType}`)?.click()}
-    >
-      <input
-        id={`file-${documentType}`}
-        type="file"
-        className="hidden"
-        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-        onChange={handleFileInput}
-      />
-      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-      <p className="font-medium text-sm mb-1">{label}</p>
-      <p className="text-xs text-muted-foreground">
-        גרור קובץ לכאן או לחץ לבחירה
-      </p>
     </div>
   );
 }
