@@ -114,19 +114,19 @@ export function ViewDocumentsDialog({
   const InfoRow = ({ label, value, fieldKey }: { label: string; value: string | null | undefined; fieldKey: string }) => (
     value ? (
       <div 
-        className="flex flex-row-reverse justify-between py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors group"
+        className="flex justify-between py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors group"
         onClick={() => copyToClipboard(value, fieldKey)}
         title="לחץ להעתקה"
       >
-        <span className="text-muted-foreground text-right">{label}</span>
         <div className="flex items-center gap-2">
+          <span className="font-medium" dir="ltr">{value}</span>
           {copiedField === fieldKey ? (
             <Check className="h-3 w-3 text-success" />
           ) : (
             <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           )}
-          <span className="font-medium text-left" dir="ltr">{value}</span>
         </div>
+        <span className="text-muted-foreground">{label}</span>
       </div>
     ) : null
   );
