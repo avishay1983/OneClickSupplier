@@ -1,4 +1,4 @@
-export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved';
+export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent';
 
 export interface VendorRequest {
   id: string;
@@ -59,6 +59,7 @@ export const STATUS_LABELS: Record<VendorStatus, string> = {
   with_vendor: 'אצל הספק',
   submitted: 'הוגש',
   approved: 'אושר',
+  resent: 'נשלח מחדש',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {

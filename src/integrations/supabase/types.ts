@@ -168,7 +168,12 @@ export type Database = {
         | "bank_confirmation"
         | "invoice_screenshot"
       payment_method: "check" | "invoice" | "transfer"
-      vendor_status: "pending" | "with_vendor" | "submitted" | "approved"
+      vendor_status:
+        | "pending"
+        | "with_vendor"
+        | "submitted"
+        | "approved"
+        | "resent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -303,7 +308,13 @@ export const Constants = {
         "invoice_screenshot",
       ],
       payment_method: ["check", "invoice", "transfer"],
-      vendor_status: ["pending", "with_vendor", "submitted", "approved"],
+      vendor_status: [
+        "pending",
+        "with_vendor",
+        "submitted",
+        "approved",
+        "resent",
+      ],
     },
   },
 } as const
