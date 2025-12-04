@@ -6,6 +6,7 @@ export interface VendorRequest {
   updated_at: string;
   secure_token: string;
   status: VendorStatus;
+  expires_at: string | null;
   
   // Internal fields (employee only)
   vendor_name: string;
