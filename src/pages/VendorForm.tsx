@@ -543,10 +543,31 @@ export default function VendorForm() {
                 <Input
                   id="bank_account_number"
                   value={formData.bank_account_number}
-                  onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
-                  placeholder="מספר חשבון"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                    setFormData({ ...formData, bank_account_number: value });
+                    // Real-time validation
+                    if (value && formData.bank_name) {
+                      const validation = validateBankAccount(value, formData.bank_name);
+                      if (!validation.valid) {
+                        setErrors(prev => ({ ...prev, bank_account_number: validation.message || '' }));
+                      } else {
+                        setErrors(prev => {
+                          const { bank_account_number, ...rest } = prev;
+                          return rest;
+                        });
+                      }
+                    }
+                  }}
+                  placeholder={formData.bank_name ? `${getBankByName(formData.bank_name)?.accountDigits || '6-9'} ספרות` : 'מספר חשבון'}
                   className="ltr text-right"
+                  maxLength={9}
                 />
+                {formData.bank_name && getBankByName(formData.bank_name) && (
+                  <p className="text-xs text-muted-foreground">
+                    {getBankByName(formData.bank_name)?.accountDigits} ספרות נדרשות עבור {formData.bank_name}
+                  </p>
+                )}
                 {errors.bank_account_number && <p className="text-sm text-destructive">{errors.bank_account_number}</p>}
               </div>
             </CardContent>
