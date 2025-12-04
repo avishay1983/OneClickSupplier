@@ -98,9 +98,9 @@ export function ViewDocumentsDialog({
 
   const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
     value ? (
-      <div className="flex justify-between py-2 border-b border-border/50 last:border-0">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
+      <div className="flex flex-row-reverse justify-between py-2 border-b border-border/50 last:border-0">
+        <span className="text-muted-foreground text-right">{label}</span>
+        <span className="font-medium text-left" dir="ltr">{value}</span>
       </div>
     ) : null
   );
