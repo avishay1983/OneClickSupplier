@@ -2,3 +2,6 @@ project_id = "ijyqtemnhlbamxmgjuzp"
 
 [functions.send-vendor-email]
 verify_jwt = false
+
+[functions.search-streets]
+verify_jwt = false

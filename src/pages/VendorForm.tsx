@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUploadZone } from '@/components/vendor/FileUploadZone';
 import { CityAutocomplete } from '@/components/ui/city-autocomplete';
+import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -406,10 +407,11 @@ export default function VendorForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="street">רחוב</Label>
-                  <Input
+                  <StreetAutocomplete
                     id="street"
                     value={formData.street}
-                    onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, street: value })}
+                    city={formData.city}
                     placeholder="שם הרחוב"
                   />
                 </div>
