@@ -134,13 +134,13 @@ export function ViewDocumentsDialog({
                   {documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-muted/30"
+                      className="flex flex-row-reverse items-center justify-between p-4 rounded-lg border bg-muted/30"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-row-reverse items-center gap-3">
                         <div className="bg-primary/10 rounded-lg p-2">
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
-                        <div>
+                        <div className="text-right">
                           <p className="font-medium text-sm text-muted-foreground">
                             {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
                           </p>
