@@ -42,7 +42,20 @@ const handler = async (req: Request): Promise<Response> => {
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>בקשה להקמת ספק</h1></div>
+          <div class="header" style="background: #1a2b5f;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+              <div style="display: grid; grid-template-columns: repeat(3, 12px); gap: 6px;">
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%;"></span>
+                <span style="width: 12px; height: 12px; background: transparent;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%;"></span>
+                <span style="width: 12px; height: 12px; background: #e63946; border-radius: 50%;"></span>
+              </div>
+              <div style="font-size: 24px; font-weight: bold; color: white;">ביטוח ישיר</div>
+            </div>
+            <h1 style="margin-top: 15px;">בקשה להקמת ספק</h1>
+          </div>
           <div class="content">
             <p>שלום ${vendorName},</p>
             <p>התקבלה בקשה להקמתך כספק במערכת שלנו.</p>
