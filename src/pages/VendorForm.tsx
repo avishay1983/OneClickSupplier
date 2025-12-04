@@ -389,6 +389,16 @@ export default function VendorForm() {
               {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
+                  <Label htmlFor="city">עיר *</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="עיר"
+                  />
+                  {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="street">רחוב</Label>
                   <Input
                     id="street"
@@ -405,16 +415,6 @@ export default function VendorForm() {
                     onChange={(e) => setFormData({ ...formData, street_number: e.target.value })}
                     placeholder="מספר בית"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">עיר *</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="עיר"
-                  />
-                  {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postal_code">מיקוד</Label>
