@@ -15,6 +15,7 @@ import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } from '@/data/israelBanks';
+import { getBranchesByBank } from '@/data/bankBranches';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -189,6 +190,12 @@ export default function VendorForm() {
       newErrors.bank_branch = 'מספר סניף הוא שדה חובה';
     } else if (!validateBankBranch(formData.bank_branch)) {
       newErrors.bank_branch = 'מספר סניף חייב להכיל 3-4 ספרות';
+    } else if (formData.bank_name) {
+      const branches = getBranchesByBank(formData.bank_name);
+      const branchExists = branches.some(b => b.code === formData.bank_branch);
+      if (branches.length > 0 && !branchExists) {
+        newErrors.bank_branch = `סניף ${formData.bank_branch} לא נמצא ברשימת הסניפים של ${formData.bank_name}`;
+      }
     }
 
     const accountValidation = validateBankAccount(formData.bank_account_number, formData.bank_name);
@@ -532,10 +539,30 @@ export default function VendorForm() {
                 <BranchAutocomplete
                   id="bank_branch"
                   value={formData.bank_branch}
-                  onChange={(value) => setFormData({ ...formData, bank_branch: value })}
+                  onChange={(value) => {
+                    setFormData({ ...formData, bank_branch: value });
+                    // Real-time validation
+                    if (value && formData.bank_name) {
+                      const branches = getBranchesByBank(formData.bank_name);
+                      const branchExists = branches.some(b => b.code === value);
+                      if (branches.length > 0 && !branchExists) {
+                        setErrors(prev => ({ ...prev, bank_branch: `סניף ${value} לא נמצא ברשימת הסניפים` }));
+                      } else {
+                        setErrors(prev => {
+                          const { bank_branch, ...rest } = prev;
+                          return rest;
+                        });
+                      }
+                    }
+                  }}
                   bankName={formData.bank_name}
                   placeholder="בחר או הקלד מספר סניף"
                 />
+                {formData.bank_name && (
+                  <p className="text-xs text-muted-foreground">
+                    {getBranchesByBank(formData.bank_name).length} סניפים זמינים עבור {formData.bank_name}
+                  </p>
+                )}
                 {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
               </div>
               <div className="space-y-2">
