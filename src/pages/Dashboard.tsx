@@ -55,14 +55,20 @@ export default function Dashboard() {
     }
     
     const secureToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + (data.expires_in_days || 7));
+    
+    // Remove expires_in_days from data as it's not a DB column
+    const { expires_in_days, ...dbData } = data;
     
     const { error } = await supabase
       .from('vendor_requests')
       .insert({
-        ...data,
+        ...dbData,
         secure_token: secureToken,
         status: 'with_vendor',
         payment_terms: 'שוטף + 60',
+        expires_at: expiresAt.toISOString(),
       });
 
     if (error) throw error;

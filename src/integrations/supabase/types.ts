@@ -62,12 +62,16 @@ export type Database = {
           contract_signed: boolean | null
           created_at: string
           expected_spending: number | null
+          expires_at: string | null
           fax: string | null
           id: string
           is_consultant: boolean | null
           is_sensitive: boolean | null
           legal_approved: boolean | null
           mobile: string | null
+          otp_code: string | null
+          otp_expires_at: string | null
+          otp_verified: boolean | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           payment_terms: string | null
           phone: string | null
@@ -96,12 +100,16 @@ export type Database = {
           contract_signed?: boolean | null
           created_at?: string
           expected_spending?: number | null
+          expires_at?: string | null
           fax?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
           legal_approved?: boolean | null
           mobile?: string | null
+          otp_code?: string | null
+          otp_expires_at?: string | null
+          otp_verified?: boolean | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_terms?: string | null
           phone?: string | null
@@ -130,12 +138,16 @@ export type Database = {
           contract_signed?: boolean | null
           created_at?: string
           expected_spending?: number | null
+          expires_at?: string | null
           fax?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
           legal_approved?: boolean | null
           mobile?: string | null
+          otp_code?: string | null
+          otp_expires_at?: string | null
+          otp_verified?: boolean | null
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           payment_terms?: string | null
           phone?: string | null

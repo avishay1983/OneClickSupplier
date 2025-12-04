@@ -31,6 +31,16 @@ export default function VendorForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [linkExpired, setLinkExpired] = useState(false);
+  
+  // OTP verification states
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [maskedEmail, setMaskedEmail] = useState('');
   
   const [files, setFiles] = useState<Record<DocumentType, File | null>>({
     bookkeeping_cert: null,
@@ -65,7 +75,7 @@ export default function VendorForm() {
     payment_method: '' as 'check' | 'invoice' | 'transfer' | '',
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -88,52 +98,66 @@ export default function VendorForm() {
         
         if (!data) {
           setNotFound(true);
-        } else if (data.status === 'submitted' || data.status === 'approved') {
-          // Only show success for submitted/approved - resent status allows editing
-          setSubmitted(true);
-          setRequest(data as VendorRequest);
         } else {
-          setRequest(data as VendorRequest);
-          // Pre-fill form with existing data
-          setFormData({
-            company_id: data.company_id || '',
-            phone: data.phone || '',
-            mobile: data.mobile || '',
-            street: data.street || '',
-            street_number: data.street_number || '',
-            city: data.city || '',
-            postal_code: data.postal_code || '',
-            po_box: data.po_box || '',
-            accounting_contact_name: data.accounting_contact_name || '',
-            accounting_contact_phone: data.accounting_contact_phone || '',
-            sales_contact_name: data.sales_contact_name || '',
-            sales_contact_phone: data.sales_contact_phone || '',
-            bank_name: data.bank_name || '',
-            bank_branch: data.bank_branch || '',
-            bank_account_number: data.bank_account_number || '',
-            payment_method: data.payment_method || '',
-          });
-
-          // Fetch existing documents
-          const { data: docs, error: docsError } = await supabase
-            .from('vendor_documents')
-            .select('*')
-            .eq('vendor_request_id', data.id);
-
-          if (!docsError && docs) {
-            const existingDocs: Record<DocumentType, ExistingDocument | null> = {
-              bookkeeping_cert: null,
-              tax_cert: null,
-              bank_confirmation: null,
-              invoice_screenshot: null,
-            };
-            docs.forEach((doc: VendorDocument) => {
-              existingDocs[doc.document_type as DocumentType] = {
-                file_name: doc.file_name,
-                file_path: doc.file_path,
-              };
+          // Check if link has expired
+          if (data.expires_at && new Date(data.expires_at) < new Date()) {
+            setLinkExpired(true);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (data.status === 'submitted' || data.status === 'approved') {
+            setSubmitted(true);
+            setRequest(data as VendorRequest);
+          } else {
+            setRequest(data as VendorRequest);
+            
+            // Check if already verified (and not resent)
+            if (data.otp_verified && data.status !== 'resent') {
+              setOtpVerified(true);
+            }
+            
+            // Pre-fill form with existing data
+            setFormData({
+              company_id: data.company_id || '',
+              phone: data.phone || '',
+              mobile: data.mobile || '',
+              street: data.street || '',
+              street_number: data.street_number || '',
+              city: data.city || '',
+              postal_code: data.postal_code || '',
+              po_box: data.po_box || '',
+              accounting_contact_name: data.accounting_contact_name || '',
+              accounting_contact_phone: data.accounting_contact_phone || '',
+              sales_contact_name: data.sales_contact_name || '',
+              sales_contact_phone: data.sales_contact_phone || '',
+              bank_name: data.bank_name || '',
+              bank_branch: data.bank_branch || '',
+              bank_account_number: data.bank_account_number || '',
+              payment_method: data.payment_method || '',
             });
-            setExistingDocuments(existingDocs);
+
+            // Fetch existing documents
+            const { data: docs, error: docsError } = await supabase
+              .from('vendor_documents')
+              .select('*')
+              .eq('vendor_request_id', data.id);
+
+            if (!docsError && docs) {
+              const existingDocs: Record<DocumentType, ExistingDocument | null> = {
+                bookkeeping_cert: null,
+                tax_cert: null,
+                bank_confirmation: null,
+                invoice_screenshot: null,
+              };
+              docs.forEach((doc: VendorDocument) => {
+                existingDocs[doc.document_type as DocumentType] = {
+                  file_name: doc.file_name,
+                  file_path: doc.file_path,
+                };
+              });
+              setExistingDocuments(existingDocs);
+            }
           }
         }
       } catch (error) {
@@ -146,6 +170,101 @@ export default function VendorForm() {
 
     fetchRequest();
   }, [token]);
+
+  // Send OTP function
+  const handleSendOtp = async () => {
+    if (!token) return;
+    
+    setIsSendingOtp(true);
+    setOtpError('');
+    
+    try {
+      const response = await supabase.functions.invoke('send-vendor-otp', {
+        body: { token },
+      });
+      
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      
+      if (data.error === 'expired') {
+        setLinkExpired(true);
+        return;
+      }
+      
+      if (data.verified) {
+        setOtpVerified(true);
+        return;
+      }
+      
+      if (data.success) {
+        setOtpSent(true);
+        setMaskedEmail(data.email || '');
+        toast({
+          title: "קוד אימות נשלח",
+          description: `קוד נשלח לכתובת ${data.email}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error sending OTP:', error);
+      setOtpError('שגיאה בשליחת קוד האימות. אנא נסה שוב.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Verify OTP function
+  const handleVerifyOtp = async () => {
+    if (!token || !otpCode) return;
+    
+    if (otpCode.length !== 6) {
+      setOtpError('קוד האימות חייב להכיל 6 ספרות');
+      return;
+    }
+    
+    setIsVerifyingOtp(true);
+    setOtpError('');
+    
+    try {
+      const response = await supabase.functions.invoke('verify-vendor-otp', {
+        body: { token, otp: otpCode },
+      });
+      
+      if (response.error) throw response.error;
+      
+      const data = response.data;
+      
+      if (data.error === 'expired') {
+        setLinkExpired(true);
+        return;
+      }
+      
+      if (data.error === 'otp_expired') {
+        setOtpError('קוד האימות פג תוקף. יש לבקש קוד חדש.');
+        setOtpSent(false);
+        setOtpCode('');
+        return;
+      }
+      
+      if (data.error === 'invalid_otp') {
+        setOtpError('קוד אימות שגוי');
+        return;
+      }
+      
+      if (data.success) {
+        setOtpVerified(true);
+        toast({
+          title: "אימות בוצע בהצלחה",
+          description: "כעת תוכל למלא את הטופס",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error);
+      setOtpError('שגיאה באימות הקוד. אנא נסה שוב.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -327,6 +446,111 @@ export default function VendorForm() {
             <p className="text-muted-foreground">
               תודה על מילוי הטופס. הפרטים שלך נקלטו במערכת ויטופלו בהקדם.
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (linkExpired) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="pt-8 pb-6">
+            <AlertCircle className="h-16 w-16 mx-auto text-destructive mb-4" />
+            <h2 className="text-xl font-bold mb-2">הקישור פג תוקף</h2>
+            <p className="text-muted-foreground">
+              הקישור אינו תקף יותר. אנא פנה לאיש הקשר שלך בחברה לקבלת קישור חדש.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // OTP Verification Screen
+  if (!otpVerified) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto bg-primary rounded-lg p-3 w-fit mb-4">
+              <Building2 className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-xl">אימות כניסה</CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              {request?.vendor_name}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!otpSent ? (
+              <>
+                <p className="text-center text-muted-foreground">
+                  לצורך אבטחה, יש לאמת את הכניסה באמצעות קוד שיישלח לכתובת המייל שלך.
+                </p>
+                <Button 
+                  onClick={handleSendOtp} 
+                  disabled={isSendingOtp}
+                  className="w-full"
+                >
+                  {isSendingOtp ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      שולח קוד...
+                    </>
+                  ) : (
+                    'שלח קוד אימות'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-center text-muted-foreground">
+                  קוד אימות נשלח לכתובת: <span className="font-medium ltr inline-block">{maskedEmail}</span>
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="otp">הזן קוד אימות (6 ספרות)</Label>
+                  <Input
+                    id="otp"
+                    value={otpCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(value);
+                      setOtpError('');
+                    }}
+                    placeholder="000000"
+                    className="text-center text-2xl tracking-widest ltr"
+                    maxLength={6}
+                  />
+                  {otpError && <p className="text-sm text-destructive">{otpError}</p>}
+                </div>
+                <Button 
+                  onClick={handleVerifyOtp} 
+                  disabled={isVerifyingOtp || otpCode.length !== 6}
+                  className="w-full"
+                >
+                  {isVerifyingOtp ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      מאמת...
+                    </>
+                  ) : (
+                    'אמת קוד'
+                  )}
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpCode('');
+                    setOtpError('');
+                  }}
+                  className="w-full"
+                >
+                  שלח קוד חדש
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

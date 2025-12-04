@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
@@ -23,6 +24,7 @@ export interface NewRequestData {
   approver_name: string;
   is_consultant: boolean;
   is_sensitive: boolean;
+  expires_in_days: number;
 }
 
 const emailSchema = z.string().email('כתובת אימייל לא תקינה');
@@ -39,6 +41,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
     approver_name: '',
     is_consultant: false,
     is_sensitive: false,
+    expires_in_days: 7,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,6 +74,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
         approver_name: '',
         is_consultant: false,
         is_sensitive: false,
+        expires_in_days: 7,
       });
       onOpenChange(false);
     } catch (error) {
@@ -143,6 +147,24 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit }: NewRequestDia
                 onChange={(e) => setFormData({ ...formData, approver_name: e.target.value })}
                 placeholder="הכנס שם מאשר"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expires_in_days">תוקף הקישור</Label>
+              <Select
+                value={String(formData.expires_in_days)}
+                onValueChange={(value) => setFormData({ ...formData, expires_in_days: Number(value) })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר תוקף" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 ימים</SelectItem>
+                  <SelectItem value="7">7 ימים</SelectItem>
+                  <SelectItem value="14">14 ימים</SelectItem>
+                  <SelectItem value="30">30 ימים</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
