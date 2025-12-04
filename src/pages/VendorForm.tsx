@@ -72,6 +72,7 @@ export default function VendorForm() {
         if (!data) {
           setNotFound(true);
         } else if (data.status === 'submitted' || data.status === 'approved') {
+          // Only show success for submitted/approved - resent status allows editing
           setSubmitted(true);
           setRequest(data as VendorRequest);
         } else {

@@ -65,6 +65,14 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const resendEmail = async (request: VendorRequest) => {
     setSendingEmailId(request.id);
     try {
+      // Update status to 'resent' so the form is editable again
+      const { error: updateError } = await supabase
+        .from('vendor_requests')
+        .update({ status: 'resent' })
+        .eq('id', request.id);
+
+      if (updateError) throw updateError;
+
       const secureLink = `${window.location.origin}/vendor/${request.secure_token}`;
       const { error } = await supabase.functions.invoke('send-vendor-email', {
         body: {
@@ -78,8 +86,11 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
 
       toast({
         title: 'המייל נשלח בהצלחה',
-        description: `הקישור נשלח ל-${request.vendor_email}`,
+        description: `הקישור נשלח ל-${request.vendor_email} - הטופס זמין לעריכה`,
       });
+
+      // Refresh the page to show updated status
+      window.location.reload();
     } catch (error) {
       console.error('Error resending email:', error);
       toast({
