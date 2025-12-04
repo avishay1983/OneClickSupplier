@@ -305,8 +305,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">ספק בודד</TabsTrigger>
             <TabsTrigger value="bulk">העלאה מאקסל</TabsTrigger>
+            <TabsTrigger value="single">ספק בודד</TabsTrigger>
           </TabsList>
 
           <TabsContent value="single" className="mt-4">
