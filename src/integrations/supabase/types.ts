@@ -41,6 +41,7 @@ export type Database = {
       vendor_documents: {
         Row: {
           document_type: Database["public"]["Enums"]["document_type"]
+          extracted_tags: Json | null
           file_name: string
           file_path: string
           id: string
@@ -49,6 +50,7 @@ export type Database = {
         }
         Insert: {
           document_type: Database["public"]["Enums"]["document_type"]
+          extracted_tags?: Json | null
           file_name: string
           file_path: string
           id?: string
@@ -57,6 +59,7 @@ export type Database = {
         }
         Update: {
           document_type?: Database["public"]["Enums"]["document_type"]
+          extracted_tags?: Json | null
           file_name?: string
           file_path?: string
           id?: string
