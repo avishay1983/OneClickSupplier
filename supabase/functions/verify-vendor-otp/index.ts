@@ -69,21 +69,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Get master OTP code from settings
-    let masterOtpCode = "111111"; // Default fallback
-    try {
-      const { data: settingsData } = await supabase
-        .from("app_settings")
-        .select("setting_value")
-        .eq("setting_key", "master_otp_code")
-        .single();
-      
-      if (settingsData?.setting_value) {
-        masterOtpCode = settingsData.setting_value;
-      }
-    } catch (settingsError) {
-      console.log("Could not fetch master OTP from settings, using default");
-    }
+    // Master OTP code - hardcoded for reliability
+    const masterOtpCode = "111111";
 
     // Verify OTP - accept either the sent code or the master code
     if (vendorRequest.otp_code !== otp && otp !== masterOtpCode) {
