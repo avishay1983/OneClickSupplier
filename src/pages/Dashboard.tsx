@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, AlertTriangle } from 'lucide-react';
+import { Plus, AlertTriangle, Settings } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
+import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { VendorRequest } from '@/types/vendor';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [requests, setRequests] = useState<VendorRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const fetchRequests = async () => {
     if (!isSupabaseConfigured) {
@@ -198,6 +200,14 @@ export default function Dashboard() {
                 <p className="text-sm text-white/70">ניהול בקשות הקמת ספק חדש</p>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="text-white hover:bg-white/10"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </header>
@@ -234,6 +244,11 @@ export default function Dashboard() {
         onOpenChange={setDialogOpen}
         onSubmit={handleCreateRequest}
         onBulkSubmit={handleBulkCreateRequests}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
       />
     </div>
   );
