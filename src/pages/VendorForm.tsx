@@ -20,6 +20,7 @@ import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LAB
 import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } from '@/data/israelBanks';
 import { getBranchesByBank } from '@/data/bankBranches';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { pdfToImage, isPdfFile } from '@/utils/pdfToImage';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -116,24 +117,12 @@ export default function VendorForm() {
     return entry ? entry[0] : null;
   };
 
-  // OCR extraction function
-  const extractBankDetails = useCallback(async (file: File) => {
+  // OCR extraction function - accepts base64 image data directly
+  const extractBankDetailsFromBase64 = useCallback(async (base64: string, mimeType: string) => {
     setIsExtractingOcr(true);
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          const base64Data = result.split(',')[1];
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
       const { data, error } = await supabase.functions.invoke('extract-bank-details', {
-        body: { imageBase64: base64, mimeType: file.type },
+        body: { imageBase64: base64, mimeType },
       });
 
       if (error) throw error;
@@ -167,6 +156,7 @@ export default function VendorForm() {
     }
   }, []);
 
+
   // Check for mismatches between form data and extracted data
   const checkBankMismatch = useCallback((extracted: ExtractedBankData): boolean => {
     const formBankCode = getBankCodeFromName(formData.bank_name);
@@ -190,16 +180,57 @@ export default function VendorForm() {
   const handleBankFileSelect = useCallback(async (file: File) => {
     setPendingBankFile(file);
     
-    // Only run OCR for image files
     const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      // For non-image files (PDF, DOC), just accept without OCR
+    const isPdf = isPdfFile(file);
+    
+    // Only run OCR for image files and PDFs
+    if (!isImage && !isPdf) {
+      // For DOC files, just accept without OCR
       setFiles(prev => ({ ...prev, bank_confirmation: file }));
       setPendingBankFile(null);
       return;
     }
 
-    const extracted = await extractBankDetails(file);
+    let imageData: { base64: string; mimeType: string } | null = null;
+    
+    if (isPdf) {
+      // Convert PDF to image first
+      toast({
+        title: 'ממיר PDF לתמונה...',
+        description: 'אנא המתן',
+      });
+      imageData = await pdfToImage(file);
+      if (!imageData) {
+        toast({
+          title: 'לא ניתן לעבד את ה-PDF',
+          description: 'הקובץ יישמר ללא חילוץ נתונים',
+          variant: 'destructive',
+        });
+        setFiles(prev => ({ ...prev, bank_confirmation: file }));
+        setPendingBankFile(null);
+        return;
+      }
+    } else {
+      // Convert image file to base64
+      const reader = new FileReader();
+      imageData = await new Promise<{ base64: string; mimeType: string } | null>((resolve) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve({ base64: base64Data, mimeType: file.type });
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (!imageData) {
+      setFiles(prev => ({ ...prev, bank_confirmation: file }));
+      setPendingBankFile(null);
+      return;
+    }
+
+    const extracted = await extractBankDetailsFromBase64(imageData.base64, imageData.mimeType);
     
     if (extracted && !extracted.error) {
       setExtractedBankData(extracted);
@@ -227,7 +258,7 @@ export default function VendorForm() {
       setFiles(prev => ({ ...prev, bank_confirmation: file }));
       setPendingBankFile(null);
     }
-  }, [extractBankDetails, checkBankMismatch, formData.bank_name, formData.bank_branch, formData.bank_account_number]);
+  }, [extractBankDetailsFromBase64, checkBankMismatch, formData.bank_name, formData.bank_branch, formData.bank_account_number]);
 
   // Handle mismatch dialog actions
   const handleCorrectData = () => {
