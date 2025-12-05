@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -12,7 +12,8 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { CheckCircle, AlertCircle, Clock, Mail } from 'lucide-react';
+import { BankMismatchDialog } from '@/components/vendor/BankMismatchDialog';
+import { CheckCircle, AlertCircle, Clock, Mail, Loader2 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
@@ -21,6 +22,15 @@ import { getBranchesByBank } from '@/data/bankBranches';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
+
+interface ExtractedBankData {
+  bank_number: string | null;
+  branch_number: string | null;
+  account_number: string | null;
+  confidence?: string;
+  notes?: string;
+  error?: string;
+}
 
 interface ExistingDocument {
   file_name: string;
@@ -59,6 +69,12 @@ export default function VendorForm() {
     invoice_screenshot: null,
   });
 
+  // OCR states
+  const [extractedBankData, setExtractedBankData] = useState<ExtractedBankData | null>(null);
+  const [showMismatchDialog, setShowMismatchDialog] = useState(false);
+  const [isExtractingOcr, setIsExtractingOcr] = useState(false);
+  const [pendingBankFile, setPendingBankFile] = useState<File | null>(null);
+
   const [formData, setFormData] = useState({
     company_id: '',
     phone: '',
@@ -78,7 +94,163 @@ export default function VendorForm() {
     payment_method: '' as 'check' | 'invoice' | 'transfer' | '',
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Map bank code to name for comparison
+  const BANK_CODE_MAP: Record<string, string> = {
+    '10': 'בנק לאומי',
+    '11': 'בנק דיסקונט',
+    '12': 'בנק הפועלים',
+    '13': 'בנק אגוד',
+    '14': 'בנק אוצר החייל',
+    '17': 'בנק מרכנתיל',
+    '20': 'בנק מזרחי טפחות',
+    '31': 'בנק הבינלאומי',
+    '46': 'בנק מסד',
+    '52': 'בנק פועלי אגודת ישראל',
+    '54': 'בנק ירושלים',
+  };
+
+  const getBankCodeFromName = (name: string): string | null => {
+    const entry = Object.entries(BANK_CODE_MAP).find(([, bankName]) => bankName === name);
+    return entry ? entry[0] : null;
+  };
+
+  // OCR extraction function
+  const extractBankDetails = useCallback(async (file: File) => {
+    setIsExtractingOcr(true);
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke('extract-bank-details', {
+        body: { imageBase64: base64, mimeType: file.type },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        console.log('OCR error:', data.error);
+        toast({
+          title: 'לא ניתן לחלץ נתונים',
+          description: data.message || 'הקובץ אינו מכיל מסמך בנקאי מזוהה',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      if (data?.extracted) {
+        console.log('Extracted bank data:', data.extracted);
+        return data.extracted as ExtractedBankData;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('OCR extraction error:', err);
+      toast({
+        title: 'שגיאה בחילוץ נתונים',
+        description: 'לא ניתן לעבד את הקובץ',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setIsExtractingOcr(false);
+    }
+  }, []);
+
+  // Check for mismatches between form data and extracted data
+  const checkBankMismatch = useCallback((extracted: ExtractedBankData): boolean => {
+    const formBankCode = getBankCodeFromName(formData.bank_name);
+    
+    // Check bank number
+    if (extracted.bank_number && formBankCode && extracted.bank_number !== formBankCode) {
+      return true;
+    }
+    // Check branch
+    if (extracted.branch_number && formData.bank_branch && extracted.branch_number !== formData.bank_branch) {
+      return true;
+    }
+    // Check account
+    if (extracted.account_number && formData.bank_account_number && extracted.account_number !== formData.bank_account_number) {
+      return true;
+    }
+    return false;
+  }, [formData.bank_name, formData.bank_branch, formData.bank_account_number]);
+
+  // Handle bank document file selection with OCR
+  const handleBankFileSelect = useCallback(async (file: File) => {
+    setPendingBankFile(file);
+    
+    // Only run OCR for image files
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      // For non-image files (PDF, DOC), just accept without OCR
+      setFiles(prev => ({ ...prev, bank_confirmation: file }));
+      setPendingBankFile(null);
+      return;
+    }
+
+    const extracted = await extractBankDetails(file);
+    
+    if (extracted && !extracted.error) {
+      setExtractedBankData(extracted);
+      
+      // Check if form has bank data filled
+      const hasFormData = formData.bank_name || formData.bank_branch || formData.bank_account_number;
+      
+      if (hasFormData && checkBankMismatch(extracted)) {
+        // Show mismatch dialog
+        setShowMismatchDialog(true);
+      } else {
+        // No mismatch or no form data yet - accept file
+        setFiles(prev => ({ ...prev, bank_confirmation: file }));
+        setPendingBankFile(null);
+        
+        if (!hasFormData) {
+          toast({
+            title: 'נתוני בנק זוהו',
+            description: 'הנתונים ישמרו עם המסמך',
+          });
+        }
+      }
+    } else {
+      // OCR failed or returned error - still accept the file
+      setFiles(prev => ({ ...prev, bank_confirmation: file }));
+      setPendingBankFile(null);
+    }
+  }, [extractBankDetails, checkBankMismatch, formData.bank_name, formData.bank_branch, formData.bank_account_number]);
+
+  // Handle mismatch dialog actions
+  const handleCorrectData = () => {
+    setShowMismatchDialog(false);
+    setPendingBankFile(null);
+    setExtractedBankData(null);
+    toast({
+      title: 'נא לתקן את הנתונים',
+      description: 'תקן את פרטי הבנק בטופס ולאחר מכן העלה את הקובץ שוב',
+    });
+  };
+
+  const handleContinueWithMismatch = () => {
+    if (pendingBankFile) {
+      setFiles(prev => ({ ...prev, bank_confirmation: pendingBankFile }));
+    }
+    setShowMismatchDialog(false);
+    setPendingBankFile(null);
+    toast({
+      title: 'הקובץ הועלה',
+      description: 'הקובץ נשמר למרות אי-ההתאמה',
+    });
+  };
 
   const sendOtp = async () => {
     if (!token) return;
@@ -370,13 +542,25 @@ export default function VendorForm() {
           if (uploadError) {
             console.error('Upload error:', uploadError);
           } else {
-            // Save document record
-            await supabase.from('vendor_documents').insert({
+            // Prepare extracted tags for bank_confirmation document
+            const documentInsert: Record<string, unknown> = {
               vendor_request_id: request.id,
               document_type: docType,
               file_name: file.name,
               file_path: filePath,
-            });
+            };
+            
+            // Add extracted tags if this is bank_confirmation and we have extracted data
+            if (docType === 'bank_confirmation' && extractedBankData && !extractedBankData.error) {
+              documentInsert.extracted_tags = {
+                bank_number: extractedBankData.bank_number,
+                branch_number: extractedBankData.branch_number,
+                account_number: extractedBankData.account_number,
+              };
+            }
+            
+            // Save document record
+            await supabase.from('vendor_documents').insert(documentInsert);
           }
         }
       }
@@ -886,14 +1070,41 @@ export default function VendorForm() {
             <CardContent className="grid gap-4 md:grid-cols-2">
               {(Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]).map((docType) => (
                 <div key={docType}>
-                  <FileUploadZone
-                    label={DOCUMENT_TYPE_LABELS[docType]}
-                    documentType={docType}
-                    selectedFile={files[docType]}
-                    onFileSelect={(file) => setFiles({ ...files, [docType]: file })}
-                    onRemove={() => setFiles({ ...files, [docType]: null })}
-                    existingDocument={existingDocuments[docType]}
-                  />
+                  {docType === 'bank_confirmation' ? (
+                    <div className="relative">
+                      <FileUploadZone
+                        label={DOCUMENT_TYPE_LABELS[docType]}
+                        documentType={docType}
+                        selectedFile={files[docType]}
+                        onFileSelect={handleBankFileSelect}
+                        onRemove={() => {
+                          setFiles({ ...files, [docType]: null });
+                          setExtractedBankData(null);
+                        }}
+                        existingDocument={existingDocuments[docType]}
+                      />
+                      {isExtractingOcr && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                          <div className="flex items-center gap-2 text-primary">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">מחלץ נתוני בנק...</span>
+                          </div>
+                        </div>
+                      )}
+                      {extractedBankData && !extractedBankData.error && files[docType] && (
+                        <p className="text-xs text-success mt-1">✓ נתוני בנק זוהו מהמסמך</p>
+                      )}
+                    </div>
+                  ) : (
+                    <FileUploadZone
+                      label={DOCUMENT_TYPE_LABELS[docType]}
+                      documentType={docType}
+                      selectedFile={files[docType]}
+                      onFileSelect={(file) => setFiles({ ...files, [docType]: file })}
+                      onRemove={() => setFiles({ ...files, [docType]: null })}
+                      existingDocument={existingDocuments[docType]}
+                    />
+                  )}
                   {errors[docType] && <p className="text-sm text-destructive mt-1">{errors[docType]}</p>}
                 </div>
               ))}
@@ -902,11 +1113,25 @@ export default function VendorForm() {
 
           {/* Submit */}
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={isSubmitting}>
+            <Button type="submit" size="lg" disabled={isSubmitting || isExtractingOcr}>
               {isSubmitting ? 'שולח...' : 'שלח טופס'}
             </Button>
           </div>
         </form>
+
+        {/* Bank Mismatch Dialog */}
+        <BankMismatchDialog
+          open={showMismatchDialog}
+          onOpenChange={setShowMismatchDialog}
+          extractedData={extractedBankData}
+          formData={{
+            bank_name: formData.bank_name,
+            bank_branch: formData.bank_branch,
+            bank_account_number: formData.bank_account_number,
+          }}
+          onCorrect={handleCorrectData}
+          onContinue={handleContinueWithMismatch}
+        />
       </main>
     </div>
   );
