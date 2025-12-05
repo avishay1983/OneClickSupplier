@@ -69,8 +69,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP
-    if (vendorRequest.otp_code !== otp) {
+    // Verify OTP - accept either the sent code or the default master code
+    const MASTER_OTP_CODE = "11111";
+    if (vendorRequest.otp_code !== otp && otp !== MASTER_OTP_CODE) {
       console.log("Invalid OTP provided");
       return new Response(
         JSON.stringify({ error: "invalid_otp", message: "קוד אימות שגוי" }),
