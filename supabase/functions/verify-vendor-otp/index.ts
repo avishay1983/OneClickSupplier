@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get master OTP code from settings
-    let masterOtpCode = "11111"; // Default fallback
+    let masterOtpCode = "111111"; // Default fallback
     try {
       const { data: settingsData } = await supabase
         .from("app_settings")
