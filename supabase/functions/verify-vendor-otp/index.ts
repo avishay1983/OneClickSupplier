@@ -69,9 +69,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Verify OTP - accept either the sent code or the default master code
-    const MASTER_OTP_CODE = "11111";
-    if (vendorRequest.otp_code !== otp && otp !== MASTER_OTP_CODE) {
+    // Get master OTP code from settings
+    let masterOtpCode = "11111"; // Default fallback
+    try {
+      const { data: settingsData } = await supabase
+        .from("app_settings")
+        .select("setting_value")
+        .eq("setting_key", "master_otp_code")
+        .single();
+      
+      if (settingsData?.setting_value) {
+        masterOtpCode = settingsData.setting_value;
+      }
+    } catch (settingsError) {
+      console.log("Could not fetch master OTP from settings, using default");
+    }
+
+    // Verify OTP - accept either the sent code or the master code
+    if (vendorRequest.otp_code !== otp && otp !== masterOtpCode) {
       console.log("Invalid OTP provided");
       return new Response(
         JSON.stringify({ error: "invalid_otp", message: "קוד אימות שגוי" }),
