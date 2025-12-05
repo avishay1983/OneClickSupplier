@@ -31,13 +31,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('app_settings')
+        .from('app_settings' as any)
         .select('setting_value')
         .eq('setting_key', 'master_otp_code')
         .single();
 
       if (error) throw error;
-      setMasterOtpCode(data?.setting_value || '');
+      setMasterOtpCode((data as any)?.setting_value || '');
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -58,7 +58,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('app_settings')
+        .from('app_settings' as any)
         .update({ setting_value: masterOtpCode.trim() })
         .eq('setting_key', 'master_otp_code');
 
