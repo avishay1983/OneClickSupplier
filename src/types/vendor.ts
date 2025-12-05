@@ -53,6 +53,11 @@ export interface VendorDocument {
   file_name: string;
   file_path: string;
   uploaded_at: string;
+  extracted_tags?: {
+    bank_number?: string | null;
+    branch_number?: string | null;
+    account_number?: string | null;
+  } | null;
 }
 
 export const STATUS_LABELS: Record<VendorStatus, string> = {

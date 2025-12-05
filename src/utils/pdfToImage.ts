@@ -1,13 +1,15 @@
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set the worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js`;
-
 /**
- * Convert the first page of a PDF file to a base64 image
+ * Convert the first page of a PDF file to a base64 image using pdf.js via CDN
  */
 export async function pdfToImage(file: File): Promise<{ base64: string; mimeType: string } | null> {
   try {
+    // Dynamically load pdf.js from CDN
+    const pdfjsLib = await loadPdfJs();
+    if (!pdfjsLib) {
+      console.error('Failed to load pdf.js');
+      return null;
+    }
+
     // Read the file as ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     
@@ -48,6 +50,42 @@ export async function pdfToImage(file: File): Promise<{ base64: string; mimeType
     };
   } catch (error) {
     console.error('Error converting PDF to image:', error);
+    return null;
+  }
+}
+
+// Load pdf.js dynamically from CDN
+let pdfjsLibCache: any = null;
+
+async function loadPdfJs(): Promise<any> {
+  if (pdfjsLibCache) {
+    return pdfjsLibCache;
+  }
+
+  try {
+    // Check if already loaded globally
+    if ((window as any).pdfjsLib) {
+      pdfjsLibCache = (window as any).pdfjsLib;
+      return pdfjsLibCache;
+    }
+
+    // Load the script dynamically
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load pdf.js'));
+      document.head.appendChild(script);
+    });
+
+    // Set worker
+    const pdfjsLib = (window as any).pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    pdfjsLibCache = pdfjsLib;
+    return pdfjsLibCache;
+  } catch (error) {
+    console.error('Error loading pdf.js:', error);
     return null;
   }
 }

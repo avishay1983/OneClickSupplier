@@ -2,10 +2,17 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Download, ExternalLink, Loader2, User, Building, CreditCard, Phone, Copy, Check } from 'lucide-react';
+import { FileText, Download, ExternalLink, Loader2, User, Building, CreditCard, Phone, Copy, Check, Scan } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { VendorDocument, VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+
+interface ExtractedTags {
+  bank_number?: string | null;
+  branch_number?: string | null;
+  account_number?: string | null;
+}
 
 interface ViewDocumentsDialogProps {
   open: boolean;
@@ -157,47 +164,88 @@ export function ViewDocumentsDialog({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex flex-row-reverse items-center justify-between p-4 rounded-lg border bg-muted/30"
-                    >
-                      <div className="flex flex-row-reverse items-center gap-3">
-                        <div className="bg-primary/10 rounded-lg p-2">
-                          <FileText className="h-5 w-5 text-primary" />
+                  {documents.map((doc) => {
+                    const extractedTags = doc.extracted_tags as ExtractedTags | null;
+                    const hasExtractedData = extractedTags && (
+                      extractedTags.bank_number || 
+                      extractedTags.branch_number || 
+                      extractedTags.account_number
+                    );
+                    
+                    return (
+                      <div
+                        key={doc.id}
+                        className="rounded-lg border bg-muted/30 overflow-hidden"
+                      >
+                        <div className="flex flex-row-reverse items-center justify-between p-4">
+                          <div className="flex flex-row-reverse items-center gap-3">
+                            <div className="bg-primary/10 rounded-lg p-2">
+                              <FileText className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium text-sm text-muted-foreground">
+                                {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
+                              </p>
+                              <p className="font-semibold">{doc.file_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                הועלה: {new Date(doc.uploaded_at).toLocaleDateString('he-IL')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDocument(doc.file_path)}
+                              className="gap-1"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              צפה
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadDocument(doc.file_path, doc.file_name)}
+                              className="gap-1"
+                            >
+                              <Download className="h-4 w-4" />
+                              הורד
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm text-muted-foreground">
-                            {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
-                          </p>
-                          <p className="font-semibold">{doc.file_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            הועלה: {new Date(doc.uploaded_at).toLocaleDateString('he-IL')}
-                          </p>
-                        </div>
+                        
+                        {/* OCR Extracted Tags */}
+                        {hasExtractedData && (
+                          <div className="border-t bg-success/5 px-4 py-3">
+                            <div className="flex items-center justify-end gap-2 mb-2">
+                              <span className="text-xs font-medium text-success">נתונים שחולצו באמצעות OCR</span>
+                              <Scan className="h-4 w-4 text-success" />
+                            </div>
+                            <div className="flex flex-wrap gap-2 justify-end">
+                              {extractedTags.bank_number && (
+                                <Badge variant="secondary" className="gap-1 text-xs">
+                                  <span className="text-muted-foreground">מספר בנק:</span>
+                                  <span className="font-mono font-bold">{extractedTags.bank_number}</span>
+                                </Badge>
+                              )}
+                              {extractedTags.branch_number && (
+                                <Badge variant="secondary" className="gap-1 text-xs">
+                                  <span className="text-muted-foreground">מספר סניף:</span>
+                                  <span className="font-mono font-bold">{extractedTags.branch_number}</span>
+                                </Badge>
+                              )}
+                              {extractedTags.account_number && (
+                                <Badge variant="secondary" className="gap-1 text-xs">
+                                  <span className="text-muted-foreground">מספר חשבון:</span>
+                                  <span className="font-mono font-bold">{extractedTags.account_number}</span>
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDocument(doc.file_path)}
-                          className="gap-1"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          צפה
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadDocument(doc.file_path, doc.file_name)}
-                          className="gap-1"
-                        >
-                          <Download className="h-4 w-4" />
-                          הורד
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
