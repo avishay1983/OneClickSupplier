@@ -231,7 +231,7 @@ export function ViewDocumentsDialog({
                                     className="gap-1 border-success/50 text-success hover:bg-success/10"
                                   >
                                     <Scan className="h-4 w-4" />
-                                    <span className="hidden sm:inline">OCR</span>
+                                    <span className="hidden sm:inline">תגיות</span>
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto" dir="rtl" align="end">
