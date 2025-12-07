@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, AlertTriangle, Settings } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2 } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
@@ -8,15 +9,25 @@ import { VendorRequest } from '@/types/vendor';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Dashboard() {
+  const { user, isLoading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<VendorRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
   const fetchRequests = async () => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !user) {
       setIsLoading(false);
       return;
     }
@@ -43,8 +54,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    if (user) {
+      fetchRequests();
+    }
+  }, [user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   const handleCreateRequest = async (data: NewRequestData) => {
     if (!isSupabaseConfigured) {
@@ -183,6 +201,20 @@ export default function Dashboard() {
     fetchRequests();
   };
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -200,14 +232,27 @@ export default function Dashboard() {
                 <p className="text-sm text-white/70">ניהול בקשות הקמת ספק חדש</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="text-white hover:bg-white/10"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-white/70 text-sm hidden sm:inline">
+                {user.email}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSettingsOpen(true)}
+                className="text-white hover:bg-white/10"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                className="text-white hover:bg-white/10"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>

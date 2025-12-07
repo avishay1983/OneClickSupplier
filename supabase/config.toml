@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.extract-bank-details]
 verify_jwt = false
+
+[functions.vendor-form-api]
+verify_jwt = false
+
+[functions.vendor-upload]
+verify_jwt = false
