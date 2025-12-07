@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +26,13 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
 
     const { token }: OTPRequest = await req.json();
     console.log("Processing OTP request for token:", token);
@@ -97,29 +102,46 @@ const handler = async (req: Request): Promise<Response> => {
       throw updateError;
     }
 
-    // Send OTP email
-    const emailResponse = await resend.emails.send({
-      from: "Vendor Onboarding <onboarding@resend.dev>",
-      to: [vendorRequest.vendor_email],
-      subject: "קוד אימות לטופס ספק",
-      html: `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
-          <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
-            <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
-          </div>
-          <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
-          <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
-          <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
-          <div style="background-color: #f0f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
-          </div>
-          <p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
-          <p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
+    const emailHtml = `
+      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
+        <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
+          <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
         </div>
-      `,
+        <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
+        <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
+        <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
+        <div style="background-color: #f0f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
+        </div>
+        <p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
+        <p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
+      </div>
+    `;
+
+    // Send OTP email via Gmail SMTP
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
+      },
     });
 
-    console.log("OTP email sent successfully:", emailResponse);
+    await client.send({
+      from: gmailUser,
+      to: vendorRequest.vendor_email,
+      subject: "קוד אימות לטופס ספק",
+      content: "אנא צפה בהודעה זו בתוכנת דוא\"ל התומכת ב-HTML",
+      html: emailHtml,
+    });
+
+    await client.close();
+
+    console.log("OTP email sent successfully via Gmail SMTP");
 
     return new Response(
       JSON.stringify({ 

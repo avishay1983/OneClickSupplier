@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +22,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending confirmation email to vendor:", vendorEmail);
     console.log("Status link:", statusLink);
+
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -63,30 +69,31 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
       },
-      body: JSON.stringify({
-        from: "מערכת הקמת ספקים <onboarding@resend.dev>",
-        to: [vendorEmail],
-        subject: "הפרטים שלך התקבלו - ביטוח ישיר",
-        html: emailHtml,
-      }),
     });
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error("Resend API error:", data);
-      throw new Error(data.message || "Failed to send email");
-    }
+    await client.send({
+      from: gmailUser,
+      to: vendorEmail,
+      subject: "הפרטים שלך התקבלו - ביטוח ישיר",
+      content: "אנא צפה בהודעה זו בתוכנת דוא\"ל התומכת ב-HTML",
+      html: emailHtml,
+    });
 
-    console.log("Confirmation email sent successfully:", data);
+    await client.close();
 
-    return new Response(JSON.stringify({ success: true, data }), {
+    console.log("Confirmation email sent successfully via Gmail SMTP");
+
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
