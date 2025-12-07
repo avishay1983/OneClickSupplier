@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
@@ -18,6 +19,42 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  const [checkingApproval, setCheckingApproval] = useState(true);
+
+  // Check if user is approved
+  useEffect(() => {
+    const checkApproval = async () => {
+      if (!user) {
+        setCheckingApproval(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_approved')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking approval:', error);
+          setIsApproved(false);
+        } else {
+          setIsApproved(profile?.is_approved ?? false);
+        }
+      } catch (error) {
+        console.error('Error checking approval:', error);
+        setIsApproved(false);
+      } finally {
+        setCheckingApproval(false);
+      }
+    };
+
+    if (user && !authLoading) {
+      checkApproval();
+    }
+  }, [user, authLoading]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -27,7 +64,7 @@ export default function Dashboard() {
   }, [user, authLoading, navigate]);
 
   const fetchRequests = async () => {
-    if (!isSupabaseConfigured || !user) {
+    if (!isSupabaseConfigured || !user || !isApproved) {
       setIsLoading(false);
       return;
     }
@@ -54,10 +91,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && isApproved) {
       fetchRequests();
     }
-  }, [user]);
+  }, [user, isApproved]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -201,8 +238,8 @@ export default function Dashboard() {
     fetchRequests();
   };
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while checking auth or approval
+  if (authLoading || checkingApproval) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -213,6 +250,29 @@ export default function Dashboard() {
   // Don't render if not authenticated (will redirect)
   if (!user) {
     return null;
+  }
+
+  // Show pending approval message
+  if (!isApproved) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4" dir="rtl">
+        <Card className="max-w-md w-full text-center">
+          <CardContent className="pt-8 pb-6">
+            <Clock className="h-16 w-16 mx-auto text-warning mb-4" />
+            <h2 className="text-xl font-bold mb-2">ממתין לאישור</h2>
+            <p className="text-muted-foreground mb-4">
+              ההרשמה שלך ממתינה לאישור מנהל המערכת.
+              <br />
+              תקבל הודעה כשהרישום יאושר.
+            </p>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              התנתק
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
