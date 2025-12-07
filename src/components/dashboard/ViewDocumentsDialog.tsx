@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VendorDocument, VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 interface ExtractedTags {
   bank_number?: string | null;
   branch_number?: string | null;
@@ -32,7 +32,7 @@ export function ViewDocumentsDialog({
   const [vendorData, setVendorData] = useState<VendorRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const isMobile = useIsMobile();
+  
 
   useEffect(() => {
     if (open && vendorRequestId) {
@@ -219,18 +219,10 @@ export function ViewDocumentsDialog({
                             </div>
                           </div>
 
-                          {/* Desktop: Inline OCR tags */}
-                          {!isMobile && hasExtractedData && (
-                            <div className="hidden md:flex items-center gap-2 shrink-0">
-                              <OcrTagsBadges tags={extractedTags} />
-                              <Scan className="h-4 w-4 text-success" />
-                            </div>
-                          )}
-
                           {/* Actions */}
                           <div className="flex gap-2 shrink-0">
-                            {/* Mobile: OCR popup button */}
-                            {isMobile && hasExtractedData && (
+                            {/* OCR popup button */}
+                            {hasExtractedData && (
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button
@@ -239,7 +231,7 @@ export function ViewDocumentsDialog({
                                     className="gap-1 border-success/50 text-success hover:bg-success/10"
                                   >
                                     <Scan className="h-4 w-4" />
-                                    OCR
+                                    <span className="hidden sm:inline">OCR</span>
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto" dir="rtl" align="end">
