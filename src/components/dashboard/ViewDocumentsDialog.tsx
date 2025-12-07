@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Download, ExternalLink, Loader2, User, Building, CreditCard, Phone, Copy, Check, Scan } from 'lucide-react';
@@ -7,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VendorDocument, VendorRequest, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-
+import { useIsMobile } from '@/hooks/use-mobile';
 interface ExtractedTags {
   bank_number?: string | null;
   branch_number?: string | null;
@@ -31,6 +32,7 @@ export function ViewDocumentsDialog({
   const [vendorData, setVendorData] = useState<VendorRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && vendorRequestId) {
@@ -138,6 +140,29 @@ export function ViewDocumentsDialog({
     ) : null
   );
 
+  const OcrTagsBadges = ({ tags }: { tags: ExtractedTags }) => (
+    <div className="flex flex-wrap gap-2 justify-end">
+      {tags.bank_number && (
+        <Badge variant="secondary" className="gap-1 text-xs">
+          <span className="text-muted-foreground">בנק:</span>
+          <span className="font-mono font-bold">{tags.bank_number}</span>
+        </Badge>
+      )}
+      {tags.branch_number && (
+        <Badge variant="secondary" className="gap-1 text-xs">
+          <span className="text-muted-foreground">סניף:</span>
+          <span className="font-mono font-bold">{tags.branch_number}</span>
+        </Badge>
+      )}
+      {tags.account_number && (
+        <Badge variant="secondary" className="gap-1 text-xs">
+          <span className="text-muted-foreground">חשבון:</span>
+          <span className="font-mono font-bold">{tags.account_number}</span>
+        </Badge>
+      )}
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" dir="rtl">
@@ -175,24 +200,59 @@ export function ViewDocumentsDialog({
                     return (
                       <div
                         key={doc.id}
-                        className="rounded-lg border bg-muted/30 overflow-hidden"
+                        className="rounded-lg border bg-muted/30 p-4"
                       >
-                        <div className="flex flex-row-reverse items-center justify-between p-4">
-                          <div className="flex flex-row-reverse items-center gap-3">
-                            <div className="bg-primary/10 rounded-lg p-2">
+                        <div className="flex flex-row-reverse items-center justify-between gap-3">
+                          {/* Document info */}
+                          <div className="flex flex-row-reverse items-center gap-3 flex-1 min-w-0">
+                            <div className="bg-primary/10 rounded-lg p-2 shrink-0">
                               <FileText className="h-5 w-5 text-primary" />
                             </div>
-                            <div className="text-right">
+                            <div className="text-right min-w-0">
                               <p className="font-medium text-sm text-muted-foreground">
                                 {DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type}
                               </p>
-                              <p className="font-semibold">{doc.file_name}</p>
+                              <p className="font-semibold truncate">{doc.file_name}</p>
                               <p className="text-xs text-muted-foreground">
                                 הועלה: {new Date(doc.uploaded_at).toLocaleDateString('he-IL')}
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+
+                          {/* Desktop: Inline OCR tags */}
+                          {!isMobile && hasExtractedData && (
+                            <div className="hidden md:flex items-center gap-2 shrink-0">
+                              <OcrTagsBadges tags={extractedTags} />
+                              <Scan className="h-4 w-4 text-success" />
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex gap-2 shrink-0">
+                            {/* Mobile: OCR popup button */}
+                            {isMobile && hasExtractedData && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1 border-success/50 text-success hover:bg-success/10"
+                                  >
+                                    <Scan className="h-4 w-4" />
+                                    OCR
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto" dir="rtl" align="end">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-success text-sm font-medium">
+                                      <Scan className="h-4 w-4" />
+                                      <span>נתונים שחולצו</span>
+                                    </div>
+                                    <OcrTagsBadges tags={extractedTags} />
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -200,7 +260,7 @@ export function ViewDocumentsDialog({
                               className="gap-1"
                             >
                               <ExternalLink className="h-4 w-4" />
-                              צפה
+                              <span className="hidden sm:inline">צפה</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -209,40 +269,10 @@ export function ViewDocumentsDialog({
                               className="gap-1"
                             >
                               <Download className="h-4 w-4" />
-                              הורד
+                              <span className="hidden sm:inline">הורד</span>
                             </Button>
                           </div>
                         </div>
-                        
-                        {/* OCR Extracted Tags */}
-                        {hasExtractedData && (
-                          <div className="border-t bg-success/5 px-4 py-3">
-                            <div className="flex items-center justify-end gap-2 mb-2">
-                              <span className="text-xs font-medium text-success">נתונים שחולצו באמצעות OCR</span>
-                              <Scan className="h-4 w-4 text-success" />
-                            </div>
-                            <div className="flex flex-wrap gap-2 justify-end">
-                              {extractedTags.bank_number && (
-                                <Badge variant="secondary" className="gap-1 text-xs">
-                                  <span className="text-muted-foreground">מספר בנק:</span>
-                                  <span className="font-mono font-bold">{extractedTags.bank_number}</span>
-                                </Badge>
-                              )}
-                              {extractedTags.branch_number && (
-                                <Badge variant="secondary" className="gap-1 text-xs">
-                                  <span className="text-muted-foreground">מספר סניף:</span>
-                                  <span className="font-mono font-bold">{extractedTags.branch_number}</span>
-                                </Badge>
-                              )}
-                              {extractedTags.account_number && (
-                                <Badge variant="secondary" className="gap-1 text-xs">
-                                  <span className="text-muted-foreground">מספר חשבון:</span>
-                                  <span className="font-mono font-bold">{extractedTags.account_number}</span>
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
