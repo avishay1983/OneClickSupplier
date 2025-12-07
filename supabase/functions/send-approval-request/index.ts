@@ -39,14 +39,14 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
 
     const { userId, userEmail, userName }: SendApprovalEmailRequest = await req.json();
-    console.log("Processing approval request for:", userEmail);
+    console.log("Processing approval request for:", userEmail, "userId:", userId);
 
-    // Get the approval token
+    // Get the approval token - search by user_id OR user_email (case-insensitive)
     const { data: approval, error: approvalError } = await supabase
       .from("pending_approvals")
       .select("approval_token")
-      .eq("user_id", userId)
       .eq("status", "pending")
+      .or(`user_id.eq.${userId},user_email.ilike.${userEmail}`)
       .maybeSingle();
 
     if (approvalError) {
@@ -55,7 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!approval) {
-      console.log("No pending approval found for user");
+      console.log("No pending approval found for user:", userId, userEmail);
       return new Response(
         JSON.stringify({ success: false, message: "No pending approval found" }),
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
