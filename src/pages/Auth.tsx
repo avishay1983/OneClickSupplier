@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -21,6 +21,10 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'שם מלא חייב להכיל לפחות 2 תווים'),
 });
 
+const resetSchema = z.object({
+  email: z.string().email('כתובת אימייל לא תקינה'),
+});
+
 export default function Auth() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -28,6 +32,8 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -169,6 +175,151 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const result = resetSchema.safeParse({ email });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach(err => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast({
+          title: 'שגיאה',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setResetEmailSent(true);
+      toast({
+        title: 'נשלח בהצלחה',
+        description: 'בדוק את האימייל שלך להוראות איפוס הסיסמה',
+      });
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'אירעה שגיאה בשליחת הבקשה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset password form
+  if (showResetPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4" dir="rtl">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <img 
+                src="/images/bituach-yashir-logo.png" 
+                alt="ביטוח ישיר" 
+                className="h-12 mx-auto"
+              />
+            </div>
+            <CardTitle className="text-2xl">איפוס סיסמה</CardTitle>
+            <CardDescription>
+              {resetEmailSent 
+                ? 'בדוק את האימייל שלך להוראות איפוס הסיסמה'
+                : 'הזן את כתובת האימייל שלך לקבלת הוראות איפוס'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {resetEmailSent ? (
+              <div className="space-y-4">
+                <div className="text-center py-4">
+                  <Mail className="h-12 w-12 mx-auto text-primary mb-4" />
+                  <p className="text-muted-foreground">
+                    שלחנו לך מייל עם הוראות לאיפוס הסיסמה.
+                    <br />
+                    בדוק גם בתיקיית הספאם.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setResetEmailSent(false);
+                    setEmail('');
+                  }}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  חזרה להתחברות
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">אימייל</Label>
+                  <div className="relative">
+                    <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pr-10"
+                      dir="ltr"
+                    />
+                  </div>
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      שולח...
+                    </>
+                  ) : (
+                    'שלח הוראות איפוס'
+                  )}
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full gap-2"
+                  onClick={() => {
+                    setShowResetPassword(false);
+                    setErrors({});
+                  }}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  חזרה להתחברות
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4" dir="rtl">
       <Card className="w-full max-w-md">
@@ -235,6 +386,18 @@ export default function Auth() {
                   ) : (
                     'התחבר'
                   )}
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="link" 
+                  className="w-full text-sm"
+                  onClick={() => {
+                    setShowResetPassword(true);
+                    setErrors({});
+                  }}
+                >
+                  שכחת סיסמה?
                 </Button>
               </form>
             </TabsContent>
