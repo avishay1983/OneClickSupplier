@@ -131,7 +131,7 @@ export default function Auth() {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -159,10 +159,28 @@ export default function Auth() {
         return;
       }
 
+      // Send approval request email to admin
+      if (signUpData.user) {
+        try {
+          await supabase.functions.invoke('send-approval-request', {
+            body: {
+              userId: signUpData.user.id,
+              userEmail: email,
+              userName: fullName,
+            },
+          });
+        } catch (emailErr) {
+          console.error('Failed to send approval email:', emailErr);
+        }
+      }
+
       toast({
-        title: 'נרשמת בהצלחה',
-        description: 'בדוק את האימייל שלך לאישור ההרשמה',
+        title: 'ההרשמה התקבלה',
+        description: 'בקשתך נשלחה למנהל המערכת לאישור. תקבל הודעה כשהרישום יאושר.',
       });
+      
+      // Sign out immediately since they're not approved yet
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Signup error:', error);
       toast({

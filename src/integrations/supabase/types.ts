@@ -38,26 +38,65 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_approvals: {
+        Row: {
+          approval_token: string
+          created_at: string
+          id: string
+          status: string
+          user_email: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          approval_token?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_email: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          approval_token?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_approved: boolean
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          is_approved?: boolean
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_approved?: boolean
           updated_at?: string
         }
         Relationships: []
