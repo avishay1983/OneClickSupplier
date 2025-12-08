@@ -252,6 +252,39 @@ export default function Dashboard() {
     return null;
   }
 
+  const [resendingApproval, setResendingApproval] = useState(false);
+
+  const handleResendApprovalRequest = async () => {
+    if (!user) return;
+    
+    setResendingApproval(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-approval-request', {
+        body: {
+          userId: user.id,
+          userEmail: user.email,
+          userName: user.user_metadata?.full_name || '',
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'הבקשה נשלחה',
+        description: 'בקשת האישור נשלחה שוב למנהל המערכת',
+      });
+    } catch (error) {
+      console.error('Error resending approval:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את הבקשה מחדש',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingApproval(false);
+    }
+  };
+
   // Show pending approval message
   if (!isApproved) {
     return (
@@ -265,10 +298,27 @@ export default function Dashboard() {
               <br />
               תקבל הודעה כשהרישום יאושר.
             </p>
-            <Button variant="outline" onClick={handleSignOut} className="gap-2">
-              <LogOut className="h-4 w-4" />
-              התנתק
-            </Button>
+            <div className="flex flex-col gap-3">
+              <Button 
+                variant="default" 
+                onClick={handleResendApprovalRequest} 
+                disabled={resendingApproval}
+                className="gap-2"
+              >
+                {resendingApproval ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    שולח...
+                  </>
+                ) : (
+                  'שלח בקשת אישור שוב'
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleSignOut} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                התנתק
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
