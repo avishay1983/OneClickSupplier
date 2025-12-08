@@ -112,11 +112,13 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Sending approval email to:", adminEmail);
+    // Send to both admin emails
+    const adminEmails = [adminEmail, "avishay.elankry@gmail.com"];
+    console.log("Sending approval email to:", adminEmails);
 
     const emailResponse = await resend.emails.send({
       from: "מערכת הקמת ספקים <onboarding@resend.dev>",
-      to: [adminEmail],
+      to: adminEmails,
       subject: `בקשת הרשמה חדשה - ${userName || userEmail}`,
       html: emailHtml,
     });
