@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Check, X, RefreshCw } from 'lucide-react';
+import { Loader2, Check, X, RefreshCw, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
 interface PendingApproval {
@@ -47,6 +48,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const fetchApprovals = async () => {
     setIsLoading(true);
@@ -125,9 +127,13 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
 
   const pendingCount = approvals.filter(a => a.status === 'pending').length;
   
-  const filteredApprovals = statusFilter === 'all' 
-    ? approvals 
-    : approvals.filter(a => a.status === statusFilter);
+  const filteredApprovals = approvals.filter(a => {
+    const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+    const matchesSearch = searchQuery === '' || 
+      a.user_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.user_name && a.user_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesStatus && matchesSearch;
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,19 +147,30 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 py-2">
-          <span className="text-sm text-muted-foreground">סינון לפי סטטוס:</span>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">הכל</SelectItem>
-              <SelectItem value="pending">ממתין</SelectItem>
-              <SelectItem value="approved">אושר</SelectItem>
-              <SelectItem value="rejected">נדחה</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4 py-2 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש לפי שם או אימייל..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">סטטוס:</span>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">הכל</SelectItem>
+                <SelectItem value="pending">ממתין</SelectItem>
+                <SelectItem value="approved">אושר</SelectItem>
+                <SelectItem value="rejected">נדחה</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
