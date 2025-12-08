@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -13,6 +12,14 @@ interface OTPRequest {
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Helper function to encode subject line for UTF-8
+function encodeSubject(subject: string): string {
+  const bytes = new TextEncoder().encode(subject);
+  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+  const encoded = btoa(binary);
+  return `=?UTF-8?B?${encoded}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -102,21 +109,26 @@ const handler = async (req: Request): Promise<Response> => {
       throw updateError;
     }
 
-    const emailHtml = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: right;">
-        <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
-          <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
-        </div>
-        <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
-        <p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
-        <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
-        <div style="background-color: #f0f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
-        </div>
-        <p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
-        <p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
-      </div>
-    `;
+    const emailHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; direction: rtl; text-align: right;">
+<div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
+</div>
+<h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
+<p style="text-align: right;">שלום ${vendorRequest.vendor_name},</p>
+<p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
+<div style="background-color: #f0f4f8; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+<span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
+</div>
+<p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
+<p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
+</body>
+</html>`;
 
     // Send OTP email via Gmail SMTP
     const client = new SMTPClient({
@@ -134,9 +146,11 @@ const handler = async (req: Request): Promise<Response> => {
     await client.send({
       from: gmailUser,
       to: vendorRequest.vendor_email,
-      subject: "קוד אימות לטופס ספק",
-      content: "אנא צפה בהודעה זו בתוכנת דוא\"ל התומכת ב-HTML",
+      subject: encodeSubject("קוד אימות לטופס ספק"),
       html: emailHtml,
+      headers: {
+        "Content-Type": "text/html; charset=UTF-8",
+      },
     });
 
     await client.close();
