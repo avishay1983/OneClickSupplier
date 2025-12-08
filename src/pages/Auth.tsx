@@ -162,8 +162,19 @@ export default function Auth() {
         return;
       }
 
-      // Send approval request email to admin
-      if (signUpData.user) {
+      // Check if user already exists (Supabase returns user but with empty identities when email exists)
+      if (signUpData.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+        setShowUserExistsMessage(true);
+        toast({
+          title: 'משתמש קיים',
+          description: 'כתובת האימייל כבר רשומה במערכת',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Send approval request email to admin - only for truly new users
+      if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length > 0) {
         try {
           await supabase.functions.invoke('send-approval-request', {
             body: {
