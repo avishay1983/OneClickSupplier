@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
+import { PendingApprovalsDialog } from '@/components/dashboard/PendingApprovalsDialog';
 import { VendorRequest } from '@/types/vendor';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [approvalsOpen, setApprovalsOpen] = useState(false);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [checkingApproval, setCheckingApproval] = useState(true);
   const [resendingApproval, setResendingApproval] = useState(false);
@@ -348,6 +350,15 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setApprovalsOpen(true)}
+                className="text-white hover:bg-white/10"
+                title="בקשות הרשמה"
+              >
+                <Users className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setSettingsOpen(true)}
                 className="text-white hover:bg-white/10"
               >
@@ -403,6 +414,11 @@ export default function Dashboard() {
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+      />
+
+      <PendingApprovalsDialog
+        open={approvalsOpen}
+        onOpenChange={setApprovalsOpen}
       />
     </div>
   );
