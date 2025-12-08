@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -47,20 +47,53 @@ const getStatusClass = (status: VendorStatus) => {
   }
 };
 
+type SortField = 'vendor_name' | 'created_at';
+type SortDirection = 'asc' | 'desc';
+
 export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const filteredRequests = requests.filter(request => {
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesSearch = searchQuery === '' || 
-      request.vendor_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.vendor_name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 mr-1 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-4 w-4 mr-1" />
+      : <ArrowDown className="h-4 w-4 mr-1" />;
+  };
+
+  const filteredAndSortedRequests = requests
+    .filter(request => {
+      const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      const matchesSearch = searchQuery === '' || 
+        request.vendor_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.vendor_name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'vendor_name') {
+        comparison = a.vendor_name.localeCompare(b.vendor_name, 'he');
+      } else if (sortField === 'created_at') {
+        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
 
   const copyLink = (token: string) => {
     const link = `${window.location.origin}/vendor/${token}`;
@@ -174,7 +207,7 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">
-        {filteredRequests.length === 0 ? (
+        {filteredAndSortedRequests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {requests.length === 0 ? (
               <>
@@ -189,15 +222,35 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">שם הספק</TableHead>
+                <TableHead className="text-right font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('vendor_name')}
+                  >
+                    {getSortIcon('vendor_name')}
+                    שם הספק
+                  </Button>
+                </TableHead>
                 <TableHead className="text-right font-semibold">אימייל</TableHead>
                 <TableHead className="text-right font-semibold">סטטוס</TableHead>
-                <TableHead className="text-right font-semibold">תאריך יצירה</TableHead>
+                <TableHead className="text-right font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    {getSortIcon('created_at')}
+                    תאריך יצירה
+                  </Button>
+                </TableHead>
                 <TableHead className="text-right font-semibold">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.map((request) => (
+              {filteredAndSortedRequests.map((request) => (
               <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-medium">{request.vendor_name}</TableCell>
                 <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
