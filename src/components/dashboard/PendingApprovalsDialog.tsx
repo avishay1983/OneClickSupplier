@@ -15,6 +15,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Check, X, RefreshCw } from 'lucide-react';
@@ -39,6 +46,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   const [approvals, setApprovals] = useState<PendingApproval[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const fetchApprovals = async () => {
     setIsLoading(true);
@@ -116,27 +124,46 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   };
 
   const pendingCount = approvals.filter(a => a.status === 'pending').length;
+  
+  const filteredApprovals = statusFilter === 'all' 
+    ? approvals 
+    : approvals.filter(a => a.status === statusFilter);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>בקשות הרשמה ממתינות</span>
+            <span>בקשות הרשמה</span>
             <Button variant="ghost" size="icon" onClick={fetchApprovals} disabled={isLoading}>
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex items-center gap-2 py-2">
+          <span className="text-sm text-muted-foreground">סינון לפי סטטוס:</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">הכל</SelectItem>
+              <SelectItem value="pending">ממתין</SelectItem>
+              <SelectItem value="approved">אושר</SelectItem>
+              <SelectItem value="rejected">נדחה</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : approvals.length === 0 ? (
+          ) : filteredApprovals.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              אין בקשות הרשמה
+              {statusFilter === 'all' ? 'אין בקשות הרשמה' : 'אין בקשות בסטטוס זה'}
             </div>
           ) : (
             <Table>
@@ -150,7 +177,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {approvals.map((approval) => (
+                {filteredApprovals.map((approval) => (
                   <TableRow key={approval.id}>
                     <TableCell className="font-medium">
                       {approval.user_name || 'לא צוין'}
