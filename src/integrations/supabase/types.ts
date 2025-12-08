@@ -148,6 +148,7 @@ export type Database = {
           bank_branch: string | null
           bank_name: string | null
           city: string | null
+          claims_area: string | null
           company_id: string | null
           contract_signed: boolean | null
           created_at: string
@@ -177,6 +178,7 @@ export type Database = {
           updated_at: string
           vendor_email: string
           vendor_name: string
+          vendor_type: string | null
         }
         Insert: {
           accounting_contact_name?: string | null
@@ -186,6 +188,7 @@ export type Database = {
           bank_branch?: string | null
           bank_name?: string | null
           city?: string | null
+          claims_area?: string | null
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string
@@ -215,6 +218,7 @@ export type Database = {
           updated_at?: string
           vendor_email: string
           vendor_name: string
+          vendor_type?: string | null
         }
         Update: {
           accounting_contact_name?: string | null
@@ -224,6 +228,7 @@ export type Database = {
           bank_branch?: string | null
           bank_name?: string | null
           city?: string | null
+          claims_area?: string | null
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string
@@ -253,6 +258,7 @@ export type Database = {
           updated_at?: string
           vendor_email?: string
           vendor_name?: string
+          vendor_type?: string | null
         }
         Relationships: []
       }

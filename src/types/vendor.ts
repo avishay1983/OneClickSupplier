@@ -18,6 +18,8 @@ export interface VendorRequest {
   approver_name: string | null;
   is_consultant: boolean;
   is_sensitive: boolean;
+  vendor_type: 'general' | 'claims' | null;
+  claims_area: 'home' | 'car' | 'life' | 'health' | null;
   
   // Vendor fields
   company_id: string | null;
@@ -79,4 +81,16 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   tax_cert: 'אישור ניכוי מס במקור',
   bank_confirmation: 'צילום המחאה / אישור בנק',
   invoice_screenshot: 'צילום חשבונית',
+};
+
+export const VENDOR_TYPE_LABELS: Record<string, string> = {
+  general: 'ספק כללי',
+  claims: 'ספק תביעות',
+};
+
+export const CLAIMS_AREA_LABELS: Record<string, string> = {
+  home: 'דירה',
+  car: 'רכב',
+  life: 'חיים',
+  health: 'בריאות',
 };
