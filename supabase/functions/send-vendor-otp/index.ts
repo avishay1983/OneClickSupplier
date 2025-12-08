@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { Resend } from "https://esm.sh/resend@4.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,12 +27,12 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
-    }
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
-    const resend = new Resend(resendApiKey);
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
 
     const { token }: OTPRequest = await req.json();
     console.log("Processing OTP request for token:", token);
@@ -122,20 +122,29 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    // Send OTP email via Resend
-    const { error } = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
-      to: [vendorRequest.vendor_email],
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailAppPassword,
+        },
+      },
+    });
+
+    await client.send({
+      from: gmailUser,
+      to: vendorRequest.vendor_email,
       subject: "קוד אימות לטופס ספק",
+      content: "auto",
       html: emailHtml,
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      throw new Error(error.message);
-    }
+    await client.close();
 
-    console.log("OTP email sent successfully via Resend");
+    console.log("OTP email sent successfully via Gmail SMTP");
 
     return new Response(
       JSON.stringify({ 

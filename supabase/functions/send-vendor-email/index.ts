@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@4.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,12 +23,24 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending email to vendor:", vendorEmail);
     console.log("Secure link:", secureLink);
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured");
     }
 
-    const resend = new Resend(resendApiKey);
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailAppPassword,
+        },
+      },
+    });
 
     const emailHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -56,21 +68,19 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    console.log("Sending email via Resend...");
+    console.log("Sending email via Gmail SMTP...");
 
-    const { error } = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
-      to: [vendorEmail],
+    await client.send({
+      from: gmailUser,
+      to: vendorEmail,
       subject: "בקשה להקמת ספק - נדרשים פרטים",
+      content: "auto",
       html: emailHtml,
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      throw new Error(error.message);
-    }
+    await client.close();
 
-    console.log("Email sent successfully via Resend");
+    console.log("Email sent successfully via Gmail SMTP");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
