@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,12 +13,16 @@ interface SendApprovalEmailRequest {
   userName: string;
 }
 
+// Helper function to encode string to base64
+function toBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+  return btoa(binary);
+}
+
 // Helper function to encode subject line for UTF-8
 function encodeSubject(subject: string): string {
-  const bytes = new TextEncoder().encode(subject);
-  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-  const encoded = btoa(binary);
-  return `=?UTF-8?B?${encoded}?=`;
+  return `=?UTF-8?B?${toBase64(subject)}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -119,16 +124,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     const subjectText = `בקשת הרשמה חדשה - ${userName || userEmail}`;
 
-    // Send to each admin email
+    // Send to each admin email with base64 encoded content
     for (const email of adminEmails) {
       await client.send({
         from: gmailUser,
         to: email,
         subject: encodeSubject(subjectText),
-        html: emailHtml,
-        headers: {
-          "Content-Type": "text/html; charset=UTF-8",
-        },
+        mimeContent: [
+          {
+            mimeType: "text/html; charset=UTF-8",
+            content: emailHtml,
+            transferEncoding: "base64",
+          }
+        ],
       });
       console.log("Approval email sent to:", email);
     }
