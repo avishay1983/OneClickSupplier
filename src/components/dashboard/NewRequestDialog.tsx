@@ -29,6 +29,8 @@ export interface NewRequestData {
   is_consultant: boolean;
   is_sensitive: boolean;
   expires_in_days: number;
+  vendor_type: 'general' | 'claims';
+  claims_area: string | null;
 }
 
 export interface BulkVendorData {
@@ -56,6 +58,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     is_consultant: false,
     is_sensitive: false,
     expires_in_days: 7,
+    vendor_type: 'general',
+    claims_area: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -77,6 +81,12 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     const emailResult = emailSchema.safeParse(formData.vendor_email);
     if (!emailResult.success) {
       setErrors({ vendor_email: 'כתובת אימייל לא תקינה' });
+      return;
+    }
+
+    // Validate claims area if vendor is claims type
+    if (formData.vendor_type === 'claims' && !formData.claims_area) {
+      setErrors({ claims_area: 'יש לבחור אזור תביעות' });
       return;
     }
 
@@ -108,6 +118,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       is_consultant: false,
       is_sensitive: false,
       expires_in_days: 7,
+      vendor_type: 'general',
+      claims_area: null,
     });
     setBulkVendors([]);
     setUploadedFileName('');
@@ -385,6 +397,51 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="block text-right">סוג ספק</Label>
+                  <Select
+                    value={formData.vendor_type}
+                    onValueChange={(value: 'general' | 'claims') => {
+                      setFormData({ 
+                        ...formData, 
+                        vendor_type: value,
+                        claims_area: value === 'general' ? null : formData.claims_area
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="flex-row-reverse">
+                      <SelectValue placeholder="בחר סוג ספק" className="text-right" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">ספק כללי</SelectItem>
+                      <SelectItem value="claims">ספק תביעות</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.vendor_type === 'claims' && (
+                  <div className="space-y-2">
+                    <Label className="block text-right">אזור תביעות *</Label>
+                    <Select
+                      value={formData.claims_area || ''}
+                      onValueChange={(value) => setFormData({ ...formData, claims_area: value })}
+                    >
+                      <SelectTrigger className="flex-row-reverse">
+                        <SelectValue placeholder="בחר אזור תביעות" className="text-right" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">דירה</SelectItem>
+                        <SelectItem value="car">רכב</SelectItem>
+                        <SelectItem value="life">חיים</SelectItem>
+                        <SelectItem value="health">בריאות</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.claims_area && (
+                      <p className="text-sm text-destructive text-right">{errors.claims_area}</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 justify-end">
