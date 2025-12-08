@@ -11,12 +11,16 @@ interface SendVendorEmailRequest {
   secureLink: string;
 }
 
+// Helper function to encode string to base64
+function toBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+  return btoa(binary);
+}
+
 // Helper function to encode subject line for UTF-8
 function encodeSubject(subject: string): string {
-  const bytes = new TextEncoder().encode(subject);
-  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-  const encoded = btoa(binary);
-  return `=?UTF-8?B?${encoded}?=`;
+  return `=?UTF-8?B?${toBase64(subject)}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -82,10 +86,13 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: vendorEmail,
       subject: encodeSubject("בקשה להקמת ספק - נדרשים פרטים"),
-      html: emailHtml,
-      headers: {
-        "Content-Type": "text/html; charset=UTF-8",
-      },
+      mimeContent: [
+        {
+          mimeType: "text/html; charset=UTF-8",
+          content: emailHtml,
+          transferEncoding: "base64",
+        }
+      ],
     });
 
     await client.close();
