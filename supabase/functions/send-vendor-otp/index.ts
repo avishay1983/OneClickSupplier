@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send OTP email via Resend
     const { error } = await resend.emails.send({
-      from: "ביטוח ישיר <noreply@yashir.co.il>",
+      from: "ביטוח ישיר <onboarding@resend.dev>",
       to: [vendorRequest.vendor_email],
       subject: "קוד אימות לטופס ספק",
       html: emailHtml,

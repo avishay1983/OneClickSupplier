@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to each admin email
     for (const email of adminEmails) {
       const { error } = await resend.emails.send({
-        from: "ביטוח ישיר <noreply@yashir.co.il>",
+        from: "ביטוח ישיר <onboarding@resend.dev>",
         to: [email],
         subject: subjectText,
         html: emailHtml,
