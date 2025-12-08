@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, FileText, Mail, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -43,6 +51,16 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const filteredRequests = requests.filter(request => {
+    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    const matchesSearch = searchQuery === '' || 
+      request.vendor_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.vendor_name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   const copyLink = (token: string) => {
     const link = `${window.location.origin}/vendor/${token}`;
@@ -124,30 +142,62 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
     );
   }
 
-  if (requests.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>אין בקשות ספקים עדיין</p>
-        <p className="text-sm mt-1">לחץ על "בקשה חדשה" כדי להתחיל</p>
-      </div>
-    );
-  }
 
   return (
     <>
+      <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="חיפוש לפי שם או אימייל..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pr-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">סטטוס:</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">הכל</SelectItem>
+              <SelectItem value="pending">ממתין</SelectItem>
+              <SelectItem value="with_vendor">אצל הספק</SelectItem>
+              <SelectItem value="submitted">הוגש</SelectItem>
+              <SelectItem value="approved">אושר</SelectItem>
+              <SelectItem value="resent">נשלח מחדש</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="rounded-lg border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="text-right font-semibold">שם הספק</TableHead>
-              <TableHead className="text-right font-semibold">אימייל</TableHead>
-              <TableHead className="text-right font-semibold">סטטוס</TableHead>
-              <TableHead className="text-right font-semibold">תאריך יצירה</TableHead>
-              <TableHead className="text-right font-semibold">פעולות</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.map((request) => (
+        {filteredRequests.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {requests.length === 0 ? (
+              <>
+                <p>אין בקשות ספקים עדיין</p>
+                <p className="text-sm mt-1">לחץ על "בקשה חדשה" כדי להתחיל</p>
+              </>
+            ) : (
+              <p>לא נמצאו בקשות התואמות לחיפוש</p>
+            )}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-right font-semibold">שם הספק</TableHead>
+                <TableHead className="text-right font-semibold">אימייל</TableHead>
+                <TableHead className="text-right font-semibold">סטטוס</TableHead>
+                <TableHead className="text-right font-semibold">תאריך יצירה</TableHead>
+                <TableHead className="text-right font-semibold">פעולות</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRequests.map((request) => (
               <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell className="font-medium">{request.vendor_name}</TableCell>
                 <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
@@ -204,9 +254,10 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {selectedRequest && (
