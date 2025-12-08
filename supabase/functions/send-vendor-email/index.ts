@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,12 +23,12 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending email to vendor:", vendorEmail);
     console.log("Secure link:", secureLink);
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
-    }
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
-    const resend = new Resend(resendApiKey);
+    if (!gmailUser || !gmailPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -68,16 +68,31 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Sending email via Resend...");
+    console.log("Sending email via Gmail SMTP...");
 
-    const emailResponse = await resend.emails.send({
-      from: "מערכת הקמת ספקים <onboarding@resend.dev>",
-      to: [vendorEmail],
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
+      },
+    });
+
+    await client.send({
+      from: gmailUser,
+      to: vendorEmail,
       subject: "בקשה להקמת ספק - נדרשים פרטים",
+      content: "אנא צפה בהודעה זו בתוכנת דוא\"ל התומכת ב-HTML",
       html: emailHtml,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    await client.close();
+
+    console.log("Email sent successfully via Gmail SMTP");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,18 +25,17 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
     const adminEmail = Deno.env.get("ADMIN_EMAIL");
 
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY not configured");
+    if (!gmailUser || !gmailPassword) {
+      throw new Error("Gmail credentials not configured");
     }
 
     if (!adminEmail) {
       throw new Error("ADMIN_EMAIL not configured");
     }
-
-    const resend = new Resend(resendApiKey);
 
     const { userId, userEmail, userName }: SendApprovalEmailRequest = await req.json();
     console.log("Processing approval request for:", userEmail, "userId:", userId);
@@ -116,14 +115,33 @@ const handler = async (req: Request): Promise<Response> => {
     const adminEmails = [adminEmail, "avishay.elankry@gmail.com"];
     console.log("Sending approval email to:", adminEmails);
 
-    const emailResponse = await resend.emails.send({
-      from: "מערכת הקמת ספקים <onboarding@resend.dev>",
-      to: adminEmails,
-      subject: `בקשת הרשמה חדשה - ${userName || userEmail}`,
-      html: emailHtml,
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
+      },
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    // Send to each admin email
+    for (const email of adminEmails) {
+      await client.send({
+        from: gmailUser,
+        to: email,
+        subject: `בקשת הרשמה חדשה - ${userName || userEmail}`,
+        content: "אנא צפה בהודעה זו בתוכנת דוא\"ל התומכת ב-HTML",
+        html: emailHtml,
+      });
+      console.log("Approval email sent to:", email);
+    }
+
+    await client.close();
+
+    console.log("All approval emails sent successfully via Gmail SMTP");
 
     return new Response(
       JSON.stringify({ success: true }),
