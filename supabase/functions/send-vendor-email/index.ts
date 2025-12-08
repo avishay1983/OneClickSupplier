@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "https://esm.sh/resend@4.0.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -9,18 +10,6 @@ interface SendVendorEmailRequest {
   vendorName: string;
   vendorEmail: string;
   secureLink: string;
-}
-
-// Helper function to encode string to base64
-function toBase64(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-  return btoa(binary);
-}
-
-// Helper function to encode subject line for UTF-8
-function encodeSubject(subject: string): string {
-  return `=?UTF-8?B?${toBase64(subject)}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -34,18 +23,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending email to vendor:", vendorEmail);
     console.log("Secure link:", secureLink);
 
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-
-    if (!gmailUser || !gmailPassword) {
-      throw new Error("Gmail credentials not configured");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
     }
+
+    const resend = new Resend(resendApiKey);
 
     const emailHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
 <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -68,30 +56,21 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    console.log("Sending email via Gmail SMTP...");
+    console.log("Sending email via Resend...");
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPassword,
-        },
-      },
-    });
-
-    await client.send({
-      from: gmailUser,
-      to: vendorEmail,
-      subject: encodeSubject("בקשה להקמת ספק - נדרשים פרטים"),
+    const { error } = await resend.emails.send({
+      from: "ביטוח ישיר <onboarding@resend.dev>",
+      to: [vendorEmail],
+      subject: "בקשה להקמת ספק - נדרשים פרטים",
       html: emailHtml,
     });
 
-    await client.close();
+    if (error) {
+      console.error("Resend error:", error);
+      throw new Error(error.message);
+    }
 
-    console.log("Email sent successfully via Gmail SMTP");
+    console.log("Email sent successfully via Resend");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
