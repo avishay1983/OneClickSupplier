@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "https://esm.sh/resend@4.0.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,18 +13,6 @@ interface OTPRequest {
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-// Helper function to encode string to base64
-function toBase64(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-  return btoa(binary);
-}
-
-// Helper function to encode subject line for UTF-8
-function encodeSubject(subject: string): string {
-  return `=?UTF-8?B?${toBase64(subject)}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -38,12 +27,12 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
-
-    if (!gmailUser || !gmailPassword) {
-      throw new Error("Gmail credentials not configured");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
     }
+
+    const resend = new Resend(resendApiKey);
 
     const { token }: OTPRequest = await req.json();
     console.log("Processing OTP request for token:", token);
@@ -117,7 +106,6 @@ const handler = async (req: Request): Promise<Response> => {
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; direction: rtl; text-align: right;">
 <div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
@@ -134,29 +122,20 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    // Send OTP email via Gmail SMTP
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPassword,
-        },
-      },
-    });
-
-    await client.send({
-      from: gmailUser,
-      to: vendorRequest.vendor_email,
-      subject: encodeSubject("קוד אימות לטופס ספק"),
+    // Send OTP email via Resend
+    const { error } = await resend.emails.send({
+      from: "ביטוח ישיר <onboarding@resend.dev>",
+      to: [vendorRequest.vendor_email],
+      subject: "קוד אימות לטופס ספק",
       html: emailHtml,
     });
 
-    await client.close();
+    if (error) {
+      console.error("Resend error:", error);
+      throw new Error(error.message);
+    }
 
-    console.log("OTP email sent successfully via Gmail SMTP");
+    console.log("OTP email sent successfully via Resend");
 
     return new Response(
       JSON.stringify({ 

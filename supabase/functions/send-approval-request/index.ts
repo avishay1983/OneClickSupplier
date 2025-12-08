@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,18 +11,6 @@ interface SendApprovalEmailRequest {
   userId: string;
   userEmail: string;
   userName: string;
-}
-
-// Helper function to encode string to base64
-function toBase64(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
-  return btoa(binary);
-}
-
-// Helper function to encode subject line for UTF-8
-function encodeSubject(subject: string): string {
-  return `=?UTF-8?B?${toBase64(subject)}?=`;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -37,17 +25,18 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const adminEmail = Deno.env.get("ADMIN_EMAIL");
 
-    if (!gmailUser || !gmailPassword) {
-      throw new Error("Gmail credentials not configured");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
     }
 
     if (!adminEmail) {
       throw new Error("ADMIN_EMAIL not configured");
     }
+
+    const resend = new Resend(resendApiKey);
 
     const { userId, userEmail, userName }: SendApprovalEmailRequest = await req.json();
     console.log("Processing approval request for:", userEmail, "userId:", userId);
@@ -81,7 +70,6 @@ const handler = async (req: Request): Promise<Response> => {
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
 <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -110,34 +98,26 @@ const handler = async (req: Request): Promise<Response> => {
     const adminEmails = [adminEmail, "avishay.elankry@gmail.com"];
     console.log("Sending approval email to:", adminEmails);
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPassword,
-        },
-      },
-    });
-
     const subjectText = `בקשת הרשמה חדשה - ${userName || userEmail}`;
 
-    // Send to each admin email with base64 encoded content
+    // Send to each admin email
     for (const email of adminEmails) {
-      await client.send({
-        from: gmailUser,
-        to: email,
-        subject: encodeSubject(subjectText),
+      const { error } = await resend.emails.send({
+        from: "ביטוח ישיר <onboarding@resend.dev>",
+        to: [email],
+        subject: subjectText,
         html: emailHtml,
       });
-      console.log("Approval email sent to:", email);
+
+      if (error) {
+        console.error("Resend error for", email, ":", error);
+        // Continue to next email even if one fails
+      } else {
+        console.log("Approval email sent to:", email);
+      }
     }
 
-    await client.close();
-
-    console.log("All approval emails sent successfully via Gmail SMTP");
+    console.log("All approval emails sent successfully via Resend");
 
     return new Response(
       JSON.stringify({ success: true }),
