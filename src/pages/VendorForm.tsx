@@ -12,7 +12,7 @@ import { CityAutocomplete } from '@/components/ui/city-autocomplete';
 import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { BankMismatchDialog } from '@/components/vendor/BankMismatchDialog';
+import { BankMismatchDialog, getBankNameFromCode } from '@/components/vendor/BankMismatchDialog';
 import { CheckCircle, AlertCircle, Clock, Mail, Loader2 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -232,13 +232,19 @@ export default function VendorForm() {
 
     const extracted = await extractBankDetailsFromBase64(imageData.base64, imageData.mimeType);
     
+    // Check if form has bank data filled
+    const hasFormData = formData.bank_name || formData.bank_branch || formData.bank_account_number;
+    
     if (extracted && !extracted.error) {
       setExtractedBankData(extracted);
       
-      // Check if form has bank data filled
-      const hasFormData = formData.bank_name || formData.bank_branch || formData.bank_account_number;
+      // Check if no data was extracted at all
+      const noDataExtracted = !extracted.bank_number && !extracted.branch_number && !extracted.account_number;
       
-      if (hasFormData && checkBankMismatch(extracted)) {
+      if (noDataExtracted && hasFormData) {
+        // Show dialog with "no data found" message
+        setShowMismatchDialog(true);
+      } else if (hasFormData && checkBankMismatch(extracted)) {
         // Show mismatch dialog
         setShowMismatchDialog(true);
       } else {
@@ -246,17 +252,29 @@ export default function VendorForm() {
         setFiles(prev => ({ ...prev, bank_confirmation: file }));
         setPendingBankFile(null);
         
-        if (!hasFormData) {
+        if (!hasFormData && !noDataExtracted) {
           toast({
             title: 'נתוני בנק זוהו',
             description: 'הנתונים ישמרו עם המסמך',
           });
+        } else if (noDataExtracted) {
+          toast({
+            title: 'לא זוהו נתוני בנק',
+            description: 'הקובץ הועלה אך לא ניתן היה לחלץ פרטי חשבון',
+            variant: 'destructive',
+          });
         }
       }
     } else {
-      // OCR failed or returned error - still accept the file
-      setFiles(prev => ({ ...prev, bank_confirmation: file }));
-      setPendingBankFile(null);
+      // OCR failed or returned error - show warning if form has data
+      if (hasFormData) {
+        setExtractedBankData({ bank_number: null, branch_number: null, account_number: null });
+        setShowMismatchDialog(true);
+      } else {
+        // No form data - just accept the file
+        setFiles(prev => ({ ...prev, bank_confirmation: file }));
+        setPendingBankFile(null);
+      }
     }
   }, [extractBankDetailsFromBase64, checkBankMismatch, formData.bank_name, formData.bank_branch, formData.bank_account_number]);
 
@@ -281,6 +299,46 @@ export default function VendorForm() {
       title: 'הקובץ הועלה',
       description: 'הקובץ נשמר למרות אי-ההתאמה',
     });
+  };
+
+  // Auto-fill form with extracted bank data
+  const handleAutoFillFromDocument = () => {
+    if (extractedBankData) {
+      const updates: Partial<typeof formData> = {};
+      
+      // Update bank name from extracted bank number
+      if (extractedBankData.bank_number) {
+        const bankName = getBankNameFromCode(extractedBankData.bank_number);
+        if (bankName) {
+          updates.bank_name = bankName;
+        }
+      }
+      
+      // Update branch number
+      if (extractedBankData.branch_number) {
+        updates.bank_branch = extractedBankData.branch_number;
+      }
+      
+      // Update account number
+      if (extractedBankData.account_number) {
+        updates.bank_account_number = extractedBankData.account_number;
+      }
+      
+      setFormData(prev => ({ ...prev, ...updates }));
+      
+      // Accept the file
+      if (pendingBankFile) {
+        setFiles(prev => ({ ...prev, bank_confirmation: pendingBankFile }));
+      }
+      
+      setShowMismatchDialog(false);
+      setPendingBankFile(null);
+      
+      toast({
+        title: 'הנתונים עודכנו',
+        description: 'פרטי הבנק עודכנו בהתאם למסמך שהועלה',
+      });
+    }
   };
 
   const sendOtp = async () => {
@@ -1162,6 +1220,7 @@ export default function VendorForm() {
           }}
           onCorrect={handleCorrectData}
           onContinue={handleContinueWithMismatch}
+          onAutoFill={handleAutoFillFromDocument}
         />
       </main>
     </div>
