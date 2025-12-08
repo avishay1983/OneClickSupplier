@@ -147,11 +147,6 @@ export default function Auth() {
       if (error) {
         if (error.message.includes('already registered') || error.message.includes('User already registered')) {
           setShowUserExistsMessage(true);
-          toast({
-            title: 'משתמש קיים',
-            description: 'כתובת האימייל כבר רשומה במערכת',
-            variant: 'destructive',
-          });
         } else {
           toast({
             title: 'שגיאה',
@@ -165,11 +160,6 @@ export default function Auth() {
       // Check if user already exists (Supabase returns user but with empty identities when email exists)
       if (signUpData.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
         setShowUserExistsMessage(true);
-        toast({
-          title: 'משתמש קיים',
-          description: 'כתובת האימייל כבר רשומה במערכת',
-          variant: 'destructive',
-        });
         return;
       }
 
