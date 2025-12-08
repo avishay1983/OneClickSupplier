@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [checkingApproval, setCheckingApproval] = useState(true);
+  const [resendingApproval, setResendingApproval] = useState(false);
 
   // Check if user is approved
   useEffect(() => {
@@ -251,8 +252,6 @@ export default function Dashboard() {
   if (!user) {
     return null;
   }
-
-  const [resendingApproval, setResendingApproval] = useState(false);
 
   const handleResendApprovalRequest = async () => {
     if (!user) return;
