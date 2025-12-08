@@ -35,7 +35,8 @@ export default function Auth() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const [showUserExistsMessage, setShowUserExistsMessage] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
@@ -144,7 +145,8 @@ export default function Auth() {
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
+        if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+          setShowUserExistsMessage(true);
           toast({
             title: 'משתמש קיים',
             description: 'כתובת האימייל כבר רשומה במערכת',
@@ -354,7 +356,7 @@ export default function Auth() {
           <CardDescription>התחבר או הירשם כדי להמשיך</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">התחברות</TabsTrigger>
               <TabsTrigger value="signup">הרשמה</TabsTrigger>
@@ -429,75 +431,122 @@ export default function Auth() {
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">שם מלא</Label>
-                  <div className="relative">
-                    <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="ישראל ישראלי"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pr-10"
-                    />
+              {showUserExistsMessage ? (
+                <div className="space-y-4 py-4">
+                  <div className="text-center">
+                    <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                      <User className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">המשתמש כבר קיים במערכת</h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      כתובת האימייל {email} כבר רשומה במערכת.
+                      <br />
+                      ניתן להתחבר או לאפס את הסיסמה.
+                    </p>
                   </div>
-                  {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">אימייל</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pr-10"
-                      dir="ltr"
-                    />
-                  </div>
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">סיסמה</Label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10 pl-10"
-                      dir="ltr"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  <div className="flex flex-col gap-3">
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        setShowUserExistsMessage(false);
+                        setActiveTab('login');
+                      }}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                      עבור להתחברות
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowUserExistsMessage(false);
+                        setShowResetPassword(true);
+                      }}
+                    >
+                      שכחתי סיסמה
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      className="w-full text-sm"
+                      onClick={() => {
+                        setShowUserExistsMessage(false);
+                        setEmail('');
+                      }}
+                    >
+                      נסה עם אימייל אחר
+                    </Button>
                   </div>
-                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                 </div>
-                
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      נרשם...
-                    </>
-                  ) : (
-                    'הירשם'
-                  )}
-                </Button>
-              </form>
+              ) : (
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">שם מלא</Label>
+                    <div className="relative">
+                      <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        placeholder="ישראל ישראלי"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pr-10"
+                      />
+                    </div>
+                    {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">אימייל</Label>
+                    <div className="relative">
+                      <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pr-10"
+                        dir="ltr"
+                      />
+                    </div>
+                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">סיסמה</Label>
+                    <div className="relative">
+                      <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pr-10 pl-10"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                  </div>
+                  
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        נרשם...
+                      </>
+                    ) : (
+                      'הירשם'
+                    )}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
