@@ -73,7 +73,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
     try {
       const supabaseUrl = 'https://ijyqtemnhlbamxmgjuzp.supabase.co';
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=${action}`
+        `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=${action}&format=json`
       );
 
       if (!response.ok) {

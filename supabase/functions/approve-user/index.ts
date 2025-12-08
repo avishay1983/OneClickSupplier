@@ -1,15 +1,32 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("approve-user function called");
+
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
     const action = url.searchParams.get("action");
+    const format = url.searchParams.get("format"); // 'json' for API calls
 
     if (!token || !action) {
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: false, error: "Missing parameters" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(createHtmlResponse("שגיאה", "פרמטרים חסרים", false), {
         status: 400,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -17,6 +34,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (action !== "approve" && action !== "reject") {
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: false, error: "Invalid action" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(createHtmlResponse("שגיאה", "פעולה לא תקינה", false), {
         status: 400,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -37,6 +60,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError) {
       console.error("Error fetching approval:", fetchError);
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: false, error: "System error" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(createHtmlResponse("שגיאה", "שגיאת מערכת", false), {
         status: 500,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -44,6 +73,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!approval) {
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: false, error: "Request not found or already processed" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(createHtmlResponse("שגיאה", "הבקשה לא נמצאה או כבר טופלה", false), {
         status: 404,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -62,6 +97,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (profileError) {
         console.error("Error updating profile:", profileError);
+        if (format === "json") {
+          return new Response(JSON.stringify({ success: false, error: "Error updating profile" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
         return new Response(createHtmlResponse("שגיאה", "שגיאה בעדכון הפרופיל", false), {
           status: 500,
           headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -76,6 +117,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("User approved:", approval.user_email);
 
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: true, message: "User approved" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(
         createHtmlResponse(
           "הרישום אושר!",
@@ -102,6 +149,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("User rejected:", approval.user_email);
 
+      if (format === "json") {
+        return new Response(JSON.stringify({ success: true, message: "User rejected" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       return new Response(
         createHtmlResponse(
           "הרישום נדחה",
