@@ -59,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending email via Resend...");
 
     const { error } = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
+      from: "ביטוח ישיר <noreply@yashir.co.il>",
       to: [vendorEmail],
       subject: "בקשה להקמת ספק - נדרשים פרטים",
       html: emailHtml,

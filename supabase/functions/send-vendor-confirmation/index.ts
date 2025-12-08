@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
 </html>`;
 
     const { error } = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
+      from: "ביטוח ישיר <noreply@yashir.co.il>",
       to: [vendorEmail],
       subject: "הפרטים שלך התקבלו - ביטוח ישיר",
       html: emailHtml,
