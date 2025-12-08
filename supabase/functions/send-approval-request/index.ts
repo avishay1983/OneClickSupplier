@@ -130,13 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: gmailUser,
         to: email,
         subject: encodeSubject(subjectText),
-        mimeContent: [
-          {
-            mimeType: "text/html; charset=UTF-8",
-            content: emailHtml,
-            transferEncoding: "base64",
-          }
-        ],
+        html: emailHtml,
       });
       console.log("Approval email sent to:", email);
     }

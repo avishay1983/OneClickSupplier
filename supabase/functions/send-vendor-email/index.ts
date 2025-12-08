@@ -86,13 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: vendorEmail,
       subject: encodeSubject("בקשה להקמת ספק - נדרשים פרטים"),
-      mimeContent: [
-        {
-          mimeType: "text/html; charset=UTF-8",
-          content: emailHtml,
-          transferEncoding: "base64",
-        }
-      ],
+      html: emailHtml,
     });
 
     await client.close();
