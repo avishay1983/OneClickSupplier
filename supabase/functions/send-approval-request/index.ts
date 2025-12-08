@@ -118,8 +118,11 @@ const handler = async (req: Request): Promise<Response> => {
           from: gmailUser,
           to: email,
           subject: subjectText,
-          content: "auto",
-          html: emailHtml,
+          content: emailHtml,
+          mimeContent: [{
+            mimeType: "text/html",
+            content: emailHtml,
+          }],
         });
         console.log("Approval email sent to:", email);
       } catch (sendError) {
