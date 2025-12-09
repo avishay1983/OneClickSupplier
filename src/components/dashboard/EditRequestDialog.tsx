@@ -443,10 +443,10 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
                   )}
                 </div>
 
-                {/* First Signature */}
+                {/* First Approval */}
                 <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
                   <div className="flex-1 text-right">
-                    <div className="font-medium">חתימה ראשונה</div>
+                    <div className="font-medium">אישור ראשון</div>
                     {approvalData.first_signature_approved && (
                       <div className="text-sm text-muted-foreground">
                         אושר ע"י {approvalData.first_signature_approved_by} בתאריך {formatApprovalDate(approvalData.first_signature_approved_at)}
@@ -474,10 +474,10 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
                   )}
                 </div>
 
-                {/* Second Signature */}
+                {/* Second Approval */}
                 <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
                   <div className="flex-1 text-right">
-                    <div className="font-medium">חתימה שניה</div>
+                    <div className="font-medium">אישור שני</div>
                     {approvalData.second_signature_approved && (
                       <div className="text-sm text-muted-foreground">
                         אושר ע"י {approvalData.second_signature_approved_by} בתאריך {formatApprovalDate(approvalData.second_signature_approved_at)}
