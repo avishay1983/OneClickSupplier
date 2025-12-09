@@ -227,7 +227,7 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
     return format(new Date(dateString), 'dd/MM/yyyy HH:mm');
   };
 
-  const isSubmittedStatus = request?.status === 'submitted';
+  const showApprovalSection = request?.status === 'submitted' || request?.status === 'approved';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -408,8 +408,8 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
             </div>
           </div>
 
-          {/* Approval Workflow Section - Only for submitted status */}
-          {isSubmittedStatus && (
+          {/* Approval Workflow Section - For submitted and approved status */}
+          {showApprovalSection && (
             <div className="border rounded-lg p-4 mt-4 bg-muted/30">
               <h3 className="font-semibold text-lg mb-4 text-right">תהליך אישור</h3>
               <div className="space-y-4">
