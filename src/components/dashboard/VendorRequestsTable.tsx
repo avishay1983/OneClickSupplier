@@ -10,10 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
+import { StatusHistoryDialog } from './StatusHistoryDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VendorRequestsTableProps {
@@ -53,6 +54,7 @@ type SortDirection = 'asc' | 'desc';
 export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [handlerFilter, setHandlerFilter] = useState<string>('all');
@@ -303,6 +305,17 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setHistoryDialogOpen(true);
+                      }}
+                      title="היסטוריית סטטוס"
+                    >
+                      <History className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => viewDocuments(request)}
                       title="צפה במסמכים"
                     >
@@ -347,12 +360,20 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
       </div>
 
       {selectedRequest && (
-        <ViewDocumentsDialog
-          open={documentsDialogOpen}
-          onOpenChange={setDocumentsDialogOpen}
-          vendorRequestId={selectedRequest.id}
-          vendorName={selectedRequest.vendor_name}
-        />
+        <>
+          <ViewDocumentsDialog
+            open={documentsDialogOpen}
+            onOpenChange={setDocumentsDialogOpen}
+            vendorRequestId={selectedRequest.id}
+            vendorName={selectedRequest.vendor_name}
+          />
+          <StatusHistoryDialog
+            open={historyDialogOpen}
+            onOpenChange={setHistoryDialogOpen}
+            vendorRequestId={selectedRequest.id}
+            vendorName={selectedRequest.vendor_name}
+          />
+        </>
       )}
     </>
   );
