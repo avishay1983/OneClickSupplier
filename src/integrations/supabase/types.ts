@@ -265,6 +265,41 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_status: string
+          old_status: string | null
+          vendor_request_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status: string
+          old_status?: string | null
+          vendor_request_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          vendor_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_status_history_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
