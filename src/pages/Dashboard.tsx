@@ -24,8 +24,9 @@ export default function Dashboard() {
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
   const [checkingApproval, setCheckingApproval] = useState(true);
   const [resendingApproval, setResendingApproval] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState<string>('');
 
-  // Check if user is approved
+  // Check if user is approved and get user name
   useEffect(() => {
     const checkApproval = async () => {
       if (!user) {
@@ -36,7 +37,7 @@ export default function Dashboard() {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('is_approved')
+          .select('is_approved, full_name')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -45,6 +46,7 @@ export default function Dashboard() {
           setIsApproved(false);
         } else {
           setIsApproved(profile?.is_approved ?? false);
+          setCurrentUserName(profile?.full_name || user.email || 'משתמש');
         }
       } catch (error) {
         console.error('Error checking approval:', error);
@@ -401,7 +403,7 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        <VendorRequestsTable requests={requests} isLoading={isLoading} />
+        <VendorRequestsTable requests={requests} isLoading={isLoading} currentUserName={currentUserName} />
       </main>
 
       <NewRequestDialog

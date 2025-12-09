@@ -32,6 +32,7 @@ interface VendorRequestsTableProps {
   requests: VendorRequest[];
   isLoading: boolean;
   onRefresh?: () => void;
+  currentUserName?: string;
 }
 
 const getStatusVariant = (status: VendorStatus) => {
@@ -63,7 +64,7 @@ const getStatusClass = (status: VendorStatus) => {
 type SortField = 'vendor_name' | 'created_at' | 'handler_name';
 type SortDirection = 'asc' | 'desc';
 
-export function VendorRequestsTable({ requests, isLoading, onRefresh }: VendorRequestsTableProps) {
+export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUserName }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -481,6 +482,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh }: VendorRe
             onOpenChange={setEditDialogOpen}
             request={selectedRequest}
             onSuccess={() => { onRefresh ? onRefresh() : window.location.reload(); }}
+            currentUserName={currentUserName}
           />
         </>
       )}
