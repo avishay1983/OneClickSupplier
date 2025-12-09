@@ -61,7 +61,7 @@ const getStatusClass = (status: VendorStatus) => {
   }
 };
 
-type SortField = 'vendor_name' | 'created_at' | 'handler_name';
+type SortField = 'vendor_name' | 'created_at' | 'handler_name' | 'status' | 'vendor_type';
 type SortDirection = 'asc' | 'desc';
 
 export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUserName }: VendorRequestsTableProps) {
@@ -116,6 +116,10 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
         comparison = (a.handler_name || '').localeCompare(b.handler_name || '', 'he');
       } else if (sortField === 'created_at') {
         comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else if (sortField === 'status') {
+        comparison = a.status.localeCompare(b.status, 'he');
+      } else if (sortField === 'vendor_type') {
+        comparison = (a.vendor_type || '').localeCompare(b.vendor_type || '', 'he');
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -336,8 +340,28 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   </Button>
                 </TableHead>
                 <TableHead className="text-right font-semibold">אימייל</TableHead>
-                <TableHead className="text-right font-semibold">סוג ספק</TableHead>
-                <TableHead className="text-right font-semibold">סטטוס</TableHead>
+                <TableHead className="text-right font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('vendor_type')}
+                  >
+                    {getSortIcon('vendor_type')}
+                    סוג ספק
+                  </Button>
+                </TableHead>
+                <TableHead className="text-right font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('status')}
+                  >
+                    {getSortIcon('status')}
+                    סטטוס
+                  </Button>
+                </TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
