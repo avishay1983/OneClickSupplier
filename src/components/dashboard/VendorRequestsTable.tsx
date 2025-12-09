@@ -338,7 +338,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 <TableHead className="text-right font-semibold">אימייל</TableHead>
                 <TableHead className="text-right font-semibold">סוג ספק</TableHead>
                 <TableHead className="text-right font-semibold">סטטוס</TableHead>
-                <TableHead className="text-right font-semibold">סטטוס אישור</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
@@ -365,36 +364,31 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={getStatusVariant(request.status)}
-                    className={getStatusClass(request.status)}
-                  >
-                    {STATUS_LABELS[request.status]}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {request.status === 'submitted' || request.status === 'approved' ? (
-                    <div className="text-sm space-y-1">
+                  {request.status === 'submitted' ? (
+                    <div className="flex flex-wrap gap-1">
                       {(request as any).first_review_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">בקרה ✓</Badge>
+                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">בקרה ✓</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">בקרה</Badge>
+                        <Badge variant="outline" className="text-muted-foreground text-xs">בקרה</Badge>
                       )}
-                      {' '}
                       {(request as any).first_signature_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 1 ✓</Badge>
+                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">אישור 1 ✓</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">אישור 1</Badge>
+                        <Badge variant="outline" className="text-muted-foreground text-xs">אישור 1</Badge>
                       )}
-                      {' '}
                       {(request as any).second_signature_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 2 ✓</Badge>
+                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">אישור 2 ✓</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">אישור 2</Badge>
+                        <Badge variant="outline" className="text-muted-foreground text-xs">אישור 2</Badge>
                       )}
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">-</span>
+                    <Badge 
+                      variant={getStatusVariant(request.status)}
+                      className={getStatusClass(request.status)}
+                    >
+                      {STATUS_LABELS[request.status]}
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
