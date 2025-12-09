@@ -101,7 +101,19 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
 
   const filteredAndSortedRequests = requests
     .filter(request => {
-      const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      let matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      
+      // Handle approval stage filters for submitted status
+      if (statusFilter === 'waiting_review') {
+        matchesStatus = request.status === 'submitted' && !(request as any).first_review_approved;
+      } else if (statusFilter === 'review_approved') {
+        matchesStatus = request.status === 'submitted' && (request as any).first_review_approved && !(request as any).first_signature_approved;
+      } else if (statusFilter === 'first_approved') {
+        matchesStatus = request.status === 'submitted' && (request as any).first_signature_approved && !(request as any).second_signature_approved;
+      } else if (statusFilter === 'second_approved') {
+        matchesStatus = request.status === 'submitted' && (request as any).second_signature_approved;
+      }
+      
       const matchesHandler = handlerFilter === 'all' || request.handler_name === handlerFilter;
       const matchesSearch = searchQuery === '' || 
         request.vendor_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -293,9 +305,12 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
               <SelectItem value="all">הכל</SelectItem>
               <SelectItem value="pending">ממתין</SelectItem>
               <SelectItem value="with_vendor">אצל הספק</SelectItem>
-              <SelectItem value="submitted">הוגש</SelectItem>
-              <SelectItem value="approved">אושר</SelectItem>
               <SelectItem value="resent">נשלח מחדש</SelectItem>
+              <SelectItem value="waiting_review">ממתין לבקרה</SelectItem>
+              <SelectItem value="review_approved">בקרה ✓</SelectItem>
+              <SelectItem value="first_approved">אישור 1 ✓</SelectItem>
+              <SelectItem value="second_approved">אישור 2 ✓</SelectItem>
+              <SelectItem value="approved">אושר</SelectItem>
             </SelectContent>
           </Select>
         </div>
