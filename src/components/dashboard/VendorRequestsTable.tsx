@@ -47,7 +47,7 @@ const getStatusClass = (status: VendorStatus) => {
   }
 };
 
-type SortField = 'vendor_name' | 'created_at';
+type SortField = 'vendor_name' | 'created_at' | 'handler_name';
 type SortDirection = 'asc' | 'desc';
 
 export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTableProps) {
@@ -94,6 +94,8 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
       let comparison = 0;
       if (sortField === 'vendor_name') {
         comparison = a.vendor_name.localeCompare(b.vendor_name, 'he');
+      } else if (sortField === 'handler_name') {
+        comparison = (a.handler_name || '').localeCompare(b.handler_name || '', 'he');
       } else if (sortField === 'created_at') {
         comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }
@@ -241,7 +243,17 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">מטפל בתהליך</TableHead>
+                <TableHead className="text-right font-semibold">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('handler_name')}
+                  >
+                    {getSortIcon('handler_name')}
+                    מטפל בתהליך
+                  </Button>
+                </TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
