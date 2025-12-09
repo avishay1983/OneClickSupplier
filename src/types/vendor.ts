@@ -20,6 +20,7 @@ export interface VendorRequest {
   is_sensitive: boolean;
   vendor_type: 'general' | 'claims' | null;
   claims_area: 'home' | 'car' | 'life' | 'health' | null;
+  handler_name: string | null;
   
   // Vendor fields
   company_id: string | null;

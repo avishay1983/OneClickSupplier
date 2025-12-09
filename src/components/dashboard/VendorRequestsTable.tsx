@@ -222,6 +222,7 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
+                <TableHead className="text-right font-semibold">מטפל בתהליך</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
@@ -252,6 +253,7 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
             <TableBody>
               {filteredAndSortedRequests.map((request) => (
               <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
+                <TableCell>{request.handler_name || '-'}</TableCell>
                 <TableCell className="font-medium">{request.vendor_name}</TableCell>
                 <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
                 <TableCell>
