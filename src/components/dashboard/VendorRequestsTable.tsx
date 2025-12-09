@@ -370,8 +370,10 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
           <StatusHistoryDialog
             open={historyDialogOpen}
             onOpenChange={setHistoryDialogOpen}
-            vendorRequestId={selectedRequest.id}
             vendorName={selectedRequest.vendor_name}
+            status={selectedRequest.status}
+            createdAt={selectedRequest.created_at}
+            updatedAt={selectedRequest.updated_at}
           />
         </>
       )}

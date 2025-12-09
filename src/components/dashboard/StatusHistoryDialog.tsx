@@ -1,108 +1,138 @@
-import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Clock, FileText, CheckCircle } from 'lucide-react';
 import { STATUS_LABELS, VendorStatus } from '@/types/vendor';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 interface StatusHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendorRequestId: string;
   vendorName: string;
-}
-
-interface StatusHistoryEntry {
-  id: string;
-  old_status: string | null;
-  new_status: string;
-  changed_at: string;
-  changed_by: string | null;
+  status: VendorStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function StatusHistoryDialog({
   open,
   onOpenChange,
-  vendorRequestId,
   vendorName,
+  status,
+  createdAt,
+  updatedAt,
 }: StatusHistoryDialogProps) {
-  const [history, setHistory] = useState<StatusHistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const formatDate = (dateStr: string) => {
+    return format(new Date(dateStr), 'dd/MM/yyyy בשעה HH:mm', { locale: he });
+  };
 
-  useEffect(() => {
-    if (open && vendorRequestId) {
-      fetchHistory();
-    }
-  }, [open, vendorRequestId]);
-
-  const fetchHistory = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('vendor_status_history')
-        .select('*')
-        .eq('vendor_request_id', vendorRequestId)
-        .order('changed_at', { ascending: false });
-
-      if (error) throw error;
-      setHistory(data || []);
-    } catch (error) {
-      console.error('Error fetching status history:', error);
-    } finally {
-      setIsLoading(false);
+  const getStatusInfo = (currentStatus: VendorStatus) => {
+    switch (currentStatus) {
+      case 'pending':
+      case 'with_vendor':
+      case 'resent':
+        return {
+          label: 'ממתין למילוי פרטים',
+          icon: <Clock className="h-4 w-4" />,
+          color: 'text-amber-500',
+          bgColor: 'bg-amber-500'
+        };
+      case 'submitted':
+        return {
+          label: 'בבדיקה',
+          icon: <FileText className="h-4 w-4" />,
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-500'
+        };
+      case 'approved':
+        return {
+          label: 'אושר',
+          icon: <CheckCircle className="h-4 w-4" />,
+          color: 'text-green-500',
+          bgColor: 'bg-green-500'
+        };
+      default:
+        return {
+          label: STATUS_LABELS[currentStatus] || currentStatus,
+          icon: <Clock className="h-4 w-4" />,
+          color: 'text-muted-foreground',
+          bgColor: 'bg-muted-foreground'
+        };
     }
   };
 
-  const getStatusLabel = (status: string | null): string => {
-    if (!status) return '-';
-    return STATUS_LABELS[status as VendorStatus] || status;
-  };
+  const currentStatusInfo = getStatusInfo(status);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-right">היסטוריית סטטוס - {vendorName}</DialogTitle>
+          <DialogTitle className="text-right">היסטוריית בקשה - {vendorName}</DialogTitle>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
+        <div className="space-y-4 pt-2">
+          {/* Current Status */}
+          <div className="text-center p-4 rounded-lg bg-muted/50 border">
+            <div className={`mx-auto mb-2 ${currentStatusInfo.color}`}>
+              {currentStatusInfo.icon}
+            </div>
+            <p className="font-semibold">{currentStatusInfo.label}</p>
           </div>
-        ) : history.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>אין היסטוריית שינויי סטטוס</p>
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
-            {history.map((entry, index) => (
-              <div
-                key={entry.id}
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">
-                      {getStatusLabel(entry.old_status)}
-                    </span>
-                    <span className="text-muted-foreground">←</span>
-                    <span className="font-medium">
-                      {getStatusLabel(entry.new_status)}
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(entry.changed_at).toLocaleString('he-IL', {
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                    })}
-                  </div>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                  {history.length - index}
+
+          {/* Timeline */}
+          <div className="border-t pt-4 space-y-4">
+            <h4 className="font-semibold text-sm mb-4">היסטוריית הבקשה</h4>
+            
+            {/* Created */}
+            <div className="flex items-start gap-4">
+              <div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+              <div>
+                <p className="font-medium">הבקשה נוצרה</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(createdAt)}
+                </p>
+              </div>
+            </div>
+
+            {/* Submitted */}
+            {(status === 'submitted' || status === 'approved') && (
+              <div className="flex items-start gap-4">
+                <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                <div>
+                  <p className="font-medium">פרטים הוגשו</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(updatedAt)}
+                  </p>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Approved */}
+            {status === 'approved' && (
+              <div className="flex items-start gap-4">
+                <div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                <div>
+                  <p className="font-medium">הבקשה אושרה</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(updatedAt)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Resent */}
+            {status === 'resent' && (
+              <div className="flex items-start gap-4">
+                <div className="w-3 h-3 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></div>
+                <div>
+                  <p className="font-medium">הטופס נשלח מחדש</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(updatedAt)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
