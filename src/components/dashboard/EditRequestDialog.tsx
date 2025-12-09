@@ -238,103 +238,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
           <DialogTitle className="text-xl">עריכת בקשת ספק</DialogTitle>
         </DialogHeader>
         
-        {/* Approval Workflow Section - Only for submitted status */}
-        {isSubmittedStatus && (
-          <div className="border rounded-lg p-4 mb-4 bg-muted/30">
-            <h3 className="font-semibold text-lg mb-4 text-right">תהליך אישור</h3>
-            <div className="space-y-4">
-              {/* First Review */}
-              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
-                <div className="flex-1 text-right">
-                  <div className="font-medium">בקרה ראשונה</div>
-                  {approvalData.first_review_approved && (
-                    <div className="text-sm text-muted-foreground">
-                      אושר ע"י {approvalData.first_review_approved_by} בתאריך {formatApprovalDate(approvalData.first_review_approved_at)}
-                    </div>
-                  )}
-                </div>
-                {approvalData.first_review_approved ? (
-                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
-                    <Check className="h-4 w-4" />
-                    אושר
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => handleApprove('first_review')}
-                    disabled={approvingStep !== null}
-                  >
-                    {approvingStep === 'first_review' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'אישור'
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {/* First Signature */}
-              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
-                <div className="flex-1 text-right">
-                  <div className="font-medium">חתימה ראשונה</div>
-                  {approvalData.first_signature_approved && (
-                    <div className="text-sm text-muted-foreground">
-                      אושר ע"י {approvalData.first_signature_approved_by} בתאריך {formatApprovalDate(approvalData.first_signature_approved_at)}
-                    </div>
-                  )}
-                </div>
-                {approvalData.first_signature_approved ? (
-                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
-                    <Check className="h-4 w-4" />
-                    אושר
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => handleApprove('first_signature')}
-                    disabled={approvingStep !== null || !approvalData.first_review_approved}
-                    variant={!approvalData.first_review_approved ? 'outline' : 'default'}
-                  >
-                    {approvingStep === 'first_signature' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'אישור'
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              {/* Second Signature */}
-              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
-                <div className="flex-1 text-right">
-                  <div className="font-medium">חתימה שניה</div>
-                  {approvalData.second_signature_approved && (
-                    <div className="text-sm text-muted-foreground">
-                      אושר ע"י {approvalData.second_signature_approved_by} בתאריך {formatApprovalDate(approvalData.second_signature_approved_at)}
-                    </div>
-                  )}
-                </div>
-                {approvalData.second_signature_approved ? (
-                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
-                    <Check className="h-4 w-4" />
-                    אושר
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={() => handleApprove('second_signature')}
-                    disabled={approvingStep !== null || !approvalData.first_signature_approved}
-                    variant={!approvalData.first_signature_approved ? 'outline' : 'default'}
-                  >
-                    {approvingStep === 'second_signature' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'אישור'
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4">
             <div className="space-y-2">
@@ -506,6 +409,106 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
               </div>
             </div>
           </div>
+
+          {/* Approval Workflow Section - Only for submitted status */}
+          {isSubmittedStatus && (
+            <div className="border rounded-lg p-4 mt-4 bg-muted/30">
+              <h3 className="font-semibold text-lg mb-4 text-right">תהליך אישור</h3>
+              <div className="space-y-4">
+                {/* First Review */}
+                <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                  <div className="flex-1 text-right">
+                    <div className="font-medium">בקרה ראשונה</div>
+                    {approvalData.first_review_approved && (
+                      <div className="text-sm text-muted-foreground">
+                        אושר ע"י {approvalData.first_review_approved_by} בתאריך {formatApprovalDate(approvalData.first_review_approved_at)}
+                      </div>
+                    )}
+                  </div>
+                  {approvalData.first_review_approved ? (
+                    <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                      <Check className="h-4 w-4" />
+                      אושר
+                    </Button>
+                  ) : (
+                    <Button 
+                      type="button"
+                      onClick={() => handleApprove('first_review')}
+                      disabled={approvingStep !== null}
+                    >
+                      {approvingStep === 'first_review' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'אישור'
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {/* First Signature */}
+                <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                  <div className="flex-1 text-right">
+                    <div className="font-medium">חתימה ראשונה</div>
+                    {approvalData.first_signature_approved && (
+                      <div className="text-sm text-muted-foreground">
+                        אושר ע"י {approvalData.first_signature_approved_by} בתאריך {formatApprovalDate(approvalData.first_signature_approved_at)}
+                      </div>
+                    )}
+                  </div>
+                  {approvalData.first_signature_approved ? (
+                    <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                      <Check className="h-4 w-4" />
+                      אושר
+                    </Button>
+                  ) : (
+                    <Button 
+                      type="button"
+                      onClick={() => handleApprove('first_signature')}
+                      disabled={approvingStep !== null || !approvalData.first_review_approved}
+                      variant={!approvalData.first_review_approved ? 'outline' : 'default'}
+                    >
+                      {approvingStep === 'first_signature' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'אישור'
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Second Signature */}
+                <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                  <div className="flex-1 text-right">
+                    <div className="font-medium">חתימה שניה</div>
+                    {approvalData.second_signature_approved && (
+                      <div className="text-sm text-muted-foreground">
+                        אושר ע"י {approvalData.second_signature_approved_by} בתאריך {formatApprovalDate(approvalData.second_signature_approved_at)}
+                      </div>
+                    )}
+                  </div>
+                  {approvalData.second_signature_approved ? (
+                    <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                      <Check className="h-4 w-4" />
+                      אושר
+                    </Button>
+                  ) : (
+                    <Button 
+                      type="button"
+                      onClick={() => handleApprove('second_signature')}
+                      disabled={approvingStep !== null || !approvalData.first_signature_approved}
+                      variant={!approvalData.first_signature_approved ? 'outline' : 'default'}
+                    >
+                      {approvingStep === 'second_signature' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'אישור'
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
