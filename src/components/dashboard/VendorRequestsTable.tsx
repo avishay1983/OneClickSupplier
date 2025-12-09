@@ -55,9 +55,13 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [handlerFilter, setHandlerFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Get unique handler names for filter dropdown
+  const uniqueHandlers = Array.from(new Set(requests.map(r => r.handler_name).filter(Boolean))) as string[];
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -80,10 +84,11 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
   const filteredAndSortedRequests = requests
     .filter(request => {
       const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+      const matchesHandler = handlerFilter === 'all' || request.handler_name === handlerFilter;
       const matchesSearch = searchQuery === '' || 
         request.vendor_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         request.vendor_name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesHandler && matchesSearch;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -187,6 +192,20 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pr-9"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">מטפל:</span>
+          <Select value={handlerFilter} onValueChange={setHandlerFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">הכל</SelectItem>
+              {uniqueHandlers.map((handler) => (
+                <SelectItem key={handler} value={handler}>{handler}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">סטטוס:</span>
