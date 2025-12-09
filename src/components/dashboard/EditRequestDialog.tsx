@@ -8,16 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { VendorRequest } from '@/types/vendor';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface EditRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   request: VendorRequest | null;
   onSuccess: () => void;
+  currentUserName?: string;
 }
 
-export function EditRequestDialog({ open, onOpenChange, request, onSuccess }: EditRequestDialogProps) {
+export function EditRequestDialog({ open, onOpenChange, request, onSuccess, currentUserName }: EditRequestDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     vendor_name: '',
@@ -34,6 +36,20 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess }: Ed
     handler_name: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Approval workflow state
+  const [approvalData, setApprovalData] = useState({
+    first_review_approved: false,
+    first_review_approved_at: null as string | null,
+    first_review_approved_by: null as string | null,
+    first_signature_approved: false,
+    first_signature_approved_at: null as string | null,
+    first_signature_approved_by: null as string | null,
+    second_signature_approved: false,
+    second_signature_approved_at: null as string | null,
+    second_signature_approved_by: null as string | null,
+  });
+  const [approvingStep, setApprovingStep] = useState<string | null>(null);
 
   useEffect(() => {
     if (request) {
@@ -51,9 +67,98 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess }: Ed
         claims_area: request.claims_area || null,
         handler_name: request.handler_name || '',
       });
+      
+      // Load approval workflow data
+      setApprovalData({
+        first_review_approved: (request as any).first_review_approved || false,
+        first_review_approved_at: (request as any).first_review_approved_at || null,
+        first_review_approved_by: (request as any).first_review_approved_by || null,
+        first_signature_approved: (request as any).first_signature_approved || false,
+        first_signature_approved_at: (request as any).first_signature_approved_at || null,
+        first_signature_approved_by: (request as any).first_signature_approved_by || null,
+        second_signature_approved: (request as any).second_signature_approved || false,
+        second_signature_approved_at: (request as any).second_signature_approved_at || null,
+        second_signature_approved_by: (request as any).second_signature_approved_by || null,
+      });
+      
       setErrors({});
     }
   }, [request]);
+
+  const handleApprove = async (step: 'first_review' | 'first_signature' | 'second_signature') => {
+    if (!request) return;
+    
+    setApprovingStep(step);
+    try {
+      const now = new Date().toISOString();
+      const approverName = currentUserName || 'משתמש';
+      
+      const updateData: any = {};
+      
+      if (step === 'first_review') {
+        updateData.first_review_approved = true;
+        updateData.first_review_approved_at = now;
+        updateData.first_review_approved_by = approverName;
+      } else if (step === 'first_signature') {
+        updateData.first_signature_approved = true;
+        updateData.first_signature_approved_at = now;
+        updateData.first_signature_approved_by = approverName;
+      } else if (step === 'second_signature') {
+        updateData.second_signature_approved = true;
+        updateData.second_signature_approved_at = now;
+        updateData.second_signature_approved_by = approverName;
+        // Also update status to approved when all steps are complete
+        updateData.status = 'approved';
+      }
+      
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update(updateData)
+        .eq('id', request.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      if (step === 'first_review') {
+        setApprovalData(prev => ({
+          ...prev,
+          first_review_approved: true,
+          first_review_approved_at: now,
+          first_review_approved_by: approverName,
+        }));
+      } else if (step === 'first_signature') {
+        setApprovalData(prev => ({
+          ...prev,
+          first_signature_approved: true,
+          first_signature_approved_at: now,
+          first_signature_approved_by: approverName,
+        }));
+      } else if (step === 'second_signature') {
+        setApprovalData(prev => ({
+          ...prev,
+          second_signature_approved: true,
+          second_signature_approved_at: now,
+          second_signature_approved_by: approverName,
+        }));
+      }
+      
+      toast({
+        title: 'אושר בהצלחה',
+        description: step === 'second_signature' ? 'הבקשה אושרה סופית' : 'השלב אושר בהצלחה',
+      });
+      
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error approving step:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'אירעה שגיאה באישור',
+        variant: 'destructive',
+      });
+    } finally {
+      setApprovingStep(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,12 +224,116 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess }: Ed
     }
   };
 
+  const formatApprovalDate = (dateString: string | null) => {
+    if (!dateString) return '';
+    return format(new Date(dateString), 'dd/MM/yyyy HH:mm');
+  };
+
+  const isSubmittedStatus = request?.status === 'submitted';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl">עריכת בקשת ספק</DialogTitle>
         </DialogHeader>
+        
+        {/* Approval Workflow Section - Only for submitted status */}
+        {isSubmittedStatus && (
+          <div className="border rounded-lg p-4 mb-4 bg-muted/30">
+            <h3 className="font-semibold text-lg mb-4 text-right">תהליך אישור</h3>
+            <div className="space-y-4">
+              {/* First Review */}
+              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                <div className="flex-1 text-right">
+                  <div className="font-medium">בקרה ראשונה</div>
+                  {approvalData.first_review_approved && (
+                    <div className="text-sm text-muted-foreground">
+                      אושר ע"י {approvalData.first_review_approved_by} בתאריך {formatApprovalDate(approvalData.first_review_approved_at)}
+                    </div>
+                  )}
+                </div>
+                {approvalData.first_review_approved ? (
+                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                    <Check className="h-4 w-4" />
+                    אושר
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => handleApprove('first_review')}
+                    disabled={approvingStep !== null}
+                  >
+                    {approvingStep === 'first_review' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'אישור'
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* First Signature */}
+              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                <div className="flex-1 text-right">
+                  <div className="font-medium">חתימה ראשונה</div>
+                  {approvalData.first_signature_approved && (
+                    <div className="text-sm text-muted-foreground">
+                      אושר ע"י {approvalData.first_signature_approved_by} בתאריך {formatApprovalDate(approvalData.first_signature_approved_at)}
+                    </div>
+                  )}
+                </div>
+                {approvalData.first_signature_approved ? (
+                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                    <Check className="h-4 w-4" />
+                    אושר
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => handleApprove('first_signature')}
+                    disabled={approvingStep !== null || !approvalData.first_review_approved}
+                    variant={!approvalData.first_review_approved ? 'outline' : 'default'}
+                  >
+                    {approvingStep === 'first_signature' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'אישור'
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* Second Signature */}
+              <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
+                <div className="flex-1 text-right">
+                  <div className="font-medium">חתימה שניה</div>
+                  {approvalData.second_signature_approved && (
+                    <div className="text-sm text-muted-foreground">
+                      אושר ע"י {approvalData.second_signature_approved_by} בתאריך {formatApprovalDate(approvalData.second_signature_approved_at)}
+                    </div>
+                  )}
+                </div>
+                {approvalData.second_signature_approved ? (
+                  <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
+                    <Check className="h-4 w-4" />
+                    אושר
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => handleApprove('second_signature')}
+                    disabled={approvingStep !== null || !approvalData.first_signature_approved}
+                    variant={!approvalData.first_signature_approved ? 'outline' : 'default'}
+                  >
+                    {approvingStep === 'second_signature' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'אישור'
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4">

@@ -155,6 +155,12 @@ export type Database = {
           expected_spending: number | null
           expires_at: string | null
           fax: string | null
+          first_review_approved: boolean | null
+          first_review_approved_at: string | null
+          first_review_approved_by: string | null
+          first_signature_approved: boolean | null
+          first_signature_approved_at: string | null
+          first_signature_approved_by: string | null
           handler_name: string | null
           id: string
           is_consultant: boolean | null
@@ -172,6 +178,9 @@ export type Database = {
           quote_received: boolean | null
           sales_contact_name: string | null
           sales_contact_phone: string | null
+          second_signature_approved: boolean | null
+          second_signature_approved_at: string | null
+          second_signature_approved_by: string | null
           secure_token: string
           status: Database["public"]["Enums"]["vendor_status"]
           street: string | null
@@ -196,6 +205,12 @@ export type Database = {
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
+          first_review_approved?: boolean | null
+          first_review_approved_at?: string | null
+          first_review_approved_by?: string | null
+          first_signature_approved?: boolean | null
+          first_signature_approved_at?: string | null
+          first_signature_approved_by?: string | null
           handler_name?: string | null
           id?: string
           is_consultant?: boolean | null
@@ -213,6 +228,9 @@ export type Database = {
           quote_received?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
+          second_signature_approved?: boolean | null
+          second_signature_approved_at?: string | null
+          second_signature_approved_by?: string | null
           secure_token?: string
           status?: Database["public"]["Enums"]["vendor_status"]
           street?: string | null
@@ -237,6 +255,12 @@ export type Database = {
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
+          first_review_approved?: boolean | null
+          first_review_approved_at?: string | null
+          first_review_approved_by?: string | null
+          first_signature_approved?: boolean | null
+          first_signature_approved_at?: string | null
+          first_signature_approved_by?: string | null
           handler_name?: string | null
           id?: string
           is_consultant?: boolean | null
@@ -254,6 +278,9 @@ export type Database = {
           quote_received?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
+          second_signature_approved?: boolean | null
+          second_signature_approved_at?: string | null
+          second_signature_approved_by?: string | null
           secure_token?: string
           status?: Database["public"]["Enums"]["vendor_status"]
           street?: string | null
