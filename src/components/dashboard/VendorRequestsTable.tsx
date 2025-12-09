@@ -10,11 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2 } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
+import { EditRequestDialog } from './EditRequestDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ import {
 interface VendorRequestsTableProps {
   requests: VendorRequest[];
   isLoading: boolean;
+  onRefresh?: () => void;
 }
 
 const getStatusVariant = (status: VendorStatus) => {
@@ -61,11 +63,12 @@ const getStatusClass = (status: VendorStatus) => {
 type SortField = 'vendor_name' | 'created_at' | 'handler_name';
 type SortDirection = 'asc' | 'desc';
 
-export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTableProps) {
+export function VendorRequestsTable({ requests, isLoading, onRefresh }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -425,6 +428,17 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                       size="icon"
                       onClick={() => {
                         setSelectedRequest(request);
+                        setEditDialogOpen(true);
+                      }}
+                      title="עריכת בקשה"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedRequest(request);
                         setDeleteDialogOpen(true);
                       }}
                       disabled={deletingId === request.id}
@@ -461,6 +475,12 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
             status={selectedRequest.status}
             createdAt={selectedRequest.created_at}
             updatedAt={selectedRequest.updated_at}
+          />
+          <EditRequestDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            request={selectedRequest}
+            onSuccess={() => { onRefresh ? onRefresh() : window.location.reload(); }}
           />
         </>
       )}
