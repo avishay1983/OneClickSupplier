@@ -146,8 +146,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
         title: 'אושר בהצלחה',
         description: step === 'second_signature' ? 'הבקשה אושרה סופית' : 'השלב אושר בהצלחה',
       });
-      
-      onSuccess();
     } catch (error: any) {
       console.error('Error approving step:', error);
       toast({
