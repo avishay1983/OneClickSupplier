@@ -365,23 +365,15 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 </TableCell>
                 <TableCell>
                   {request.status === 'submitted' ? (
-                    <div className="flex flex-wrap gap-1">
-                      {(request as any).first_review_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">בקרה ✓</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground text-xs">בקרה</Badge>
-                      )}
-                      {(request as any).first_signature_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">אישור 1 ✓</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground text-xs">אישור 1</Badge>
-                      )}
-                      {(request as any).second_signature_approved ? (
-                        <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 text-xs">אישור 2 ✓</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-muted-foreground text-xs">אישור 2</Badge>
-                      )}
-                    </div>
+                    (request as any).second_signature_approved ? (
+                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 2 ✓</Badge>
+                    ) : (request as any).first_signature_approved ? (
+                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 1 ✓</Badge>
+                    ) : (request as any).first_review_approved ? (
+                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">בקרה ✓</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">ממתין לבקרה</Badge>
+                    )
                   ) : (
                     <Badge 
                       variant={getStatusVariant(request.status)}
