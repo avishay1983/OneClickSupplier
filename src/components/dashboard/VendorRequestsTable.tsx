@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History } from 'lucide-react';
-import { VendorRequest, STATUS_LABELS, VendorStatus } from '@/types/vendor';
+import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
@@ -268,6 +268,7 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                   </Button>
                 </TableHead>
                 <TableHead className="text-right font-semibold">אימייל</TableHead>
+                <TableHead className="text-right font-semibold">סוג ספק</TableHead>
                 <TableHead className="text-right font-semibold">סטטוס</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
@@ -289,6 +290,11 @@ export function VendorRequestsTable({ requests, isLoading }: VendorRequestsTable
                 <TableCell>{request.handler_name || '-'}</TableCell>
                 <TableCell className="font-medium">{request.vendor_name}</TableCell>
                 <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {VENDOR_TYPE_LABELS[request.vendor_type as keyof typeof VENDOR_TYPE_LABELS] || 'כללי'}
+                  </Badge>
+                </TableCell>
                 <TableCell>
                   <Badge 
                     variant={getStatusVariant(request.status)}
