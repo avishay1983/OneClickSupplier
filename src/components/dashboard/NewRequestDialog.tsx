@@ -31,6 +31,7 @@ export interface NewRequestData {
   expires_in_days: number;
   vendor_type: 'general' | 'claims';
   claims_area: string | null;
+  handler_name: string;
 }
 
 export interface BulkVendorData {
@@ -60,6 +61,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     expires_in_days: 7,
     vendor_type: 'general',
     claims_area: null,
+    handler_name: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -120,6 +122,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       expires_in_days: 7,
       vendor_type: 'general',
       claims_area: null,
+      handler_name: '',
     });
     setBulkVendors([]);
     setUploadedFileName('');
@@ -324,6 +327,17 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
           <TabsContent value="single" className="mt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="handler_name" className="block text-right">מטפל בתהליך</Label>
+                  <Input
+                    id="handler_name"
+                    className="text-right"
+                    value={formData.handler_name}
+                    onChange={(e) => setFormData({ ...formData, handler_name: e.target.value })}
+                    placeholder="הכנס שם מטפל"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="vendor_name" className="block text-right">שם הספק *</Label>
                   <Input

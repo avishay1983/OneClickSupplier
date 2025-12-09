@@ -155,6 +155,7 @@ export type Database = {
           expected_spending: number | null
           expires_at: string | null
           fax: string | null
+          handler_name: string | null
           id: string
           is_consultant: boolean | null
           is_sensitive: boolean | null
@@ -195,6 +196,7 @@ export type Database = {
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
+          handler_name?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
@@ -235,6 +237,7 @@ export type Database = {
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
+          handler_name?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
