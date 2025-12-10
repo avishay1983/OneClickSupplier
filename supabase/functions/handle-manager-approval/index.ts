@@ -1,43 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-// Hebrew text as HTML entities - no Hebrew characters in source file
-const HEBREW = {
-  error: '&#1513;&#1490;&#1497;&#1488;&#1492;',
-  missingParams: '&#1508;&#1512;&#1502;&#1496;&#1512;&#1497;&#1501; &#1495;&#1505;&#1512;&#1497;&#1501; &#1489;&#1489;&#1511;&#1513;&#1492;',
-  vendorNotFound: '&#1489;&#1511;&#1513;&#1514; &#1492;&#1505;&#1508;&#1511; &#1500;&#1488; &#1504;&#1502;&#1510;&#1488;&#1492;',
-  procurementManager: '&#1502;&#1504;&#1492;&#1500; &#1512;&#1499;&#1513;',
-  procurementManagerDb: '\u05DE\u05E0\u05D4\u05DC \u05E8\u05DB\u05E9',
-  vp: '&#1505;&#1502;&#1504;&#1499;"&#1500;',
-  vpDb: '\u05E1\u05DE\u05E0\u05DB"\u05DC',
-  approved: '&#1488;&#1493;&#1513;&#1512;',
-  rejected: '&#1504;&#1491;&#1495;&#1492;',
-  alreadyProcessed: '&#1499;&#1489;&#1512; &#1496;&#1493;&#1508;&#1500;',
-  theVendor: '&#1492;&#1505;&#1508;&#1511;',
-  already: '&#1499;&#1489;&#1512;',
-  by: '&#1506;&#1500; &#1497;&#1491;&#1497;',
-  cannotUpdateApproval: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1488;&#1497;&#1513;&#1493;&#1512;',
-  approvedSuccessfully: '&#1488;&#1493;&#1513;&#1512; &#1489;&#1492;&#1510;&#1500;&#1495;&#1492;!',
-  approvedBy: '&#1488;&#1493;&#1513;&#1512; &#1506;&#1500; &#1497;&#1491;&#1497;',
-  cannotUpdateRejection: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1491;&#1495;&#1497;&#1497;&#1492;',
-  rejectedBy: '&#1504;&#1491;&#1495;&#1492; &#1506;&#1500; &#1497;&#1491;&#1497;',
-  invalidAction: '&#1508;&#1506;&#1493;&#1500;&#1492; &#1500;&#1488; &#1514;&#1511;&#1497;&#1504;&#1492;',
-  errorOccurred: '&#1488;&#1497;&#1512;&#1506;&#1492; &#1513;&#1490;&#1497;&#1488;&#1492;',
-  bituachYashir: '&#1489;&#1497;&#1496;&#1493;&#1495; &#1497;&#1513;&#1497;&#1512;',
-  vendorApprovalSystem: '&#1502;&#1506;&#1512;&#1499;&#1514; &#1488;&#1497;&#1513;&#1493;&#1512; &#1505;&#1508;&#1511;&#1497;&#1501;',
-  canCloseWindow: '&#1504;&#1497;&#1514;&#1503; &#1500;&#1505;&#1490;&#1493;&#1512; &#1495;&#1500;&#1493;&#1503; &#1494;&#1492;',
-};
-
-function toHtmlEntities(str: string): string {
-  return str.split('').map(char => {
-    const code = char.charCodeAt(0);
-    if (code > 127) {
-      return `&#${code};`;
-    }
-    return char;
-  }).join('');
-}
-
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-manager-approval function called");
 
@@ -51,7 +14,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Processing:", { action, role, vendorId });
 
     if (!action || !role || !vendorId) {
-      return createHtmlResponse(HEBREW.error, HEBREW.missingParams, false);
+      return createHtmlResponse("שגיאה", "פרמטרים חסרים בבקשה", false);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -66,22 +29,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !vendorRequest) {
       console.error("Error fetching vendor request:", fetchError);
-      return createHtmlResponse(HEBREW.error, HEBREW.vendorNotFound, false);
+      return createHtmlResponse("שגיאה", "בקשת הספק לא נמצאה", false);
     }
 
-    const roleLabel = role === 'procurement_manager' ? HEBREW.procurementManager : HEBREW.vp;
-    const roleLabelForDb = role === 'procurement_manager' ? HEBREW.procurementManagerDb : HEBREW.vpDb;
+    const roleLabel = role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל';
     const approvedField = role === 'procurement_manager' ? 'procurement_manager_approved' : 'vp_approved';
     const approvedAtField = role === 'procurement_manager' ? 'procurement_manager_approved_at' : 'vp_approved_at';
     const approvedByField = role === 'procurement_manager' ? 'procurement_manager_approved_by' : 'vp_approved_by';
 
-    const vendorNameEncoded = toHtmlEntities(vendorRequest.vendor_name);
+    const vendorName = vendorRequest.vendor_name;
 
     if (vendorRequest[approvedField] !== null) {
-      const status = vendorRequest[approvedField] ? HEBREW.approved : HEBREW.rejected;
+      const status = vendorRequest[approvedField] ? 'אושר' : 'נדחה';
       return createHtmlResponse(
-        HEBREW.alreadyProcessed,
-        `${HEBREW.theVendor} "${vendorNameEncoded}" ${HEBREW.already} ${status} ${HEBREW.by} ${roleLabel}`,
+        "כבר טופל",
+        `הספק "${vendorName}" כבר ${status} על ידי ${roleLabel}`,
         vendorRequest[approvedField]
       );
     }
@@ -92,19 +54,19 @@ const handler = async (req: Request): Promise<Response> => {
         .update({
           [approvedField]: true,
           [approvedAtField]: new Date().toISOString(),
-          [approvedByField]: roleLabelForDb,
+          [approvedByField]: roleLabel,
         })
         .eq("id", vendorId);
 
       if (updateError) {
         console.error("Error updating approval:", updateError);
-        return createHtmlResponse(HEBREW.error, HEBREW.cannotUpdateApproval, false);
+        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את האישור", false);
       }
 
       console.log(`Vendor ${vendorId} approved by ${role}`);
       return createHtmlResponse(
-        HEBREW.approvedSuccessfully,
-        `${HEBREW.theVendor} "${vendorNameEncoded}" ${HEBREW.approvedBy} ${roleLabel}`,
+        "אושר בהצלחה!",
+        `הספק "${vendorName}" אושר על ידי ${roleLabel}`,
         true
       );
     } else if (action === 'reject') {
@@ -113,46 +75,47 @@ const handler = async (req: Request): Promise<Response> => {
         .update({
           [approvedField]: false,
           [approvedAtField]: new Date().toISOString(),
-          [approvedByField]: roleLabelForDb,
+          [approvedByField]: roleLabel,
         })
         .eq("id", vendorId);
 
       if (updateError) {
         console.error("Error updating rejection:", updateError);
-        return createHtmlResponse(HEBREW.error, HEBREW.cannotUpdateRejection, false);
+        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את הדחייה", false);
       }
 
       console.log(`Vendor ${vendorId} rejected by ${role}`);
       return createHtmlResponse(
-        HEBREW.rejected,
-        `${HEBREW.theVendor} "${vendorNameEncoded}" ${HEBREW.rejectedBy} ${roleLabel}`,
+        "נדחה",
+        `הספק "${vendorName}" נדחה על ידי ${roleLabel}`,
         false
       );
     }
 
-    return createHtmlResponse(HEBREW.error, HEBREW.invalidAction, false);
+    return createHtmlResponse("שגיאה", "פעולה לא תקינה", false);
   } catch (error: any) {
     console.error("Error in handle-manager-approval:", error);
-    return createHtmlResponse(HEBREW.error, HEBREW.errorOccurred, false);
+    return createHtmlResponse("שגיאה", "אירעה שגיאה", false);
   }
 };
 
 function createHtmlResponse(title: string, message: string, success: boolean | null): Response {
   let bgColor = '#3b82f6';
-  let icon = '&#10004;';
+  let icon = '\u2714';
   
   if (success === true) {
     bgColor = '#22c55e';
-    icon = '&#10004;';
+    icon = '\u2714';
   } else if (success === false) {
     bgColor = '#ef4444';
-    icon = '&#10008;';
+    icon = '\u2718';
   }
 
-  const htmlContent = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
-<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vendor Approval</title>
 <style>
@@ -207,8 +170,8 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 <body>
 <div class="container">
 <div class="header">
-<div class="header-logo">${HEBREW.bituachYashir}</div>
-<div class="header-subtitle">${HEBREW.vendorApprovalSystem}</div>
+<div class="header-logo">ביטוח ישיר</div>
+<div class="header-subtitle">מערכת אישור ספקים</div>
 </div>
 <div class="icon-wrapper">
 <div class="icon">${icon}</div>
@@ -217,12 +180,16 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 <h1>${title}</h1>
 <p class="message">${message}</p>
 </div>
-<div class="footer">${HEBREW.canCloseWindow}</div>
+<div class="footer">ניתן לסגור חלון זה</div>
 </div>
 </body>
 </html>`;
 
-  return new Response(htmlContent, {
+  // Encode the HTML as UTF-8 bytes
+  const encoder = new TextEncoder();
+  const body = encoder.encode(html);
+
+  return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
