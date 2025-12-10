@@ -20,14 +20,18 @@ interface SettingsDialogProps {
 interface AppSettings {
   master_otp_code: string;
   car_manager_email: string;
+  car_manager_name: string;
   vp_email: string;
+  vp_name: string;
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [settings, setSettings] = useState<AppSettings>({
     master_otp_code: '',
     car_manager_email: '',
+    car_manager_name: '',
     vp_email: '',
+    vp_name: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +54,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const settingsMap: AppSettings = {
         master_otp_code: '',
         car_manager_email: '',
+        car_manager_name: '',
         vp_email: '',
+        vp_name: '',
       };
       
       (data as any[])?.forEach((item: any) => {
@@ -83,7 +89,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       const settingsToSave = [
         { key: 'master_otp_code', value: settings.master_otp_code.trim() },
         { key: 'car_manager_email', value: settings.car_manager_email.trim() },
+        { key: 'car_manager_name', value: settings.car_manager_name.trim() },
         { key: 'vp_email', value: settings.vp_email.trim() },
+        { key: 'vp_name', value: settings.vp_name.trim() },
       ];
 
       for (const setting of settingsToSave) {
@@ -149,6 +157,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <h3 className="font-medium">כתובות מייל לאישור הקמת ספק</h3>
             
             <div className="space-y-2">
+              <Label htmlFor="carManagerName">שם מנהל רכש</Label>
+              <Input
+                id="carManagerName"
+                value={settings.car_manager_name}
+                onChange={(e) => updateSetting('car_manager_name', e.target.value)}
+                placeholder="הזן שם מנהל רכש"
+                disabled={isLoading}
+                className="text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="carManagerEmail">מייל מנהל רכש</Label>
               <Input
                 id="carManagerEmail"
@@ -159,6 +179,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 disabled={isLoading}
                 className="text-right"
                 dir="ltr"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vpName">שם סמנכ"ל</Label>
+              <Input
+                id="vpName"
+                value={settings.vp_name}
+                onChange={(e) => updateSetting('vp_name', e.target.value)}
+                placeholder="הזן שם סמנכ״ל"
+                disabled={isLoading}
+                className="text-right"
               />
             </div>
 
