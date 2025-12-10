@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import VendorForm from "./pages/VendorForm";
 import VendorStatus from "./pages/VendorStatus";
 import Auth from "./pages/Auth";
+import ManagerApprovalResult from "./pages/ManagerApprovalResult";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/vendor/:token" element={<VendorForm />} />
             <Route path="/vendor-status/:token" element={<VendorStatus />} />
+            <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
