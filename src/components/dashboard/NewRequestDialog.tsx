@@ -339,6 +339,51 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="block text-right">סוג ספק</Label>
+                  <Select
+                    value={formData.vendor_type}
+                    onValueChange={(value: 'general' | 'claims') => {
+                      setFormData({ 
+                        ...formData, 
+                        vendor_type: value,
+                        claims_area: value === 'general' ? null : formData.claims_area
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="flex-row-reverse">
+                      <SelectValue placeholder="בחר סוג ספק" className="text-right" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">ספק כללי</SelectItem>
+                      <SelectItem value="claims">ספק תביעות</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.vendor_type === 'claims' && (
+                  <div className="space-y-2">
+                    <Label className="block text-right">אזור תביעות *</Label>
+                    <Select
+                      value={formData.claims_area || ''}
+                      onValueChange={(value) => setFormData({ ...formData, claims_area: value })}
+                    >
+                      <SelectTrigger className="flex-row-reverse">
+                        <SelectValue placeholder="בחר אזור תביעות" className="text-right" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="home">דירה</SelectItem>
+                        <SelectItem value="car">רכב</SelectItem>
+                        <SelectItem value="life">חיים</SelectItem>
+                        <SelectItem value="health">בריאות</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.claims_area && (
+                      <p className="text-sm text-destructive text-right">{errors.claims_area}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
                   <Label htmlFor="vendor_name" className="block text-right">שם הספק *</Label>
                   <Input
                     id="vendor_name"
@@ -411,51 +456,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label className="block text-right">סוג ספק</Label>
-                  <Select
-                    value={formData.vendor_type}
-                    onValueChange={(value: 'general' | 'claims') => {
-                      setFormData({ 
-                        ...formData, 
-                        vendor_type: value,
-                        claims_area: value === 'general' ? null : formData.claims_area
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="flex-row-reverse">
-                      <SelectValue placeholder="בחר סוג ספק" className="text-right" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">ספק כללי</SelectItem>
-                      <SelectItem value="claims">ספק תביעות</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.vendor_type === 'claims' && (
-                  <div className="space-y-2">
-                    <Label className="block text-right">אזור תביעות *</Label>
-                    <Select
-                      value={formData.claims_area || ''}
-                      onValueChange={(value) => setFormData({ ...formData, claims_area: value })}
-                    >
-                      <SelectTrigger className="flex-row-reverse">
-                        <SelectValue placeholder="בחר אזור תביעות" className="text-right" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="home">דירה</SelectItem>
-                        <SelectItem value="car">רכב</SelectItem>
-                        <SelectItem value="life">חיים</SelectItem>
-                        <SelectItem value="health">בריאות</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.claims_area && (
-                      <p className="text-sm text-destructive text-right">{errors.claims_area}</p>
-                    )}
-                  </div>
-                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 justify-end">
