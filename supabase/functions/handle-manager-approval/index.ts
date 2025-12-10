@@ -102,26 +102,26 @@ const handler = async (req: Request): Promise<Response> => {
 function createHtmlResponse(title: string, message: string, success: boolean | null): Response {
   // success: true = approved (green), false = rejected (red), null = info/already processed (blue)
   let bgColor = '#3b82f6'; // blue for info
-  let icon = 'ℹ️';
+  let icon = '&#10004;'; // checkmark
   
   if (success === true) {
     bgColor = '#22c55e'; // green
-    icon = '✓';
+    icon = '&#10004;';
   } else if (success === false) {
     bgColor = '#ef4444'; // red
-    icon = '✗';
+    icon = '&#10008;';
   }
 
-  const html = `<!DOCTYPE html>
+  // Use a simple approach - return Uint8Array with BOM
+  const htmlContent = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title} - ביטוח ישיר</title>
+<title>${title}</title>
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -147,20 +147,9 @@ body {
   color: white;
   padding: 30px 20px;
 }
-.header-logo {
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 10px;
-}
-.header-subtitle {
-  font-size: 14px;
-  opacity: 0.8;
-}
-.icon-wrapper {
-  margin-top: -35px;
-  margin-bottom: 20px;
-}
+.header-logo { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+.header-subtitle { font-size: 14px; opacity: 0.8; }
+.icon-wrapper { margin-top: -35px; margin-bottom: 20px; }
 .icon {
   width: 70px;
   height: 70px;
@@ -174,35 +163,17 @@ body {
   box-shadow: 0 8px 25px rgba(0,0,0,0.25);
   border: 4px solid white;
 }
-.content {
-  padding: 10px 30px 40px;
-}
-h1 {
-  color: #1a2b5f;
-  margin: 0 0 15px;
-  font-size: 24px;
-  font-weight: 600;
-}
-.message {
-  color: #555;
-  font-size: 16px;
-  line-height: 1.7;
-  margin: 0;
-}
-.footer {
-  background: #f8f9fa;
-  padding: 15px;
-  font-size: 12px;
-  color: #888;
-  border-top: 1px solid #eee;
-}
+.content { padding: 10px 30px 40px; }
+h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
+.message { color: #555; font-size: 16px; line-height: 1.7; margin: 0; }
+.footer { background: #f8f9fa; padding: 15px; font-size: 12px; color: #888; border-top: 1px solid #eee; }
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-<div class="header-logo">ביטוח ישיר</div>
-<div class="header-subtitle">מערכת אישור ספקים</div>
+<div class="header-logo">&#1489;&#1497;&#1496;&#1493;&#1495; &#1497;&#1513;&#1497;&#1512;</div>
+<div class="header-subtitle">&#1502;&#1506;&#1512;&#1499;&#1514; &#1488;&#1497;&#1513;&#1493;&#1512; &#1505;&#1508;&#1511;&#1497;&#1501;</div>
 </div>
 <div class="icon-wrapper">
 <div class="icon">${icon}</div>
@@ -211,18 +182,12 @@ h1 {
 <h1>${title}</h1>
 <p class="message">${message}</p>
 </div>
-<div class="footer">
-ניתן לסגור חלון זה
-</div>
+<div class="footer">&#1504;&#1497;&#1514;&#1503; &#1500;&#1505;&#1490;&#1493;&#1512; &#1495;&#1500;&#1493;&#1503; &#1494;&#1492;</div>
 </div>
 </body>
 </html>`;
 
-  // Encode as UTF-8 using TextEncoder
-  const encoder = new TextEncoder();
-  const body = encoder.encode(html);
-
-  return new Response(body, {
+  return new Response(htmlContent, {
     status: 200,
     headers: { 
       "Content-Type": "text/html; charset=utf-8",
