@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil } from 'lucide-react';
-import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS } from '@/types/vendor';
+import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
@@ -398,9 +398,16 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 <TableCell className="font-medium">{request.vendor_name}</TableCell>
                 <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">
-                    {VENDOR_TYPE_LABELS[request.vendor_type as keyof typeof VENDOR_TYPE_LABELS] || 'כללי'}
-                  </Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant="outline">
+                      {VENDOR_TYPE_LABELS[request.vendor_type as keyof typeof VENDOR_TYPE_LABELS] || 'כללי'}
+                    </Badge>
+                    {request.claims_sub_category && (
+                      <span className="text-xs text-muted-foreground">
+                        {CLAIMS_SUB_CATEGORY_LABELS[request.claims_sub_category] || request.claims_sub_category}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {request.status === 'submitted' ? (
