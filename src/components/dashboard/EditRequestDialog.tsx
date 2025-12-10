@@ -471,36 +471,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
             <div className="border rounded-lg p-4 mt-4 bg-muted/30">
               <h3 className="font-semibold text-lg mb-4 text-right">תהליך אישור</h3>
               <div className="space-y-4">
-                {/* First Review */}
-                <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
-                  <div className="flex-1 text-right">
-                    <div className="font-medium">בקרה ראשונה</div>
-                    {approvalData.first_review_approved && (
-                      <div className="text-sm text-muted-foreground">
-                        אושר ע"י {approvalData.first_review_approved_by} בתאריך {formatApprovalDate(approvalData.first_review_approved_at)}
-                      </div>
-                    )}
-                  </div>
-                  {approvalData.first_review_approved ? (
-                    <Button variant="outline" disabled className="gap-2 bg-green-50 border-green-200 text-green-700">
-                      <Check className="h-4 w-4" />
-                      אושר
-                    </Button>
-                  ) : (
-                    <Button 
-                      type="button"
-                      onClick={() => handleApprove('first_review')}
-                      disabled={approvingStep !== null}
-                    >
-                      {approvingStep === 'first_review' ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'אישור'
-                      )}
-                    </Button>
-                  )}
-                </div>
-
                 {/* First Approval */}
                 <div className="flex items-center justify-between gap-4 p-3 border rounded-md bg-background">
                   <div className="flex-1 text-right">
@@ -520,8 +490,7 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
                     <Button 
                       type="button"
                       onClick={() => handleApprove('first_signature')}
-                      disabled={approvingStep !== null || !approvalData.first_review_approved}
-                      variant={!approvalData.first_review_approved ? 'outline' : 'default'}
+                      disabled={approvingStep !== null}
                     >
                       {approvingStep === 'first_signature' ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
