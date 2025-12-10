@@ -1,6 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// Convert string to HTML entities to avoid encoding issues
+function toHtmlEntities(str: string): string {
+  return str.split('').map(char => {
+    const code = char.charCodeAt(0);
+    // Convert non-ASCII characters to HTML entities
+    if (code > 127) {
+      return `&#${code};`;
+    }
+    return char;
+  }).join('');
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-manager-approval function called");
 
@@ -14,7 +26,11 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Processing:", { action, role, vendorId });
 
     if (!action || !role || !vendorId) {
-      return createHtmlResponse("שגיאה", "פרמטרים חסרים בבקשה", false);
+      return createHtmlResponse(
+        toHtmlEntities("שגיאה"), 
+        toHtmlEntities("פרמטרים חסרים בבקשה"), 
+        false
+      );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -30,20 +46,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !vendorRequest) {
       console.error("Error fetching vendor request:", fetchError);
-      return createHtmlResponse("שגיאה", "בקשת הספק לא נמצאה", false);
+      return createHtmlResponse(
+        toHtmlEntities("שגיאה"), 
+        toHtmlEntities("בקשת הספק לא נמצאה"), 
+        false
+      );
     }
 
-    const roleLabel = role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל';
+    const roleLabel = role === 'procurement_manager' 
+      ? toHtmlEntities('מנהל רכש') 
+      : toHtmlEntities('סמנכ"ל');
     const approvedField = role === 'procurement_manager' ? 'procurement_manager_approved' : 'vp_approved';
     const approvedAtField = role === 'procurement_manager' ? 'procurement_manager_approved_at' : 'vp_approved_at';
     const approvedByField = role === 'procurement_manager' ? 'procurement_manager_approved_by' : 'vp_approved_by';
 
     // Check if already processed
     if (vendorRequest[approvedField] !== null) {
-      const status = vendorRequest[approvedField] ? 'אושר' : 'נדחה';
+      const status = vendorRequest[approvedField] 
+        ? toHtmlEntities('אושר') 
+        : toHtmlEntities('נדחה');
       return createHtmlResponse(
-        "כבר טופל",
-        `הספק "${vendorRequest.vendor_name}" כבר ${status} על ידי ${roleLabel}`,
+        toHtmlEntities("כבר טופל"),
+        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("כבר")} ${status} ${toHtmlEntities("על ידי")} ${roleLabel}`,
         vendorRequest[approvedField]
       );
     }
@@ -54,19 +78,23 @@ const handler = async (req: Request): Promise<Response> => {
         .update({
           [approvedField]: true,
           [approvedAtField]: new Date().toISOString(),
-          [approvedByField]: roleLabel,
+          [approvedByField]: role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל',
         })
         .eq("id", vendorId);
 
       if (updateError) {
         console.error("Error updating approval:", updateError);
-        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את האישור", false);
+        return createHtmlResponse(
+          toHtmlEntities("שגיאה"), 
+          toHtmlEntities("לא ניתן לעדכן את האישור"), 
+          false
+        );
       }
 
       console.log(`Vendor ${vendorId} approved by ${role}`);
       return createHtmlResponse(
-        "אושר בהצלחה!",
-        `הספק "${vendorRequest.vendor_name}" אושר על ידי ${roleLabel}`,
+        toHtmlEntities("אושר בהצלחה!"),
+        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("אושר על ידי")} ${roleLabel}`,
         true
       );
     } else if (action === 'reject') {
@@ -75,27 +103,39 @@ const handler = async (req: Request): Promise<Response> => {
         .update({
           [approvedField]: false,
           [approvedAtField]: new Date().toISOString(),
-          [approvedByField]: roleLabel,
+          [approvedByField]: role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל',
         })
         .eq("id", vendorId);
 
       if (updateError) {
         console.error("Error updating rejection:", updateError);
-        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את הדחייה", false);
+        return createHtmlResponse(
+          toHtmlEntities("שגיאה"), 
+          toHtmlEntities("לא ניתן לעדכן את הדחייה"), 
+          false
+        );
       }
 
       console.log(`Vendor ${vendorId} rejected by ${role}`);
       return createHtmlResponse(
-        "נדחה",
-        `הספק "${vendorRequest.vendor_name}" נדחה על ידי ${roleLabel}`,
+        toHtmlEntities("נדחה"),
+        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("נדחה על ידי")} ${roleLabel}`,
         false
       );
     }
 
-    return createHtmlResponse("שגיאה", "פעולה לא תקינה", false);
+    return createHtmlResponse(
+      toHtmlEntities("שגיאה"), 
+      toHtmlEntities("פעולה לא תקינה"), 
+      false
+    );
   } catch (error: any) {
     console.error("Error in handle-manager-approval:", error);
-    return createHtmlResponse("שגיאה", error.message, false);
+    return createHtmlResponse(
+      toHtmlEntities("שגיאה"), 
+      toHtmlEntities(error.message || "אירעה שגיאה"), 
+      false
+    );
   }
 };
 
