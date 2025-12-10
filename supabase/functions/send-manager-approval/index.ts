@@ -49,7 +49,9 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const procurementManagerEmail = settingsMap.car_manager_email;
+    const procurementManagerName = settingsMap.car_manager_name || 'מנהל רכש';
     const vpEmail = settingsMap.vp_email;
+    const vpName = settingsMap.vp_name || 'סמנכ"ל';
 
     if (!procurementManagerEmail && !vpEmail) {
       throw new Error("No approval email addresses configured");
@@ -89,8 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = Deno.env.get("SUPABASE_URL")!.replace('.supabase.co', '');
     const projectRef = baseUrl.split('//')[1];
 
-    const createApprovalEmail = (role: 'procurement_manager' | 'vp', token: string) => {
-      const roleLabel = role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל';
+    const createApprovalEmail = (role: 'procurement_manager' | 'vp', token: string, recipientName: string) => {
       const approveLink = `https://${projectRef}.supabase.co/functions/v1/handle-manager-approval?action=approve&role=${role}&vendorId=${vendorRequestId}&token=${token}`;
       const rejectLink = `https://${projectRef}.supabase.co/functions/v1/handle-manager-approval?action=reject&role=${role}&vendorId=${vendorRequestId}&token=${token}`;
 
@@ -106,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
 <h1 style="margin: 0; text-align: center; color: white;">אישור הקמת ספק</h1>
 </div>
 <div style="padding: 30px;">
-<p style="margin: 12px 0;">שלום ${roleLabel},</p>
+<p style="margin: 12px 0;">שלום ${recipientName},</p>
 <p style="margin: 12px 0;">ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.</p>
 
 <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
@@ -137,26 +138,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email to procurement manager
     if (procurementManagerEmail) {
-      console.log("Sending approval email to procurement manager:", procurementManagerEmail);
+      console.log("Sending approval email to procurement manager:", procurementManagerEmail, "Name:", procurementManagerName);
       await client.send({
         from: gmailUser,
         to: procurementManagerEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
         content: "auto",
-        html: createApprovalEmail('procurement_manager', procurementToken),
+        html: createApprovalEmail('procurement_manager', procurementToken, procurementManagerName),
       });
       console.log("Email sent to procurement manager");
     }
 
     // Send email to VP
     if (vpEmail) {
-      console.log("Sending approval email to VP:", vpEmail);
+      console.log("Sending approval email to VP:", vpEmail, "Name:", vpName);
       await client.send({
         from: gmailUser,
         to: vpEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
         content: "auto",
-        html: createApprovalEmail('vp', vpToken),
+        html: createApprovalEmail('vp', vpToken, vpName),
       });
       console.log("Email sent to VP");
     }
