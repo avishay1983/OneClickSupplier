@@ -149,6 +149,7 @@ export type Database = {
           bank_name: string | null
           city: string | null
           claims_area: string | null
+          claims_sub_category: string | null
           company_id: string | null
           contract_signed: boolean | null
           created_at: string
@@ -199,6 +200,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           claims_area?: string | null
+          claims_sub_category?: string | null
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string
@@ -249,6 +251,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           claims_area?: string | null
+          claims_sub_category?: string | null
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string

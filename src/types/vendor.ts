@@ -20,6 +20,7 @@ export interface VendorRequest {
   is_sensitive: boolean;
   vendor_type: 'general' | 'claims' | null;
   claims_area: 'home' | 'car' | 'life' | 'health' | null;
+  claims_sub_category: string | null;
   handler_name: string | null;
   
   // Vendor fields
@@ -94,4 +95,16 @@ export const CLAIMS_AREA_LABELS: Record<string, string> = {
   car: 'רכב',
   life: 'חיים',
   health: 'בריאות',
+};
+
+export const CLAIMS_SUB_CATEGORY_LABELS: Record<string, string> = {
+  // Car
+  garage: 'מוסך',
+  appraiser: 'שמאי',
+  // Life/Health
+  doctor: 'רופא',
+  lawyer: 'עורך דין',
+  // Home
+  plumber: 'שרברב',
+  management: 'חברת ניהול',
 };

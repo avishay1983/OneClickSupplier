@@ -349,7 +349,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       setFormData({ 
                         ...formData, 
                         vendor_type: value,
-                        claims_area: value === 'general' ? null : formData.claims_area
+                        claims_area: value === 'general' ? null : formData.claims_area,
+                        claims_sub_category: value === 'general' ? null : formData.claims_sub_category
                       });
                     }}
                   >
