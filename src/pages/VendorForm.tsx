@@ -192,10 +192,12 @@ export default function VendorForm() {
     }
   }, []);
 
-  // Check if file is DOCX
-  const isDocxFile = (file: File): boolean => {
+  // Check if file is DOC or DOCX
+  const isWordFile = (file: File): boolean => {
     return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           file.name.toLowerCase().endsWith('.docx');
+           file.type === 'application/msword' ||
+           file.name.toLowerCase().endsWith('.docx') ||
+           file.name.toLowerCase().endsWith('.doc');
   };
 
   // Extract text from DOCX file
@@ -240,10 +242,10 @@ export default function VendorForm() {
   const processOcrOnDocument = async (file: File, documentType: string): Promise<ExtractedDocumentData | null> => {
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
-    const isDocx = isDocxFile(file);
+    const isWord = isWordFile(file);
     
     // Handle DOCX files by extracting text and sending to AI
-    if (isDocx) {
+    if (isWord) {
       const textContent = await extractTextFromDocx(file);
       if (!textContent) {
         console.log('Could not extract text from DOCX');
