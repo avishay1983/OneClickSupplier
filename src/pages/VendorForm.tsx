@@ -17,11 +17,19 @@ import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, Arrow
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
-import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } from '@/data/israelBanks';
+import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES, ISRAEL_BANKS } from '@/data/israelBanks';
 import { getBranchesByBank } from '@/data/bankBranches';
+import { ISRAEL_CITIES } from '@/data/israelCities';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { pdfToImage, isPdfFile } from '@/utils/pdfToImage';
 import mammoth from 'mammoth';
+
+interface OcrValidationWarning {
+  field: string;
+  fieldLabel: string;
+  extractedValue: string;
+  message: string;
+}
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -98,6 +106,7 @@ export default function VendorForm() {
   const [showMismatchDialog, setShowMismatchDialog] = useState(false);
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
   const [pendingBankFile, setPendingBankFile] = useState<File | null>(null);
+  const [ocrValidationWarnings, setOcrValidationWarnings] = useState<OcrValidationWarning[]>([]);
 
   const [formData, setFormData] = useState({
     company_id: '',
@@ -236,6 +245,94 @@ export default function VendorForm() {
       console.error('Text extraction error:', err);
       return null;
     }
+  }, []);
+
+  // Validate OCR extracted data against available options
+  const validateOcrData = useCallback((data: Partial<typeof formData>): OcrValidationWarning[] => {
+    const warnings: OcrValidationWarning[] = [];
+    
+    // Validate city
+    if (data.city) {
+      const cityExists = ISRAEL_CITIES.some(
+        city => city === data.city || city.includes(data.city!) || data.city!.includes(city)
+      );
+      if (!cityExists) {
+        warnings.push({
+          field: 'city',
+          fieldLabel: 'עיר',
+          extractedValue: data.city,
+          message: `העיר "${data.city}" לא נמצאה ברשימת הערים. יש לבחור עיר מהרשימה.`
+        });
+      }
+    }
+    
+    // Validate bank name
+    if (data.bank_name) {
+      const bankExists = BANK_NAMES.some(
+        name => name === data.bank_name || name.includes(data.bank_name!) || data.bank_name!.includes(name)
+      );
+      if (!bankExists) {
+        warnings.push({
+          field: 'bank_name',
+          fieldLabel: 'בנק',
+          extractedValue: data.bank_name,
+          message: `הבנק "${data.bank_name}" לא נמצא ברשימת הבנקים. יש לבחור בנק מהרשימה.`
+        });
+      }
+    }
+    
+    // Validate bank branch format
+    if (data.bank_branch) {
+      if (!validateBankBranch(data.bank_branch)) {
+        warnings.push({
+          field: 'bank_branch',
+          fieldLabel: 'סניף',
+          extractedValue: data.bank_branch,
+          message: `מספר הסניף "${data.bank_branch}" אינו תקין. מספר סניף חייב להכיל 3-4 ספרות.`
+        });
+      }
+    }
+    
+    // Validate bank account if bank is selected
+    if (data.bank_account_number && data.bank_name) {
+      const accountValidation = validateBankAccount(data.bank_account_number, data.bank_name);
+      if (!accountValidation.valid) {
+        warnings.push({
+          field: 'bank_account_number',
+          fieldLabel: 'מספר חשבון',
+          extractedValue: data.bank_account_number,
+          message: accountValidation.message || 'מספר החשבון אינו תקין'
+        });
+      }
+    }
+    
+    // Validate mobile phone format
+    if (data.mobile) {
+      const mobileRegex = /^05\d{8}$/;
+      if (!mobileRegex.test(data.mobile.replace(/[-\s]/g, ''))) {
+        warnings.push({
+          field: 'mobile',
+          fieldLabel: 'טלפון נייד',
+          extractedValue: data.mobile,
+          message: `מספר הנייד "${data.mobile}" אינו תקין. מספר נייד חייב להתחיל ב-05 ולהכיל 10 ספרות.`
+        });
+      }
+    }
+    
+    // Validate company ID (9 digits)
+    if (data.company_id) {
+      const companyIdClean = data.company_id.replace(/\D/g, '');
+      if (companyIdClean.length !== 9) {
+        warnings.push({
+          field: 'company_id',
+          fieldLabel: 'ח.פ / עוסק מורשה',
+          extractedValue: data.company_id,
+          message: `מספר ח.פ/עוסק מורשה "${data.company_id}" אינו תקין. חייב להכיל 9 ספרות.`
+        });
+      }
+    }
+    
+    return warnings;
   }, []);
 
   // Process OCR on any document file
@@ -620,6 +717,20 @@ export default function VendorForm() {
       console.log('Final updates to apply:', finalUpdates);
       console.log('Current formData before update:', formData);
       
+      // Validate OCR data before applying
+      const warnings = validateOcrData(finalUpdates);
+      setOcrValidationWarnings(warnings);
+      
+      if (warnings.length > 0) {
+        console.log('OCR validation warnings:', warnings);
+        // Show warnings in toast
+        toast({
+          title: 'שים לב - נתונים לא תקינים',
+          description: `נמצאו ${warnings.length} בעיות בנתונים שחולצו. יש לתקן לפני השליחה.`,
+          variant: 'destructive',
+        });
+      }
+      
       const appliedFieldsCount = Object.keys(finalUpdates).length;
       
       if (appliedFieldsCount > 0) {
@@ -628,10 +739,13 @@ export default function VendorForm() {
           console.log('New formData after update:', newData);
           return newData;
         });
-        toast({
-          title: 'נתונים זוהו והוזנו',
-          description: `${appliedFieldsCount} שדות מולאו אוטומטית מהמסמכים שהועלו`,
-        });
+        
+        if (warnings.length === 0) {
+          toast({
+            title: 'נתונים זוהו והוזנו',
+            description: `${appliedFieldsCount} שדות מולאו אוטומטית מהמסמכים שהועלו`,
+          });
+        }
       } else if (extractedFieldsCount > 0) {
         toast({
           title: 'נתונים זוהו',
@@ -862,6 +976,8 @@ export default function VendorForm() {
     
     if (!formData.city.trim()) {
       newErrors.city = 'עיר היא שדה חובה';
+    } else if (!ISRAEL_CITIES.includes(formData.city)) {
+      newErrors.city = `העיר "${formData.city}" לא נמצאה ברשימת הערים. יש לבחור עיר מהרשימה.`;
     }
 
     if (!formData.bank_name.trim()) {
@@ -1255,6 +1371,34 @@ export default function VendorForm() {
         ) : (
           /* Step 2: Fill Form */
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* OCR Validation Warnings */}
+            {ocrValidationWarnings.length > 0 && (
+              <Card className="border-destructive bg-destructive/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-destructive flex items-center gap-2 text-lg">
+                    <AlertCircle className="h-5 w-5" />
+                    שים לב - נמצאו בעיות בנתונים שחולצו
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {ocrValidationWarnings.map((warning, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <span className="text-destructive mt-0.5">•</span>
+                        <div>
+                          <span className="font-medium">{warning.fieldLabel}:</span>{' '}
+                          <span className="text-muted-foreground">{warning.message}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    יש לתקן את השדות המסומנים לפני שליחת הטופס.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Basic Info */}
             <Card>
               <CardHeader>
