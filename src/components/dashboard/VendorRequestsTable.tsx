@@ -308,9 +308,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
               <SelectItem value="pending">ממתין</SelectItem>
               <SelectItem value="with_vendor">אצל הספק</SelectItem>
               <SelectItem value="resent">נשלח מחדש</SelectItem>
-              <SelectItem value="submitted">נשלח</SelectItem>
-              <SelectItem value="first_approved">אישור 1 ✓</SelectItem>
-              <SelectItem value="second_approved">אישור 2 ✓</SelectItem>
               <SelectItem value="approved">אושר</SelectItem>
             </SelectContent>
           </Select>
@@ -411,22 +408,12 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   </div>
                 </TableCell>
                 <TableCell>
-                  {request.status === 'submitted' ? (
-                    (request as any).second_signature_approved ? (
-                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 2 ✓</Badge>
-                    ) : (request as any).first_signature_approved ? (
-                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 1 ✓</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">נשלח</Badge>
-                    )
-                  ) : (
-                    <Badge 
-                      variant={getStatusVariant(request.status)}
-                      className={getStatusClass(request.status)}
-                    >
-                      {STATUS_LABELS[request.status]}
-                    </Badge>
-                  )}
+                  <Badge 
+                    variant={getStatusVariant(request.status)}
+                    className={getStatusClass(request.status)}
+                  >
+                    {STATUS_LABELS[request.status]}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   {new Date(request.created_at).toLocaleDateString('he-IL')}
