@@ -22,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Check, X, RefreshCw, Search } from 'lucide-react';
+import { Loader2, Check, X, RefreshCw, Search, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
@@ -49,6 +50,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [adminFlags, setAdminFlags] = useState<Record<string, boolean>>({});
 
   const fetchApprovals = async () => {
     setIsLoading(true);
@@ -82,8 +84,9 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
     setProcessingId(approval.id);
     try {
       const supabaseUrl = 'https://ijyqtemnhlbamxmgjuzp.supabase.co';
+      const isAdmin = adminFlags[approval.id] || false;
       const response = await fetch(
-        `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=${action}&format=json`
+        `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=${action}&format=json&isAdmin=${isAdmin}`
       );
 
       if (!response.ok) {
@@ -94,7 +97,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
       toast({
         title: action === 'approve' ? 'המשתמש אושר' : 'המשתמש נדחה',
         description: action === 'approve' 
-          ? `${approval.user_email} יכול כעת להתחבר למערכת`
+          ? `${approval.user_email} יכול כעת להתחבר למערכת${isAdmin ? ' כמנהל מערכת' : ''}`
           : `${approval.user_email} הוסר מהמערכת`,
       });
 
@@ -110,6 +113,13 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
     } finally {
       setProcessingId(null);
     }
+  };
+
+  const toggleAdminFlag = (approvalId: string) => {
+    setAdminFlags(prev => ({
+      ...prev,
+      [approvalId]: !prev[approvalId]
+    }));
   };
 
   const getStatusBadge = (status: string) => {
@@ -206,7 +216,21 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
                     <TableCell>{getStatusBadge(approval.status)}</TableCell>
                     <TableCell>
                       {approval.status === 'pending' && (
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`admin-${approval.id}`}
+                              checked={adminFlags[approval.id] || false}
+                              onCheckedChange={() => toggleAdminFlag(approval.id)}
+                            />
+                            <label 
+                              htmlFor={`admin-${approval.id}`}
+                              className="text-xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <Shield className="h-3 w-3" />
+                              מנהל
+                            </label>
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"

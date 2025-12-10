@@ -19,6 +19,7 @@ const handler = async (req: Request): Promise<Response> => {
     const token = url.searchParams.get("token");
     const action = url.searchParams.get("action");
     const format = url.searchParams.get("format"); // 'json' for API calls
+    const setAsAdmin = url.searchParams.get("isAdmin") === "true"; // Set user as admin
 
     if (!token || !action) {
       if (format === "json") {
@@ -109,6 +110,22 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
+      // Set user role (admin or regular user)
+      const role = setAsAdmin ? "admin" : "user";
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .upsert({
+          user_id: approval.user_id,
+          role: role,
+        }, { onConflict: "user_id,role" });
+
+      if (roleError) {
+        console.error("Error setting user role:", roleError);
+        // Continue even if role setting fails
+      }
+
+      console.log(`User ${approval.user_email} approved with role: ${role}`);
+
       // Update pending approval status
       await supabase
         .from("pending_approvals")
@@ -118,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("User approved:", approval.user_email);
 
       if (format === "json") {
-        return new Response(JSON.stringify({ success: true, message: "User approved" }), {
+        return new Response(JSON.stringify({ success: true, message: "User approved", role }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         });
@@ -126,7 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         createHtmlResponse(
           "הרישום אושר!",
-          `המשתמש ${approval.user_name || approval.user_email} אושר בהצלחה וכעת יכול להתחבר למערכת.`,
+          `המשתמש ${approval.user_name || approval.user_email} אושר בהצלחה${setAsAdmin ? ' כמנהל מערכת' : ''} וכעת יכול להתחבר למערכת.`,
           true
         ),
         {
