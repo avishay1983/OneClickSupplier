@@ -1535,7 +1535,12 @@ export default function VendorForm() {
                 חזרה לשלב הקודם
               </Button>
               <Button type="submit" size="lg" disabled={isSubmitting || isExtractingOcr}>
-                {isSubmitting ? 'שולח...' : 'שלח טופס'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    שולח טופס...
+                  </>
+                ) : 'שלח טופס'}
               </Button>
             </div>
           </form>
