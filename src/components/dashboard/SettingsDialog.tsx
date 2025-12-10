@@ -149,7 +149,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <h3 className="font-medium">כתובות מייל לאישור הקמת ספק</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="carManagerEmail">מייל מנהל רכב</Label>
+              <Label htmlFor="carManagerEmail">מייל מנהל רכש</Label>
               <Input
                 id="carManagerEmail"
                 type="email"
