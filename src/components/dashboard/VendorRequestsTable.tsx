@@ -308,8 +308,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
               <SelectItem value="pending">ממתין</SelectItem>
               <SelectItem value="with_vendor">אצל הספק</SelectItem>
               <SelectItem value="resent">נשלח מחדש</SelectItem>
-              <SelectItem value="waiting_review">ממתין לבקרה</SelectItem>
-              <SelectItem value="review_approved">בקרה ✓</SelectItem>
+              <SelectItem value="submitted">נשלח</SelectItem>
               <SelectItem value="first_approved">אישור 1 ✓</SelectItem>
               <SelectItem value="second_approved">אישור 2 ✓</SelectItem>
               <SelectItem value="approved">אושר</SelectItem>
@@ -417,10 +416,8 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                       <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 2 ✓</Badge>
                     ) : (request as any).first_signature_approved ? (
                       <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">אישור 1 ✓</Badge>
-                    ) : (request as any).first_review_approved ? (
-                      <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">בקרה ✓</Badge>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground">ממתין לבקרה</Badge>
+                      <Badge variant="outline" className="text-muted-foreground">נשלח</Badge>
                     )
                   ) : (
                     <Badge 
