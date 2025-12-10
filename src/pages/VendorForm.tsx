@@ -676,72 +676,77 @@ export default function VendorForm() {
       }
       
       try {
-        const { data, error } = await supabase
-          .from('vendor_requests')
-          .select('*')
-          .eq('secure_token', token)
-          .maybeSingle();
+        // Use vendor-form-api edge function (uses service role, bypasses RLS)
+        const { data: response, error } = await supabase.functions.invoke('vendor-form-api', {
+          body: { action: 'get', token },
+        });
 
         if (error) throw error;
         
-        if (!data) {
+        if (response?.error === 'not_found') {
           setNotFound(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (response?.error === 'expired') {
+          setLinkExpired(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!response?.request) {
+          setNotFound(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        const data = response.request;
+        const docs = response.documents || [];
+        
+        if (data.otp_verified) {
+          setOtpVerified(true);
+        }
+        
+        if (data.status === 'submitted' || data.status === 'approved') {
+          setSubmitted(true);
+          setRequest(data as VendorRequest);
         } else {
-          if (data.expires_at && new Date(data.expires_at) < new Date()) {
-            setLinkExpired(true);
-            setIsLoading(false);
-            return;
-          }
+          setRequest(data as VendorRequest);
           
-          if (data.otp_verified) {
-            setOtpVerified(true);
-          }
-          
-          if (data.status === 'submitted' || data.status === 'approved') {
-            setSubmitted(true);
-            setRequest(data as VendorRequest);
-          } else {
-            setRequest(data as VendorRequest);
-            
-            setFormData({
-              company_id: data.company_id || '',
-              phone: data.phone || '',
-              mobile: data.mobile || '',
-              street: data.street || '',
-              street_number: data.street_number || '',
-              city: data.city || '',
-              postal_code: data.postal_code || '',
-              po_box: data.po_box || '',
-              accounting_contact_name: data.accounting_contact_name || '',
-              accounting_contact_phone: data.accounting_contact_phone || '',
-              sales_contact_name: data.sales_contact_name || '',
-              sales_contact_phone: data.sales_contact_phone || '',
-              bank_name: data.bank_name || '',
-              bank_branch: data.bank_branch || '',
-              bank_account_number: data.bank_account_number || '',
-              payment_method: data.payment_method || '',
-            });
+          setFormData({
+            company_id: data.company_id || '',
+            phone: data.phone || '',
+            mobile: data.mobile || '',
+            street: data.street || '',
+            street_number: data.street_number || '',
+            city: data.city || '',
+            postal_code: data.postal_code || '',
+            po_box: data.po_box || '',
+            accounting_contact_name: data.accounting_contact_name || '',
+            accounting_contact_phone: data.accounting_contact_phone || '',
+            sales_contact_name: data.sales_contact_name || '',
+            sales_contact_phone: data.sales_contact_phone || '',
+            bank_name: data.bank_name || '',
+            bank_branch: data.bank_branch || '',
+            bank_account_number: data.bank_account_number || '',
+            payment_method: data.payment_method || '',
+          });
 
-            const { data: docs, error: docsError } = await supabase
-              .from('vendor_documents')
-              .select('*')
-              .eq('vendor_request_id', data.id);
-
-            if (!docsError && docs) {
-              const existingDocs: Record<DocumentType, ExistingDocument | null> = {
-                bookkeeping_cert: null,
-                tax_cert: null,
-                bank_confirmation: null,
-                invoice_screenshot: null,
+          if (docs.length > 0) {
+            const existingDocs: Record<DocumentType, ExistingDocument | null> = {
+              bookkeeping_cert: null,
+              tax_cert: null,
+              bank_confirmation: null,
+              invoice_screenshot: null,
+            };
+            docs.forEach((doc: VendorDocument) => {
+              existingDocs[doc.document_type as DocumentType] = {
+                file_name: doc.file_name,
+                file_path: doc.file_path,
               };
-              docs.forEach((doc: VendorDocument) => {
-                existingDocs[doc.document_type as DocumentType] = {
-                  file_name: doc.file_name,
-                  file_path: doc.file_path,
-                };
-              });
-              setExistingDocuments(existingDocs);
-            }
+            });
+            setExistingDocuments(existingDocs);
           }
         }
       } catch (error) {
@@ -821,64 +826,53 @@ export default function VendorForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || !request) return;
+    if (!validateForm() || !request || !token) return;
 
     setIsSubmitting(true);
     try {
-      const { error: updateError } = await supabase
-        .from('vendor_requests')
-        .update({
-          ...formData,
-          status: 'submitted',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
-
-      if (updateError) throw updateError;
-
+      // Upload all new files first using vendor-upload edge function
       for (const [docType, file] of Object.entries(files)) {
         if (file) {
-          const existingDoc = existingDocuments[docType as DocumentType];
+          const uploadFormData = new FormData();
+          uploadFormData.append('token', token);
+          uploadFormData.append('documentType', docType);
+          uploadFormData.append('file', file);
           
-          if (existingDoc) {
-            await supabase.storage
-              .from('vendor_documents')
-              .remove([existingDoc.file_path]);
-            
-            await supabase
-              .from('vendor_documents')
-              .delete()
-              .eq('vendor_request_id', request.id)
-              .eq('document_type', docType);
+          if (docType === 'bank_confirmation' && extractedBankData && !extractedBankData.error) {
+            uploadFormData.append('extractedTags', JSON.stringify({
+              bank_number: extractedBankData.bank_number,
+              branch_number: extractedBankData.branch_number,
+              account_number: extractedBankData.account_number,
+            }));
           }
           
-          const filePath = `${request.id}/${docType}/${file.name}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('vendor_documents')
-            .upload(filePath, file);
-
-          if (uploadError) {
-            console.error('Upload error:', uploadError);
-          } else {
-            const documentInsert: Record<string, unknown> = {
-              vendor_request_id: request.id,
-              document_type: docType,
-              file_name: file.name,
-              file_path: filePath,
-            };
-            
-            if (docType === 'bank_confirmation' && extractedBankData && !extractedBankData.error) {
-              documentInsert.extracted_tags = {
-                bank_number: extractedBankData.bank_number,
-                branch_number: extractedBankData.branch_number,
-                account_number: extractedBankData.account_number,
-              };
+          const response = await fetch(
+            `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
+            {
+              method: 'POST',
+              body: uploadFormData,
             }
-            
-            await supabase.from('vendor_documents').insert(documentInsert);
+          );
+          
+          if (!response.ok) {
+            console.error('Upload error for', docType);
           }
         }
+      }
+
+      // Submit the form using vendor-form-api edge function
+      const { data: response, error } = await supabase.functions.invoke('vendor-form-api', {
+        body: { 
+          action: 'submit', 
+          token,
+          data: formData 
+        },
+      });
+
+      if (error) throw error;
+      
+      if (response?.error) {
+        throw new Error(response.message || 'שגיאה בשליחת הטופס');
       }
 
       const statusLink = `${window.location.origin}/vendor-status/${token}`;
