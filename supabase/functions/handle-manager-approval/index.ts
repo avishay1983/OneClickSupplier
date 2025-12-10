@@ -1,18 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-// Convert string to HTML entities to avoid encoding issues
-function toHtmlEntities(str: string): string {
-  return str.split('').map(char => {
-    const code = char.charCodeAt(0);
-    // Convert non-ASCII characters to HTML entities
-    if (code > 127) {
-      return `&#${code};`;
-    }
-    return char;
-  }).join('');
-}
-
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-manager-approval function called");
 
@@ -26,11 +14,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Processing:", { action, role, vendorId });
 
     if (!action || !role || !vendorId) {
-      return createHtmlResponse(
-        toHtmlEntities("שגיאה"), 
-        toHtmlEntities("פרמטרים חסרים בבקשה"), 
-        false
-      );
+      return createHtmlResponse("שגיאה", "פרמטרים חסרים בבקשה", false);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -46,28 +30,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !vendorRequest) {
       console.error("Error fetching vendor request:", fetchError);
-      return createHtmlResponse(
-        toHtmlEntities("שגיאה"), 
-        toHtmlEntities("בקשת הספק לא נמצאה"), 
-        false
-      );
+      return createHtmlResponse("שגיאה", "בקשת הספק לא נמצאה", false);
     }
 
-    const roleLabel = role === 'procurement_manager' 
-      ? toHtmlEntities('מנהל רכש') 
-      : toHtmlEntities('סמנכ"ל');
+    const roleLabel = role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל';
     const approvedField = role === 'procurement_manager' ? 'procurement_manager_approved' : 'vp_approved';
     const approvedAtField = role === 'procurement_manager' ? 'procurement_manager_approved_at' : 'vp_approved_at';
     const approvedByField = role === 'procurement_manager' ? 'procurement_manager_approved_by' : 'vp_approved_by';
 
     // Check if already processed
     if (vendorRequest[approvedField] !== null) {
-      const status = vendorRequest[approvedField] 
-        ? toHtmlEntities('אושר') 
-        : toHtmlEntities('נדחה');
+      const status = vendorRequest[approvedField] ? 'אושר' : 'נדחה';
       return createHtmlResponse(
-        toHtmlEntities("כבר טופל"),
-        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("כבר")} ${status} ${toHtmlEntities("על ידי")} ${roleLabel}`,
+        "כבר טופל",
+        `הספק "${vendorRequest.vendor_name}" כבר ${status} על ידי ${roleLabel}`,
         vendorRequest[approvedField]
       );
     }
@@ -84,17 +60,13 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (updateError) {
         console.error("Error updating approval:", updateError);
-        return createHtmlResponse(
-          toHtmlEntities("שגיאה"), 
-          toHtmlEntities("לא ניתן לעדכן את האישור"), 
-          false
-        );
+        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את האישור", false);
       }
 
       console.log(`Vendor ${vendorId} approved by ${role}`);
       return createHtmlResponse(
-        toHtmlEntities("אושר בהצלחה!"),
-        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("אושר על ידי")} ${roleLabel}`,
+        "אושר בהצלחה!",
+        `הספק "${vendorRequest.vendor_name}" אושר על ידי ${roleLabel}`,
         true
       );
     } else if (action === 'reject') {
@@ -109,55 +81,41 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (updateError) {
         console.error("Error updating rejection:", updateError);
-        return createHtmlResponse(
-          toHtmlEntities("שגיאה"), 
-          toHtmlEntities("לא ניתן לעדכן את הדחייה"), 
-          false
-        );
+        return createHtmlResponse("שגיאה", "לא ניתן לעדכן את הדחייה", false);
       }
 
       console.log(`Vendor ${vendorId} rejected by ${role}`);
       return createHtmlResponse(
-        toHtmlEntities("נדחה"),
-        `${toHtmlEntities("הספק")} "${toHtmlEntities(vendorRequest.vendor_name)}" ${toHtmlEntities("נדחה על ידי")} ${roleLabel}`,
+        "נדחה",
+        `הספק "${vendorRequest.vendor_name}" נדחה על ידי ${roleLabel}`,
         false
       );
     }
 
-    return createHtmlResponse(
-      toHtmlEntities("שגיאה"), 
-      toHtmlEntities("פעולה לא תקינה"), 
-      false
-    );
+    return createHtmlResponse("שגיאה", "פעולה לא תקינה", false);
   } catch (error: any) {
     console.error("Error in handle-manager-approval:", error);
-    return createHtmlResponse(
-      toHtmlEntities("שגיאה"), 
-      toHtmlEntities(error.message || "אירעה שגיאה"), 
-      false
-    );
+    return createHtmlResponse("שגיאה", error.message || "אירעה שגיאה", false);
   }
 };
 
 function createHtmlResponse(title: string, message: string, success: boolean | null): Response {
   // success: true = approved (green), false = rejected (red), null = info/already processed (blue)
   let bgColor = '#3b82f6'; // blue for info
-  let icon = '&#10004;'; // checkmark
+  let icon = '✓'; // checkmark
   
   if (success === true) {
     bgColor = '#22c55e'; // green
-    icon = '&#10004;';
+    icon = '✓';
   } else if (success === false) {
     bgColor = '#ef4444'; // red
-    icon = '&#10008;';
+    icon = '✗';
   }
 
-  // Use a simple approach - return Uint8Array with BOM
   const htmlContent = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <style>
@@ -212,8 +170,8 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 <body>
 <div class="container">
 <div class="header">
-<div class="header-logo">&#1489;&#1497;&#1496;&#1493;&#1495; &#1497;&#1513;&#1497;&#1512;</div>
-<div class="header-subtitle">&#1502;&#1506;&#1512;&#1499;&#1514; &#1488;&#1497;&#1513;&#1493;&#1512; &#1505;&#1508;&#1511;&#1497;&#1501;</div>
+<div class="header-logo">ביטוח ישיר</div>
+<div class="header-subtitle">מערכת אישור ספקים</div>
 </div>
 <div class="icon-wrapper">
 <div class="icon">${icon}</div>
@@ -222,17 +180,20 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 <h1>${title}</h1>
 <p class="message">${message}</p>
 </div>
-<div class="footer">&#1504;&#1497;&#1514;&#1503; &#1500;&#1505;&#1490;&#1493;&#1512; &#1495;&#1500;&#1493;&#1503; &#1494;&#1492;</div>
+<div class="footer">ניתן לסגור חלון זה</div>
 </div>
 </body>
 </html>`;
 
-  const headers = new Headers();
-  headers.set("Content-Type", "text/html; charset=utf-8");
-  
-  return new Response(htmlContent, {
+  // Encode as UTF-8 bytes
+  const encoder = new TextEncoder();
+  const body = encoder.encode(htmlContent);
+
+  return new Response(body, {
     status: 200,
-    headers: headers,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+    },
   });
 }
 
