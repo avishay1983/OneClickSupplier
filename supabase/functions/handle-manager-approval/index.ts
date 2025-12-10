@@ -218,9 +218,15 @@ h1 {
 </body>
 </html>`;
 
-  return new Response(html, {
+  // Encode as UTF-8 using TextEncoder
+  const encoder = new TextEncoder();
+  const body = encoder.encode(html);
+
+  return new Response(body, {
     status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
+    headers: { 
+      "Content-Type": "text/html; charset=utf-8",
+    },
   });
 }
 
