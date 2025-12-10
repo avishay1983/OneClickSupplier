@@ -53,8 +53,8 @@ const ManagerApprovalResult = () => {
           className="py-8 px-5 text-white"
           style={{ background: "linear-gradient(135deg, #1a2b5f 0%, #2d4a8c 100%)" }}
         >
-          <h2 className="text-2xl font-bold mb-2">ביטוח ישיר</h2>
-          <p className="text-sm opacity-80">מערכת אישור ספקים</p>
+          <h2 className="text-2xl font-bold mb-2">ספק בקליק</h2>
+          <p className="text-sm opacity-80">מערכת הקמת ספקים</p>
         </div>
 
         {/* Icon */}
