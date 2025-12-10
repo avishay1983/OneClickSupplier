@@ -36,7 +36,7 @@ export function ManagerApprovalStatusDialog({
 }: ManagerApprovalStatusDialogProps) {
   const [status, setStatus] = useState<ApprovalStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [sendingTarget, setSendingTarget] = useState<'all' | 'procurement_manager' | 'vp' | null>(null);
 
   useEffect(() => {
     if (open && vendorRequestId) {
@@ -64,38 +64,49 @@ export function ManagerApprovalStatusDialog({
     }
   };
 
-  const sendApprovalEmails = async () => {
+  const sendApprovalEmails = async (targetRole?: 'procurement_manager' | 'vp') => {
     if (!vendorRequestId) return;
     
-    setIsSendingEmail(true);
+    setSendingTarget(targetRole || 'all');
     try {
       const { data, error } = await supabase.functions.invoke('send-manager-approval', {
-        body: { vendorRequestId },
+        body: { vendorRequestId, targetRole },
       });
 
       if (error) throw error;
       if (data && !data.success) throw new Error(data.error);
 
-      toast({
-        title: 'המיילים נשלחו',
-        description: 'בקשות האישור נשלחו למנהל הרכש ולסמנכ"ל',
-      });
+      const targetLabel = targetRole === 'procurement_manager' ? 'למנהל הרכש' : 
+                          targetRole === 'vp' ? 'לסמנכ"ל' : 'למנהל הרכש ולסמנכ"ל';
+
+      if (data.emailsSent === 0) {
+        toast({
+          title: 'לא נשלחו מיילים',
+          description: 'כל המנהלים כבר אישרו או דחו את הבקשה',
+        });
+      } else {
+        toast({
+          title: 'המייל נשלח',
+          description: `בקשת האישור נשלחה ${targetLabel}`,
+        });
+      }
       
       fetchStatus();
     } catch (error: any) {
       console.error('Error sending approval emails:', error);
       toast({
-        title: 'שגיאה בשליחת המיילים',
-        description: error.message || 'לא ניתן לשלוח את המיילים',
+        title: 'שגיאה בשליחת המייל',
+        description: error.message || 'לא ניתן לשלוח את המייל',
         variant: 'destructive',
       });
     } finally {
-      setIsSendingEmail(false);
+      setSendingTarget(null);
     }
   };
 
   const renderApprovalStatus = (
     label: string,
+    role: 'procurement_manager' | 'vp',
     approved: boolean | null,
     approvedAt: string | null,
     approvedBy: string | null
@@ -132,7 +143,24 @@ export function ManagerApprovalStatusDialog({
             )}
           </div>
         </div>
-        {statusBadge}
+        <div className="flex items-center gap-2">
+          {statusBadge}
+          {approved === null && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => sendApprovalEmails(role)}
+              disabled={sendingTarget !== null}
+              title={`שלח מייל ל${label}`}
+            >
+              {sendingTarget === role ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     );
   };
@@ -168,6 +196,7 @@ export function ManagerApprovalStatusDialog({
             
             {renderApprovalStatus(
               'מנהל רכש',
+              'procurement_manager',
               status.procurement_manager_approved,
               status.procurement_manager_approved_at,
               status.procurement_manager_approved_by
@@ -175,29 +204,32 @@ export function ManagerApprovalStatusDialog({
             
             {renderApprovalStatus(
               'סמנכ"ל',
+              'vp',
               status.vp_approved,
               status.vp_approved_at,
               status.vp_approved_by
             )}
 
-            <Button
-              onClick={sendApprovalEmails}
-              disabled={isSendingEmail}
-              className="w-full mt-4"
-              variant="outline"
-            >
-              {isSendingEmail ? (
-                <>
-                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  שולח...
-                </>
-              ) : (
-                <>
-                  <Mail className="h-4 w-4 ml-2" />
-                  {status.approval_email_sent_at ? 'שלח מייל אישור שוב' : 'שלח מייל אישור'}
-                </>
-              )}
-            </Button>
+            {(status.procurement_manager_approved === null || status.vp_approved === null) && (
+              <Button
+                onClick={() => sendApprovalEmails()}
+                disabled={sendingTarget !== null}
+                className="w-full mt-4"
+                variant="outline"
+              >
+                {sendingTarget === 'all' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    שולח...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 ml-2" />
+                    שלח מייל לכל הממתינים
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
