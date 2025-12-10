@@ -248,7 +248,7 @@ export default function VendorForm() {
   }, []);
 
   // Validate OCR extracted data against available options
-  const validateOcrData = useCallback((data: Partial<typeof formData>): OcrValidationWarning[] => {
+  const validateOcrData = useCallback(async (data: Partial<typeof formData>): Promise<OcrValidationWarning[]> => {
     const warnings: OcrValidationWarning[] = [];
     
     // Validate city
@@ -263,6 +263,34 @@ export default function VendorForm() {
           extractedValue: data.city,
           message: `העיר "${data.city}" לא נמצאה ברשימת הערים. יש לבחור עיר מהרשימה.`
         });
+      }
+    }
+    
+    // Validate street exists in the city
+    if (data.street && data.city) {
+      const cityExists = ISRAEL_CITIES.includes(data.city);
+      if (cityExists) {
+        try {
+          const { data: streetData } = await supabase.functions.invoke('search-streets', {
+            body: { city: data.city, query: data.street },
+          });
+          
+          if (streetData?.streets && Array.isArray(streetData.streets)) {
+            const streetExists = streetData.streets.some(
+              (s: string) => s === data.street || s.includes(data.street!) || data.street!.includes(s)
+            );
+            if (!streetExists && streetData.streets.length === 0) {
+              warnings.push({
+                field: 'street',
+                fieldLabel: 'רחוב',
+                extractedValue: data.street,
+                message: `הרחוב "${data.street}" לא נמצא בעיר ${data.city}. יש לבחור רחוב מהרשימה.`
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Street validation error:', error);
+        }
       }
     }
     
@@ -333,6 +361,22 @@ export default function VendorForm() {
     }
     
     return warnings;
+  }, []);
+
+  // Helper to check if a field has a validation warning
+  const hasFieldWarning = useCallback((fieldName: string): boolean => {
+    return ocrValidationWarnings.some(w => w.field === fieldName);
+  }, [ocrValidationWarnings]);
+
+  // Helper to get field warning message
+  const getFieldWarning = useCallback((fieldName: string): string | null => {
+    const warning = ocrValidationWarnings.find(w => w.field === fieldName);
+    return warning?.message || null;
+  }, [ocrValidationWarnings]);
+
+  // Clear warning for a specific field when user edits it
+  const clearFieldWarning = useCallback((fieldName: string) => {
+    setOcrValidationWarnings(prev => prev.filter(w => w.field !== fieldName));
   }, []);
 
   // Process OCR on any document file
@@ -718,7 +762,7 @@ export default function VendorForm() {
       console.log('Current formData before update:', formData);
       
       // Validate OCR data before applying
-      const warnings = validateOcrData(finalUpdates);
+      const warnings = await validateOcrData(finalUpdates);
       setOcrValidationWarnings(warnings);
       
       if (warnings.length > 0) {
@@ -1418,9 +1462,14 @@ export default function VendorForm() {
                   <Input
                     id="company_id"
                     value={formData.company_id}
-                    onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, company_id: e.target.value });
+                      clearFieldWarning('company_id');
+                    }}
                     placeholder="הכנס מספר ח.פ או עוסק מורשה"
+                    className={hasFieldWarning('company_id') ? 'border-destructive' : ''}
                   />
+                  {hasFieldWarning('company_id') && <p className="text-sm text-destructive">{getFieldWarning('company_id')}</p>}
                   {errors.company_id && <p className="text-sm text-destructive">{errors.company_id}</p>}
                 </div>
                 <div className="space-y-2">
@@ -1438,10 +1487,14 @@ export default function VendorForm() {
                   <Input
                     id="mobile"
                     value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, mobile: e.target.value });
+                      clearFieldWarning('mobile');
+                    }}
                     placeholder="טלפון נייד"
-                    className="ltr text-right"
+                    className={`ltr text-right ${hasFieldWarning('mobile') ? 'border-destructive' : ''}`}
                   />
+                  {hasFieldWarning('mobile') && <p className="text-sm text-destructive">{getFieldWarning('mobile')}</p>}
                   {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
                 </div>
               </CardContent>
@@ -1458,23 +1511,35 @@ export default function VendorForm() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city">עיר *</Label>
-                    <CityAutocomplete
-                      id="city"
-                      value={formData.city}
-                      onChange={(value) => setFormData({ ...formData, city: value })}
-                      placeholder="הקלד שם עיר"
-                    />
+                    <div className={hasFieldWarning('city') ? 'rounded-md border border-destructive' : ''}>
+                      <CityAutocomplete
+                        id="city"
+                        value={formData.city}
+                        onChange={(value) => {
+                          setFormData({ ...formData, city: value });
+                          clearFieldWarning('city');
+                        }}
+                        placeholder="הקלד שם עיר"
+                      />
+                    </div>
+                    {hasFieldWarning('city') && <p className="text-sm text-destructive">{getFieldWarning('city')}</p>}
                     {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street">רחוב</Label>
-                    <StreetAutocomplete
-                      id="street"
-                      value={formData.street}
-                      onChange={(value) => setFormData({ ...formData, street: value })}
-                      city={formData.city}
-                      placeholder="שם הרחוב"
-                    />
+                    <div className={hasFieldWarning('street') ? 'rounded-md border border-destructive' : ''}>
+                      <StreetAutocomplete
+                        id="street"
+                        value={formData.street}
+                        onChange={(value) => {
+                          setFormData({ ...formData, street: value });
+                          clearFieldWarning('street');
+                        }}
+                        city={formData.city}
+                        placeholder="שם הרחוב"
+                      />
+                    </div>
+                    {hasFieldWarning('street') && <p className="text-sm text-destructive">{getFieldWarning('street')}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street_number">מספר</Label>
@@ -1577,42 +1642,52 @@ export default function VendorForm() {
               <CardContent className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="bank_name">שם הבנק *</Label>
-                  <BankAutocomplete
-                    id="bank_name"
-                    value={formData.bank_name}
-                    onChange={(value) => setFormData({ ...formData, bank_name: value, bank_branch: '', bank_account_number: '' })}
-                    placeholder="בחר בנק"
-                  />
+                  <div className={hasFieldWarning('bank_name') ? 'rounded-md border border-destructive' : ''}>
+                    <BankAutocomplete
+                      id="bank_name"
+                      value={formData.bank_name}
+                      onChange={(value) => {
+                        setFormData({ ...formData, bank_name: value, bank_branch: '', bank_account_number: '' });
+                        clearFieldWarning('bank_name');
+                      }}
+                      placeholder="בחר בנק"
+                    />
+                  </div>
+                  {hasFieldWarning('bank_name') && <p className="text-sm text-destructive">{getFieldWarning('bank_name')}</p>}
                   {errors.bank_name && <p className="text-sm text-destructive">{errors.bank_name}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bank_branch">סניף *</Label>
-                  <BranchAutocomplete
-                    id="bank_branch"
-                    value={formData.bank_branch}
-                    onChange={(value) => {
-                      setFormData({ ...formData, bank_branch: value });
-                      if (value && formData.bank_name) {
-                        const branches = getBranchesByBank(formData.bank_name);
-                        const branchExists = branches.some(b => b.code === value);
-                        if (branches.length > 0 && !branchExists) {
-                          setErrors(prev => ({ ...prev, bank_branch: `סניף ${value} לא נמצא ברשימת הסניפים` }));
-                        } else {
-                          setErrors(prev => {
-                            const { bank_branch, ...rest } = prev;
-                            return rest;
-                          });
+                  <div className={hasFieldWarning('bank_branch') ? 'rounded-md border border-destructive' : ''}>
+                    <BranchAutocomplete
+                      id="bank_branch"
+                      value={formData.bank_branch}
+                      onChange={(value) => {
+                        setFormData({ ...formData, bank_branch: value });
+                        clearFieldWarning('bank_branch');
+                        if (value && formData.bank_name) {
+                          const branches = getBranchesByBank(formData.bank_name);
+                          const branchExists = branches.some(b => b.code === value);
+                          if (branches.length > 0 && !branchExists) {
+                            setErrors(prev => ({ ...prev, bank_branch: `סניף ${value} לא נמצא ברשימת הסניפים` }));
+                          } else {
+                            setErrors(prev => {
+                              const { bank_branch, ...rest } = prev;
+                              return rest;
+                            });
+                          }
                         }
-                      }
-                    }}
-                    bankName={formData.bank_name}
-                    placeholder="בחר או הקלד מספר סניף"
-                  />
+                      }}
+                      bankName={formData.bank_name}
+                      placeholder="בחר או הקלד מספר סניף"
+                    />
+                  </div>
                   {formData.bank_name && (
                     <p className="text-xs text-muted-foreground">
                       {getBranchesByBank(formData.bank_name).length} סניפים זמינים עבור {formData.bank_name}
                     </p>
                   )}
+                  {hasFieldWarning('bank_branch') && <p className="text-sm text-destructive">{getFieldWarning('bank_branch')}</p>}
                   {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
                 </div>
                 <div className="space-y-2">
@@ -1623,6 +1698,7 @@ export default function VendorForm() {
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, '');
                       setFormData({ ...formData, bank_account_number: value });
+                      clearFieldWarning('bank_account_number');
                       if (value && formData.bank_name) {
                         const validation = validateBankAccount(value, formData.bank_name);
                         if (!validation.valid) {
@@ -1636,7 +1712,7 @@ export default function VendorForm() {
                       }
                     }}
                     placeholder={formData.bank_name ? `${getBankByName(formData.bank_name)?.accountDigits || '6-9'} ספרות` : 'מספר חשבון'}
-                    className="ltr text-right"
+                    className={`ltr text-right ${hasFieldWarning('bank_account_number') ? 'border-destructive' : ''}`}
                     maxLength={9}
                   />
                   {formData.bank_name && getBankByName(formData.bank_name) && (
@@ -1644,6 +1720,7 @@ export default function VendorForm() {
                       {getBankByName(formData.bank_name)?.accountDigits} ספרות נדרשות עבור {formData.bank_name}
                     </p>
                   )}
+                  {hasFieldWarning('bank_account_number') && <p className="text-sm text-destructive">{getFieldWarning('bank_account_number')}</p>}
                   {errors.bank_account_number && <p className="text-sm text-destructive">{errors.bank_account_number}</p>}
                 </div>
               </CardContent>
