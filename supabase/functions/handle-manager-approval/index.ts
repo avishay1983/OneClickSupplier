@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Base URL for the frontend app
-const FRONTEND_URL = "https://ijyqtemnhlbamxmgjuzp.lovable.app";
+const FRONTEND_URL = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovable.app";
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-manager-approval function called");
