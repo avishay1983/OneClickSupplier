@@ -341,8 +341,8 @@ export default function Dashboard() {
                 className="h-10 w-auto"
               />
               <div className="border-r border-white/20 pr-4">
-                <h1 className="text-xl font-bold text-white">מערכת הקמת ספקים</h1>
-                <p className="text-sm text-white/70">ניהול בקשות הקמת ספק חדש</p>
+                <h1 className="text-xl font-bold text-white">ספק בקליק</h1>
+                <p className="text-sm text-white/70">מערכת הקמת ספקים</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
