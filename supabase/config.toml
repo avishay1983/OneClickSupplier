@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.approve-user]
 verify_jwt = false
+
+[functions.send-manager-approval]
+verify_jwt = false
+
+[functions.handle-manager-approval]
+verify_jwt = false

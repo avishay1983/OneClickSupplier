@@ -1,0 +1,210 @@
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Loader2, RefreshCw, CheckCircle2, XCircle, Clock, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+
+interface ManagerApprovalStatusDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  vendorRequestId: string | null;
+  vendorName: string;
+}
+
+interface ApprovalStatus {
+  procurement_manager_approved: boolean | null;
+  procurement_manager_approved_at: string | null;
+  procurement_manager_approved_by: string | null;
+  vp_approved: boolean | null;
+  vp_approved_at: string | null;
+  vp_approved_by: string | null;
+  approval_email_sent_at: string | null;
+}
+
+export function ManagerApprovalStatusDialog({
+  open,
+  onOpenChange,
+  vendorRequestId,
+  vendorName,
+}: ManagerApprovalStatusDialogProps) {
+  const [status, setStatus] = useState<ApprovalStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  useEffect(() => {
+    if (open && vendorRequestId) {
+      fetchStatus();
+    }
+  }, [open, vendorRequestId]);
+
+  const fetchStatus = async () => {
+    if (!vendorRequestId) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .select('procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, vp_approved, vp_approved_at, vp_approved_by, approval_email_sent_at')
+        .eq('id', vendorRequestId)
+        .single();
+
+      if (error) throw error;
+      setStatus(data);
+    } catch (error) {
+      console.error('Error fetching approval status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendApprovalEmails = async () => {
+    if (!vendorRequestId) return;
+    
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-manager-approval', {
+        body: { vendorRequestId },
+      });
+
+      if (error) throw error;
+      if (data && !data.success) throw new Error(data.error);
+
+      toast({
+        title: 'המיילים נשלחו',
+        description: 'בקשות האישור נשלחו למנהל הרכש ולסמנכ"ל',
+      });
+      
+      fetchStatus();
+    } catch (error: any) {
+      console.error('Error sending approval emails:', error);
+      toast({
+        title: 'שגיאה בשליחת המיילים',
+        description: error.message || 'לא ניתן לשלוח את המיילים',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const renderApprovalStatus = (
+    label: string,
+    approved: boolean | null,
+    approvedAt: string | null,
+    approvedBy: string | null
+  ) => {
+    let statusBadge;
+    let statusIcon;
+
+    if (approved === null) {
+      statusBadge = <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />ממתין לאישור</Badge>;
+      statusIcon = <Clock className="h-8 w-8 text-muted-foreground" />;
+    } else if (approved) {
+      statusBadge = <Badge className="bg-success text-success-foreground gap-1"><CheckCircle2 className="h-3 w-3" />אושר</Badge>;
+      statusIcon = <CheckCircle2 className="h-8 w-8 text-success" />;
+    } else {
+      statusBadge = <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />נדחה</Badge>;
+      statusIcon = <XCircle className="h-8 w-8 text-destructive" />;
+    }
+
+    return (
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+        <div className="flex items-center gap-4">
+          {statusIcon}
+          <div>
+            <h4 className="font-medium">{label}</h4>
+            {approvedAt && (
+              <p className="text-sm text-muted-foreground">
+                {new Date(approvedAt).toLocaleDateString('he-IL')} בשעה {new Date(approvedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+            {approvedBy && (
+              <p className="text-sm text-muted-foreground">
+                על ידי: {approvedBy}
+              </p>
+            )}
+          </div>
+        </div>
+        {statusBadge}
+      </div>
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>סטטוס אישור - {vendorName}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={fetchStatus}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : status ? (
+          <div className="space-y-4 py-4">
+            {status.approval_email_sent_at && (
+              <p className="text-sm text-muted-foreground text-center">
+                מייל אישור נשלח בתאריך: {new Date(status.approval_email_sent_at).toLocaleDateString('he-IL')}
+              </p>
+            )}
+            
+            {renderApprovalStatus(
+              'מנהל רכש',
+              status.procurement_manager_approved,
+              status.procurement_manager_approved_at,
+              status.procurement_manager_approved_by
+            )}
+            
+            {renderApprovalStatus(
+              'סמנכ"ל',
+              status.vp_approved,
+              status.vp_approved_at,
+              status.vp_approved_by
+            )}
+
+            <Button
+              onClick={sendApprovalEmails}
+              disabled={isSendingEmail}
+              className="w-full mt-4"
+              variant="outline"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 ml-2" />
+                  {status.approval_email_sent_at ? 'שלח מייל אישור שוב' : 'שלח מייל אישור'}
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            לא ניתן לטעון את סטטוס האישור
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
