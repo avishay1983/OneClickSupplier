@@ -99,9 +99,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function createHtmlResponse(title: string, message: string, success: boolean): Response {
-  const bgColor = success ? '#22c55e' : '#ef4444';
-  const icon = success ? '✓' : '✗';
+function createHtmlResponse(title: string, message: string, success: boolean | null): Response {
+  // success: true = approved (green), false = rejected (red), null = info/already processed (blue)
+  let bgColor = '#3b82f6'; // blue for info
+  let icon = 'ℹ️';
+  
+  if (success === true) {
+    bgColor = '#22c55e'; // green
+    icon = '✓';
+  } else if (success === false) {
+    bgColor = '#ef4444'; // red
+    icon = '✗';
+  }
 
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -110,9 +119,12 @@ function createHtmlResponse(title: string, message: string, success: boolean): R
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title} - ביטוח ישיר</title>
 <style>
+* {
+  box-sizing: border-box;
+}
 body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   margin: 0;
   padding: 20px;
   direction: rtl;
@@ -122,58 +134,85 @@ body {
   justify-content: center;
 }
 .container {
-  max-width: 500px;
+  max-width: 450px;
+  width: 100%;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   overflow: hidden;
   text-align: center;
 }
 .header {
-  background: #1a2b5f;
+  background: linear-gradient(135deg, #1a2b5f 0%, #2d4a8c 100%);
   color: white;
-  padding: 30px;
+  padding: 30px 20px;
 }
-.header img {
-  max-width: 120px;
-  margin-bottom: 15px;
+.header-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+.header-subtitle {
+  font-size: 14px;
+  opacity: 0.8;
+}
+.icon-wrapper {
+  margin-top: -35px;
+  margin-bottom: 20px;
 }
 .icon {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   background: ${bgColor};
   color: white;
-  font-size: 40px;
-  display: flex;
+  font-size: 32px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: -40px auto 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  border: 4px solid white;
 }
 .content {
-  padding: 30px;
+  padding: 10px 30px 40px;
 }
 h1 {
   color: #1a2b5f;
   margin: 0 0 15px;
+  font-size: 24px;
+  font-weight: 600;
 }
-p {
-  color: #666;
+.message {
+  color: #555;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.7;
+  margin: 0;
+}
+.footer {
+  background: #f8f9fa;
+  padding: 15px;
+  font-size: 12px;
+  color: #888;
+  border-top: 1px solid #eee;
 }
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" />
+<div class="header-logo">ביטוח ישיר</div>
+<div class="header-subtitle">מערכת אישור ספקים</div>
 </div>
+<div class="icon-wrapper">
 <div class="icon">${icon}</div>
+</div>
 <div class="content">
 <h1>${title}</h1>
-<p>${message}</p>
+<p class="message">${message}</p>
+</div>
+<div class="footer">
+ניתן לסגור חלון זה
 </div>
 </div>
 </body>
