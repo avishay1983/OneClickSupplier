@@ -136,8 +136,10 @@ const handler = async (req: Request): Promise<Response> => {
 </html>`;
     };
 
-    // Send email to procurement manager
-    if (procurementManagerEmail) {
+    let emailsSent = 0;
+
+    // Send email to procurement manager only if they haven't responded yet
+    if (procurementManagerEmail && vendorRequest.procurement_manager_approved === null) {
       console.log("Sending approval email to procurement manager:", procurementManagerEmail, "Name:", procurementManagerName);
       await client.send({
         from: gmailUser,
@@ -147,10 +149,13 @@ const handler = async (req: Request): Promise<Response> => {
         html: createApprovalEmail('procurement_manager', procurementToken, procurementManagerName),
       });
       console.log("Email sent to procurement manager");
+      emailsSent++;
+    } else if (procurementManagerEmail) {
+      console.log("Skipping procurement manager - already responded:", vendorRequest.procurement_manager_approved);
     }
 
-    // Send email to VP
-    if (vpEmail) {
+    // Send email to VP only if they haven't responded yet
+    if (vpEmail && vendorRequest.vp_approved === null) {
       console.log("Sending approval email to VP:", vpEmail, "Name:", vpName);
       await client.send({
         from: gmailUser,
@@ -160,11 +165,14 @@ const handler = async (req: Request): Promise<Response> => {
         html: createApprovalEmail('vp', vpToken, vpName),
       });
       console.log("Email sent to VP");
+      emailsSent++;
+    } else if (vpEmail) {
+      console.log("Skipping VP - already responded:", vendorRequest.vp_approved);
     }
 
     await client.close();
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, emailsSent }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
