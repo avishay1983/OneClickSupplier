@@ -469,14 +469,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyLink(request.secure_token)}
-                      title="העתק קישור"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
                       onClick={() => openVendorForm(request.secure_token)}
                       title="פתח טופס"
                     >
