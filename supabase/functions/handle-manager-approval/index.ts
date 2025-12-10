@@ -185,11 +185,7 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 </body>
 </html>`;
 
-  // Encode the HTML as UTF-8 bytes
-  const encoder = new TextEncoder();
-  const body = encoder.encode(html);
-
-  return new Response(body, {
+  return new Response(html, {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
