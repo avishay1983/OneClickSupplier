@@ -227,11 +227,12 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 </body>
 </html>`;
 
+  const headers = new Headers();
+  headers.set("Content-Type", "text/html; charset=utf-8");
+  
   return new Response(htmlContent, {
     status: 200,
-    headers: { 
-      "Content-Type": "text/html; charset=utf-8",
-    },
+    headers: headers,
   });
 }
 
