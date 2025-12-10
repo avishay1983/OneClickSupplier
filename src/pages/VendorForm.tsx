@@ -1415,33 +1415,6 @@ export default function VendorForm() {
         ) : (
           /* Step 2: Fill Form */
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* OCR Validation Warnings */}
-            {ocrValidationWarnings.length > 0 && (
-              <Card className="border-destructive bg-destructive/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-destructive flex items-center gap-2 text-lg">
-                    <AlertCircle className="h-5 w-5" />
-                    שים לב - נמצאו בעיות בנתונים שחולצו
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {ocrValidationWarnings.map((warning, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <span className="text-destructive mt-0.5">•</span>
-                        <div>
-                          <span className="font-medium">{warning.fieldLabel}:</span>{' '}
-                          <span className="text-muted-foreground">{warning.message}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    יש לתקן את השדות המסומנים לפני שליחת הטופס.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
             
             {/* Basic Info */}
             <Card>
