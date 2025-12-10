@@ -1,32 +1,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-// Hebrew text as HTML entities to avoid encoding issues
+// Hebrew text as HTML entities - no Hebrew characters in source file
 const HEBREW = {
-  error: '&#1513;&#1490;&#1497;&#1488;&#1492;', // שגיאה
-  missingParams: '&#1508;&#1512;&#1502;&#1496;&#1512;&#1497;&#1501; &#1495;&#1505;&#1512;&#1497;&#1501; &#1489;&#1489;&#1511;&#1513;&#1492;', // פרמטרים חסרים בבקשה
-  vendorNotFound: '&#1489;&#1511;&#1513;&#1514; &#1492;&#1505;&#1508;&#1511; &#1500;&#1488; &#1504;&#1502;&#1510;&#1488;&#1492;', // בקשת הספק לא נמצאה
-  procurementManager: '&#1502;&#1504;&#1492;&#1500; &#1512;&#1499;&#1513;', // מנהל רכש
-  vp: '&#1505;&#1502;&#1504;&#1499;"&#1500;', // סמנכ"ל
-  approved: '&#1488;&#1493;&#1513;&#1512;', // אושר
-  rejected: '&#1504;&#1491;&#1495;&#1492;', // נדחה
-  alreadyProcessed: '&#1499;&#1489;&#1512; &#1496;&#1493;&#1508;&#1500;', // כבר טופל
-  theVendor: '&#1492;&#1505;&#1508;&#1511;', // הספק
-  already: '&#1499;&#1489;&#1512;', // כבר
-  by: '&#1506;&#1500; &#1497;&#1491;&#1497;', // על ידי
-  cannotUpdateApproval: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1488;&#1497;&#1513;&#1493;&#1512;', // לא ניתן לעדכן את האישור
-  approvedSuccessfully: '&#1488;&#1493;&#1513;&#1512; &#1489;&#1492;&#1510;&#1500;&#1495;&#1492;!', // אושר בהצלחה!
-  approvedBy: '&#1488;&#1493;&#1513;&#1512; &#1506;&#1500; &#1497;&#1491;&#1497;', // אושר על ידי
-  cannotUpdateRejection: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1491;&#1495;&#1497;&#1497;&#1492;', // לא ניתן לעדכן את הדחייה
-  rejectedBy: '&#1504;&#1491;&#1495;&#1492; &#1506;&#1500; &#1497;&#1491;&#1497;', // נדחה על ידי
-  invalidAction: '&#1508;&#1506;&#1493;&#1500;&#1492; &#1500;&#1488; &#1514;&#1511;&#1497;&#1504;&#1492;', // פעולה לא תקינה
-  errorOccurred: '&#1488;&#1497;&#1512;&#1506;&#1492; &#1513;&#1490;&#1497;&#1488;&#1492;', // אירעה שגיאה
-  bituachYashir: '&#1489;&#1497;&#1496;&#1493;&#1495; &#1497;&#1513;&#1497;&#1512;', // ביטוח ישיר
-  vendorApprovalSystem: '&#1502;&#1506;&#1512;&#1499;&#1514; &#1488;&#1497;&#1513;&#1493;&#1512; &#1505;&#1508;&#1511;&#1497;&#1501;', // מערכת אישור ספקים
-  canCloseWindow: '&#1504;&#1497;&#1514;&#1503; &#1500;&#1505;&#1490;&#1493;&#1512; &#1495;&#1500;&#1493;&#1503; &#1494;&#1492;', // ניתן לסגור חלון זה
+  error: '&#1513;&#1490;&#1497;&#1488;&#1492;',
+  missingParams: '&#1508;&#1512;&#1502;&#1496;&#1512;&#1497;&#1501; &#1495;&#1505;&#1512;&#1497;&#1501; &#1489;&#1489;&#1511;&#1513;&#1492;',
+  vendorNotFound: '&#1489;&#1511;&#1513;&#1514; &#1492;&#1505;&#1508;&#1511; &#1500;&#1488; &#1504;&#1502;&#1510;&#1488;&#1492;',
+  procurementManager: '&#1502;&#1504;&#1492;&#1500; &#1512;&#1499;&#1513;',
+  procurementManagerDb: '\u05DE\u05E0\u05D4\u05DC \u05E8\u05DB\u05E9',
+  vp: '&#1505;&#1502;&#1504;&#1499;"&#1500;',
+  vpDb: '\u05E1\u05DE\u05E0\u05DB"\u05DC',
+  approved: '&#1488;&#1493;&#1513;&#1512;',
+  rejected: '&#1504;&#1491;&#1495;&#1492;',
+  alreadyProcessed: '&#1499;&#1489;&#1512; &#1496;&#1493;&#1508;&#1500;',
+  theVendor: '&#1492;&#1505;&#1508;&#1511;',
+  already: '&#1499;&#1489;&#1512;',
+  by: '&#1506;&#1500; &#1497;&#1491;&#1497;',
+  cannotUpdateApproval: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1488;&#1497;&#1513;&#1493;&#1512;',
+  approvedSuccessfully: '&#1488;&#1493;&#1513;&#1512; &#1489;&#1492;&#1510;&#1500;&#1495;&#1492;!',
+  approvedBy: '&#1488;&#1493;&#1513;&#1512; &#1506;&#1500; &#1497;&#1491;&#1497;',
+  cannotUpdateRejection: '&#1500;&#1488; &#1504;&#1497;&#1514;&#1503; &#1500;&#1506;&#1491;&#1499;&#1503; &#1488;&#1514; &#1492;&#1491;&#1495;&#1497;&#1497;&#1492;',
+  rejectedBy: '&#1504;&#1491;&#1495;&#1492; &#1506;&#1500; &#1497;&#1491;&#1497;',
+  invalidAction: '&#1508;&#1506;&#1493;&#1500;&#1492; &#1500;&#1488; &#1514;&#1511;&#1497;&#1504;&#1492;',
+  errorOccurred: '&#1488;&#1497;&#1512;&#1506;&#1492; &#1513;&#1490;&#1497;&#1488;&#1492;',
+  bituachYashir: '&#1489;&#1497;&#1496;&#1493;&#1495; &#1497;&#1513;&#1497;&#1512;',
+  vendorApprovalSystem: '&#1502;&#1506;&#1512;&#1499;&#1514; &#1488;&#1497;&#1513;&#1493;&#1512; &#1505;&#1508;&#1511;&#1497;&#1501;',
+  canCloseWindow: '&#1504;&#1497;&#1514;&#1503; &#1500;&#1505;&#1490;&#1493;&#1512; &#1495;&#1500;&#1493;&#1503; &#1494;&#1492;',
 };
 
-// Convert vendor name to HTML entities
 function toHtmlEntities(str: string): string {
   return str.split('').map(char => {
     const code = char.charCodeAt(0);
@@ -57,7 +58,6 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get vendor request
     const { data: vendorRequest, error: fetchError } = await supabase
       .from("vendor_requests")
       .select("*")
@@ -70,14 +70,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const roleLabel = role === 'procurement_manager' ? HEBREW.procurementManager : HEBREW.vp;
-    const roleLabelForDb = role === 'procurement_manager' ? 'מנהל רכש' : 'סמנכ"ל';
+    const roleLabelForDb = role === 'procurement_manager' ? HEBREW.procurementManagerDb : HEBREW.vpDb;
     const approvedField = role === 'procurement_manager' ? 'procurement_manager_approved' : 'vp_approved';
     const approvedAtField = role === 'procurement_manager' ? 'procurement_manager_approved_at' : 'vp_approved_at';
     const approvedByField = role === 'procurement_manager' ? 'procurement_manager_approved_by' : 'vp_approved_by';
 
     const vendorNameEncoded = toHtmlEntities(vendorRequest.vendor_name);
 
-    // Check if already processed
     if (vendorRequest[approvedField] !== null) {
       const status = vendorRequest[approvedField] ? HEBREW.approved : HEBREW.rejected;
       return createHtmlResponse(
@@ -139,15 +138,14 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 function createHtmlResponse(title: string, message: string, success: boolean | null): Response {
-  // success: true = approved (green), false = rejected (red), null = info/already processed (blue)
-  let bgColor = '#3b82f6'; // blue for info
-  let icon = '&#10004;'; // checkmark
+  let bgColor = '#3b82f6';
+  let icon = '&#10004;';
   
   if (success === true) {
-    bgColor = '#22c55e'; // green
+    bgColor = '#22c55e';
     icon = '&#10004;';
   } else if (success === false) {
-    bgColor = '#ef4444'; // red
+    bgColor = '#ef4444';
     icon = '&#10008;';
   }
 
