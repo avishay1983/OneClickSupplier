@@ -21,6 +21,7 @@ import { validateBankBranch, validateBankAccount, getBankByName, BANK_NAMES } fr
 import { getBranchesByBank } from '@/data/bankBranches';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { pdfToImage, isPdfFile } from '@/utils/pdfToImage';
+import mammoth from 'mammoth';
 
 type DocumentType = 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot';
 
@@ -191,10 +192,65 @@ export default function VendorForm() {
     }
   }, []);
 
+  // Check if file is DOCX
+  const isDocxFile = (file: File): boolean => {
+    return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+           file.name.toLowerCase().endsWith('.docx');
+  };
+
+  // Extract text from DOCX file
+  const extractTextFromDocx = async (file: File): Promise<string | null> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value;
+    } catch (error) {
+      console.error('Error extracting text from DOCX:', error);
+      return null;
+    }
+  };
+
+  // Extract document data from text content
+  const extractDocumentDataFromText = useCallback(async (textContent: string, documentType: string): Promise<ExtractedDocumentData | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-document-text', {
+        body: { textContent, documentType },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        console.log('Text extraction error:', data.error);
+        return null;
+      }
+
+      if (data?.extracted) {
+        console.log(`Extracted data from text (${documentType}):`, data.extracted);
+        return data.extracted as ExtractedDocumentData;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('Text extraction error:', err);
+      return null;
+    }
+  }, []);
+
   // Process OCR on any document file
   const processOcrOnDocument = async (file: File, documentType: string): Promise<ExtractedDocumentData | null> => {
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
+    const isDocx = isDocxFile(file);
+    
+    // Handle DOCX files by extracting text and sending to AI
+    if (isDocx) {
+      const textContent = await extractTextFromDocx(file);
+      if (!textContent) {
+        console.log('Could not extract text from DOCX');
+        return null;
+      }
+      return await extractDocumentDataFromText(textContent, documentType);
+    }
     
     if (!isImage && !isPdf) {
       return null;
