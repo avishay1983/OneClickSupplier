@@ -185,9 +185,15 @@ h1 { color: #1a2b5f; margin: 0 0 15px; font-size: 24px; font-weight: 600; }
 </body>
 </html>`;
 
-  // Encode as UTF-8 bytes
+  // Add UTF-8 BOM and encode as bytes
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
   const encoder = new TextEncoder();
-  const body = encoder.encode(htmlContent);
+  const htmlBytes = encoder.encode(htmlContent);
+  
+  // Combine BOM + HTML content
+  const body = new Uint8Array(bom.length + htmlBytes.length);
+  body.set(bom, 0);
+  body.set(htmlBytes, bom.length);
 
   return new Response(body, {
     status: 200,
