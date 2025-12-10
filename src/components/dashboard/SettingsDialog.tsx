@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -16,8 +17,18 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface AppSettings {
+  master_otp_code: string;
+  car_manager_email: string;
+  vp_email: string;
+}
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [masterOtpCode, setMasterOtpCode] = useState('');
+  const [settings, setSettings] = useState<AppSettings>({
+    master_otp_code: '',
+    car_manager_email: '',
+    vp_email: '',
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -32,12 +43,23 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     try {
       const { data, error } = await supabase
         .from('app_settings' as any)
-        .select('setting_value')
-        .eq('setting_key', 'master_otp_code')
-        .single();
+        .select('setting_key, setting_value');
 
       if (error) throw error;
-      setMasterOtpCode((data as any)?.setting_value || '');
+      
+      const settingsMap: AppSettings = {
+        master_otp_code: '',
+        car_manager_email: '',
+        vp_email: '',
+      };
+      
+      (data as any[])?.forEach((item: any) => {
+        if (item.setting_key in settingsMap) {
+          settingsMap[item.setting_key as keyof AppSettings] = item.setting_value;
+        }
+      });
+      
+      setSettings(settingsMap);
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -46,7 +68,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   const handleSave = async () => {
-    if (!masterOtpCode.trim()) {
+    if (!settings.master_otp_code.trim()) {
       toast({
         title: 'שגיאה',
         description: 'יש להזין קוד ברירת מחדל',
@@ -57,16 +79,27 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('app_settings' as any)
-        .update({ setting_value: masterOtpCode.trim() })
-        .eq('setting_key', 'master_otp_code');
+      // Update or insert each setting
+      const settingsToSave = [
+        { key: 'master_otp_code', value: settings.master_otp_code.trim() },
+        { key: 'car_manager_email', value: settings.car_manager_email.trim() },
+        { key: 'vp_email', value: settings.vp_email.trim() },
+      ];
 
-      if (error) throw error;
+      for (const setting of settingsToSave) {
+        const { error } = await supabase
+          .from('app_settings' as any)
+          .upsert(
+            { setting_key: setting.key, setting_value: setting.value },
+            { onConflict: 'setting_key' }
+          );
+
+        if (error) throw error;
+      }
 
       toast({
         title: 'ההגדרות נשמרו',
-        description: 'קוד ברירת המחדל עודכן בהצלחה',
+        description: 'ההגדרות עודכנו בהצלחה',
       });
       onOpenChange(false);
     } catch (error) {
@@ -81,26 +114,70 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   };
 
+  const updateSetting = (key: keyof AppSettings, value: string) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" dir="rtl">
+      <DialogContent className="sm:max-w-[500px]" dir="rtl">
         <DialogHeader>
           <DialogTitle>הגדרות מערכת</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-6 py-4">
+          {/* OTP Settings */}
           <div className="space-y-2">
             <Label htmlFor="masterOtp">קוד OTP ברירת מחדל</Label>
             <Input
               id="masterOtp"
-              value={masterOtpCode}
-              onChange={(e) => setMasterOtpCode(e.target.value)}
+              value={settings.master_otp_code}
+              onChange={(e) => updateSetting('master_otp_code', e.target.value)}
               placeholder="הזן קוד ברירת מחדל"
               disabled={isLoading}
               className="text-right"
             />
             <p className="text-sm text-muted-foreground">
               קוד זה יעבוד תמיד לפתיחת טפסי ספקים, בנוסף לקוד שנשלח במייל
+            </p>
+          </div>
+
+          <Separator />
+
+          {/* Approval Emails */}
+          <div className="space-y-4">
+            <h3 className="font-medium">כתובות מייל לאישור הקמת ספק</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="carManagerEmail">מייל מנהל רכב</Label>
+              <Input
+                id="carManagerEmail"
+                type="email"
+                value={settings.car_manager_email}
+                onChange={(e) => updateSetting('car_manager_email', e.target.value)}
+                placeholder="הזן כתובת מייל"
+                disabled={isLoading}
+                className="text-right"
+                dir="ltr"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vpEmail">מייל סמנכ"ל</Label>
+              <Input
+                id="vpEmail"
+                type="email"
+                value={settings.vp_email}
+                onChange={(e) => updateSetting('vp_email', e.target.value)}
+                placeholder="הזן כתובת מייל"
+                disabled={isLoading}
+                className="text-right"
+                dir="ltr"
+              />
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              כתובות אלו יקבלו מייל עם כל פרטי הספק לאחר שליחת הטופס
             </p>
           </div>
         </div>
