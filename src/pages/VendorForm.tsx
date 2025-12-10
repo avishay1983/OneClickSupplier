@@ -521,11 +521,14 @@ export default function VendorForm() {
 
       const ocrResults = await Promise.all(ocrPromises);
       
+      console.log('OCR Results:', ocrResults);
+      
       // Merge all extracted data - later documents override earlier ones for same fields
       const mergedData: Partial<typeof formData> = {};
       let extractedFieldsCount = 0;
       
       for (const { docType, data } of ocrResults) {
+        console.log(`Processing OCR result for ${docType}:`, data);
         if (!data) continue;
         
         // Company ID
@@ -596,6 +599,9 @@ export default function VendorForm() {
         }
       }
       
+      console.log('Merged OCR data:', mergedData);
+      console.log('Extracted fields count:', extractedFieldsCount);
+      
       // Apply merged data to form - OCR data from NEW files overrides existing values
       const finalUpdates: Partial<typeof formData> = {};
       
@@ -611,10 +617,17 @@ export default function VendorForm() {
       if (mergedData.bank_branch) finalUpdates.bank_branch = mergedData.bank_branch;
       if (mergedData.bank_account_number) finalUpdates.bank_account_number = mergedData.bank_account_number;
       
+      console.log('Final updates to apply:', finalUpdates);
+      console.log('Current formData before update:', formData);
+      
       const appliedFieldsCount = Object.keys(finalUpdates).length;
       
       if (appliedFieldsCount > 0) {
-        setFormData(prev => ({ ...prev, ...finalUpdates }));
+        setFormData(prev => {
+          const newData = { ...prev, ...finalUpdates };
+          console.log('New formData after update:', newData);
+          return newData;
+        });
         toast({
           title: 'נתונים זוהו והוזנו',
           description: `${appliedFieldsCount} שדות מולאו אוטומטית מהמסמכים שהועלו`,
