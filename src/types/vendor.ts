@@ -65,9 +65,9 @@ export interface VendorDocument {
 }
 
 export const STATUS_LABELS: Record<VendorStatus, string> = {
-  pending: 'ממתין',
-  with_vendor: 'אצל הספק',
-  submitted: 'הוגש',
+  pending: 'ממתין לספק',
+  with_vendor: 'ממתין לספק',
+  submitted: 'ממתין לאישור הקמת ספק',
   approved: 'אושר',
   resent: 'נשלח מחדש',
 };

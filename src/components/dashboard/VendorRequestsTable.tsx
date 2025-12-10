@@ -305,7 +305,8 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">הכל</SelectItem>
-              <SelectItem value="with_vendor">אצל הספק</SelectItem>
+              <SelectItem value="with_vendor">ממתין לספק</SelectItem>
+              <SelectItem value="submitted">ממתין לאישור</SelectItem>
               <SelectItem value="resent">נשלח מחדש</SelectItem>
               <SelectItem value="approved">אושר</SelectItem>
             </SelectContent>
