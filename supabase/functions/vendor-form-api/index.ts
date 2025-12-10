@@ -128,6 +128,28 @@ const handler = async (req: Request): Promise<Response> => {
           throw updateError;
         }
 
+        // Send approval emails to procurement manager and VP
+        try {
+          const baseUrl = supabaseUrl.replace('/rest/v1', '');
+          const response = await fetch(`${baseUrl}/functions/v1/send-manager-approval`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ vendorRequestId: vendorRequest.id }),
+          });
+          
+          if (!response.ok) {
+            console.error("Failed to send manager approval emails");
+          } else {
+            console.log("Manager approval emails sent successfully");
+          }
+        } catch (emailError) {
+          console.error("Error sending manager approval emails:", emailError);
+          // Don't fail the submission if emails fail
+        }
+
         return new Response(
           JSON.stringify({ success: true, vendorName: vendorRequest.vendor_name, vendorEmail: vendorRequest.vendor_email }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }

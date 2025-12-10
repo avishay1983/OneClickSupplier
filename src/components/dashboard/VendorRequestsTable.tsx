@@ -10,12 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
 import { EditRequestDialog } from './EditRequestDialog';
+import { ManagerApprovalStatusDialog } from './ManagerApprovalStatusDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -70,6 +71,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [approvalStatusDialogOpen, setApprovalStatusDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -434,6 +436,20 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
+                    {request.status === 'submitted' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setApprovalStatusDialogOpen(true);
+                        }}
+                        title="סטטוס אישור מנהלים"
+                        className="text-primary"
+                      >
+                        <ClipboardCheck className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -533,6 +549,12 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             request={selectedRequest}
             onSuccess={() => { onRefresh ? onRefresh() : window.location.reload(); }}
             currentUserName={currentUserName}
+          />
+          <ManagerApprovalStatusDialog
+            open={approvalStatusDialogOpen}
+            onOpenChange={setApprovalStatusDialogOpen}
+            vendorRequestId={selectedRequest.id}
+            vendorName={selectedRequest.vendor_name}
           />
         </>
       )}

@@ -143,6 +143,7 @@ export type Database = {
         Row: {
           accounting_contact_name: string | null
           accounting_contact_phone: string | null
+          approval_email_sent_at: string | null
           approver_name: string | null
           bank_account_number: string | null
           bank_branch: string | null
@@ -176,6 +177,9 @@ export type Database = {
           phone: string | null
           po_box: string | null
           postal_code: string | null
+          procurement_manager_approved: boolean | null
+          procurement_manager_approved_at: string | null
+          procurement_manager_approved_by: string | null
           quote_received: boolean | null
           sales_contact_name: string | null
           sales_contact_phone: string | null
@@ -190,10 +194,14 @@ export type Database = {
           vendor_email: string
           vendor_name: string
           vendor_type: string | null
+          vp_approved: boolean | null
+          vp_approved_at: string | null
+          vp_approved_by: string | null
         }
         Insert: {
           accounting_contact_name?: string | null
           accounting_contact_phone?: string | null
+          approval_email_sent_at?: string | null
           approver_name?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
@@ -227,6 +235,9 @@ export type Database = {
           phone?: string | null
           po_box?: string | null
           postal_code?: string | null
+          procurement_manager_approved?: boolean | null
+          procurement_manager_approved_at?: string | null
+          procurement_manager_approved_by?: string | null
           quote_received?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
@@ -241,10 +252,14 @@ export type Database = {
           vendor_email: string
           vendor_name: string
           vendor_type?: string | null
+          vp_approved?: boolean | null
+          vp_approved_at?: string | null
+          vp_approved_by?: string | null
         }
         Update: {
           accounting_contact_name?: string | null
           accounting_contact_phone?: string | null
+          approval_email_sent_at?: string | null
           approver_name?: string | null
           bank_account_number?: string | null
           bank_branch?: string | null
@@ -278,6 +293,9 @@ export type Database = {
           phone?: string | null
           po_box?: string | null
           postal_code?: string | null
+          procurement_manager_approved?: boolean | null
+          procurement_manager_approved_at?: string | null
+          procurement_manager_approved_by?: string | null
           quote_received?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
@@ -292,6 +310,9 @@ export type Database = {
           vendor_email?: string
           vendor_name?: string
           vendor_type?: string | null
+          vp_approved?: boolean | null
+          vp_approved_at?: string | null
+          vp_approved_by?: string | null
         }
         Relationships: []
       }
