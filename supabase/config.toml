@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.handle-manager-approval]
 verify_jwt = false
+
+[functions.extract-document-text]
+verify_jwt = false
