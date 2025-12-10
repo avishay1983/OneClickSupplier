@@ -33,6 +33,24 @@ interface ExtractedBankData {
   error?: string;
 }
 
+interface ExtractedDocumentData {
+  company_id?: string | null;
+  company_name?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  fax?: string | null;
+  email?: string | null;
+  city?: string | null;
+  street?: string | null;
+  street_number?: string | null;
+  postal_code?: string | null;
+  bank_number?: string | null;
+  branch_number?: string | null;
+  account_number?: string | null;
+  confidence?: string;
+  notes?: string;
+}
+
 interface ExistingDocument {
   file_name: string;
   file_path: string;
@@ -147,7 +165,65 @@ export default function VendorForm() {
     }
   }, []);
 
-  // Process OCR on bank confirmation file
+  // OCR extraction function for all document data
+  const extractDocumentDataFromBase64 = useCallback(async (base64: string, mimeType: string, documentType: string): Promise<ExtractedDocumentData | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-document-data', {
+        body: { imageBase64: base64, mimeType, documentType },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        console.log('OCR error:', data.error);
+        return null;
+      }
+
+      if (data?.extracted) {
+        console.log(`Extracted data from ${documentType}:`, data.extracted);
+        return data.extracted as ExtractedDocumentData;
+      }
+
+      return null;
+    } catch (err) {
+      console.error('OCR extraction error:', err);
+      return null;
+    }
+  }, []);
+
+  // Process OCR on any document file
+  const processOcrOnDocument = async (file: File, documentType: string): Promise<ExtractedDocumentData | null> => {
+    const isImage = file.type.startsWith('image/');
+    const isPdf = isPdfFile(file);
+    
+    if (!isImage && !isPdf) {
+      return null;
+    }
+
+    let imageData: { base64: string; mimeType: string } | null = null;
+    
+    if (isPdf) {
+      imageData = await pdfToImage(file);
+      if (!imageData) return null;
+    } else {
+      const reader = new FileReader();
+      imageData = await new Promise<{ base64: string; mimeType: string } | null>((resolve) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve({ base64: base64Data, mimeType: file.type });
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (!imageData) return null;
+
+    return await extractDocumentDataFromBase64(imageData.base64, imageData.mimeType, documentType);
+  };
+
+  // Process OCR on bank confirmation file (legacy function for step 2)
   const processOcrOnBankFile = async (file: File): Promise<ExtractedBankData | null> => {
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
@@ -350,7 +426,7 @@ export default function VendorForm() {
     }
   };
 
-  // Handle proceeding from step 1 to step 2 with OCR
+  // Handle proceeding from step 1 to step 2 with OCR on all documents
   const handleProceedToForm = async () => {
     // Validate all documents are uploaded
     const requiredDocs: DocumentType[] = ['bookkeeping_cert', 'tax_cert', 'bank_confirmation', 'invoice_screenshot'];
@@ -368,60 +444,133 @@ export default function VendorForm() {
     setIsProcessingOcr(true);
     
     try {
-      // Process OCR on bank_confirmation if we have a new file
-      const bankFile = files.bank_confirmation;
-      if (bankFile) {
-        toast({
-          title: 'מעבד מסמכים...',
-          description: 'מחלץ נתוני בנק מהמסמכים שהועלו',
-        });
+      toast({
+        title: 'מעבד מסמכים...',
+        description: 'מחלץ נתונים מכל המסמכים שהועלו',
+      });
+
+      // Process OCR on all new files
+      const ocrPromises: Promise<{ docType: DocumentType; data: ExtractedDocumentData | null }>[] = [];
+      
+      for (const docType of requiredDocs) {
+        const file = files[docType];
+        if (file) {
+          ocrPromises.push(
+            processOcrOnDocument(file, docType).then(data => ({ docType, data }))
+          );
+        }
+      }
+
+      const ocrResults = await Promise.all(ocrPromises);
+      
+      // Merge all extracted data - later documents override earlier ones for same fields
+      const mergedData: Partial<typeof formData> = {};
+      let extractedFieldsCount = 0;
+      
+      for (const { docType, data } of ocrResults) {
+        if (!data) continue;
         
-        const extracted = await processOcrOnBankFile(bankFile);
+        // Company ID
+        if (data.company_id && !mergedData.company_id) {
+          mergedData.company_id = data.company_id;
+          extractedFieldsCount++;
+        }
         
-        if (extracted && !extracted.error) {
-          setExtractedBankData(extracted);
-          
-          const noDataExtracted = !extracted.bank_number && !extracted.branch_number && !extracted.account_number;
-          
-          if (!noDataExtracted) {
-            // Auto-fill the form with extracted data
-            const updates: Partial<typeof formData> = {};
-            
-            if (extracted.bank_number) {
-              const bankName = getBankNameFromCode(extracted.bank_number);
-              if (bankName) {
-                updates.bank_name = bankName;
-              }
+        // Phone numbers
+        if (data.phone && !mergedData.phone) {
+          mergedData.phone = data.phone;
+          extractedFieldsCount++;
+        }
+        if (data.mobile && !mergedData.mobile) {
+          mergedData.mobile = data.mobile;
+          extractedFieldsCount++;
+        }
+        
+        // Address
+        if (data.city && !mergedData.city) {
+          mergedData.city = data.city;
+          extractedFieldsCount++;
+        }
+        if (data.street && !mergedData.street) {
+          mergedData.street = data.street;
+          extractedFieldsCount++;
+        }
+        if (data.street_number && !mergedData.street_number) {
+          mergedData.street_number = data.street_number;
+          extractedFieldsCount++;
+        }
+        if (data.postal_code && !mergedData.postal_code) {
+          mergedData.postal_code = data.postal_code;
+          extractedFieldsCount++;
+        }
+        
+        // Bank details (prefer from bank_confirmation document)
+        if (docType === 'bank_confirmation' || !mergedData.bank_name) {
+          if (data.bank_number) {
+            const bankName = getBankNameFromCode(data.bank_number);
+            if (bankName) {
+              mergedData.bank_name = bankName;
+              extractedFieldsCount++;
             }
-            
-            if (extracted.branch_number) {
-              updates.bank_branch = extracted.branch_number;
-            }
-            
-            if (extracted.account_number) {
-              updates.bank_account_number = extracted.account_number;
-            }
-            
-            setFormData(prev => ({ ...prev, ...updates }));
-            
-            toast({
-              title: 'נתוני בנק זוהו והוזנו',
-              description: 'פרטי הבנק עודכנו אוטומטית מהמסמך שהועלה',
-            });
-          } else {
-            toast({
-              title: 'לא זוהו נתוני בנק',
-              description: 'לא ניתן היה לחלץ פרטי בנק מהמסמך - יש למלא ידנית',
-              variant: 'destructive',
-            });
           }
-        } else {
-          toast({
-            title: 'לא ניתן לעבד את המסמך',
-            description: 'יש למלא את פרטי הבנק ידנית',
-            variant: 'destructive',
+        }
+        if (docType === 'bank_confirmation' || !mergedData.bank_branch) {
+          if (data.branch_number) {
+            mergedData.bank_branch = data.branch_number;
+            extractedFieldsCount++;
+          }
+        }
+        if (docType === 'bank_confirmation' || !mergedData.bank_account_number) {
+          if (data.account_number) {
+            mergedData.bank_account_number = data.account_number;
+            extractedFieldsCount++;
+          }
+        }
+        
+        // Store bank data for extracted tags
+        if (docType === 'bank_confirmation' && (data.bank_number || data.branch_number || data.account_number)) {
+          setExtractedBankData({
+            bank_number: data.bank_number || null,
+            branch_number: data.branch_number || null,
+            account_number: data.account_number || null,
+            confidence: data.confidence,
           });
         }
+      }
+      
+      // Apply merged data to form (only fill empty fields)
+      const finalUpdates: Partial<typeof formData> = {};
+      
+      if (mergedData.company_id && !formData.company_id) finalUpdates.company_id = mergedData.company_id;
+      if (mergedData.phone && !formData.phone) finalUpdates.phone = mergedData.phone;
+      if (mergedData.mobile && !formData.mobile) finalUpdates.mobile = mergedData.mobile;
+      if (mergedData.city && !formData.city) finalUpdates.city = mergedData.city;
+      if (mergedData.street && !formData.street) finalUpdates.street = mergedData.street;
+      if (mergedData.street_number && !formData.street_number) finalUpdates.street_number = mergedData.street_number;
+      if (mergedData.postal_code && !formData.postal_code) finalUpdates.postal_code = mergedData.postal_code;
+      if (mergedData.bank_name && !formData.bank_name) finalUpdates.bank_name = mergedData.bank_name;
+      if (mergedData.bank_branch && !formData.bank_branch) finalUpdates.bank_branch = mergedData.bank_branch;
+      if (mergedData.bank_account_number && !formData.bank_account_number) finalUpdates.bank_account_number = mergedData.bank_account_number;
+      
+      const appliedFieldsCount = Object.keys(finalUpdates).length;
+      
+      if (appliedFieldsCount > 0) {
+        setFormData(prev => ({ ...prev, ...finalUpdates }));
+        toast({
+          title: 'נתונים זוהו והוזנו',
+          description: `${appliedFieldsCount} שדות מולאו אוטומטית מהמסמכים שהועלו`,
+        });
+      } else if (extractedFieldsCount > 0) {
+        toast({
+          title: 'נתונים זוהו',
+          description: 'הנתונים שזוהו כבר קיימים בטופס',
+        });
+      } else {
+        toast({
+          title: 'לא זוהו נתונים',
+          description: 'לא ניתן היה לחלץ נתונים מהמסמכים - יש למלא ידנית',
+          variant: 'destructive',
+        });
       }
       
       setCurrentStep(2);
