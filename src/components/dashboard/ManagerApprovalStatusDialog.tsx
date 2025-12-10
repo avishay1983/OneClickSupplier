@@ -64,13 +64,13 @@ export function ManagerApprovalStatusDialog({
     }
   };
 
-  const sendApprovalEmails = async (targetRole?: 'procurement_manager' | 'vp') => {
+  const sendApprovalEmails = async (targetRole?: 'procurement_manager' | 'vp', forceResend?: boolean) => {
     if (!vendorRequestId) return;
     
     setSendingTarget(targetRole || 'all');
     try {
       const { data, error } = await supabase.functions.invoke('send-manager-approval', {
-        body: { vendorRequestId, targetRole },
+        body: { vendorRequestId, targetRole, forceResend },
       });
 
       if (error) throw error;
@@ -145,21 +145,19 @@ export function ManagerApprovalStatusDialog({
         </div>
         <div className="flex items-center gap-2">
           {statusBadge}
-          {approved === null && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => sendApprovalEmails(role)}
-              disabled={sendingTarget !== null}
-              title={`שלח מייל ל${label}`}
-            >
-              {sendingTarget === role ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Mail className="h-4 w-4" />
-              )}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => sendApprovalEmails(role, true)}
+            disabled={sendingTarget !== null}
+            title={`שלח מייל ל${label}`}
+          >
+            {sendingTarget === role ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
     );
