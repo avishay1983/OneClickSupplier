@@ -596,19 +596,20 @@ export default function VendorForm() {
         }
       }
       
-      // Apply merged data to form (only fill empty fields)
+      // Apply merged data to form - OCR data from NEW files overrides existing values
       const finalUpdates: Partial<typeof formData> = {};
       
-      if (mergedData.company_id && !formData.company_id) finalUpdates.company_id = mergedData.company_id;
-      if (mergedData.phone && !formData.phone) finalUpdates.phone = mergedData.phone;
-      if (mergedData.mobile && !formData.mobile) finalUpdates.mobile = mergedData.mobile;
-      if (mergedData.city && !formData.city) finalUpdates.city = mergedData.city;
-      if (mergedData.street && !formData.street) finalUpdates.street = mergedData.street;
-      if (mergedData.street_number && !formData.street_number) finalUpdates.street_number = mergedData.street_number;
-      if (mergedData.postal_code && !formData.postal_code) finalUpdates.postal_code = mergedData.postal_code;
-      if (mergedData.bank_name && !formData.bank_name) finalUpdates.bank_name = mergedData.bank_name;
-      if (mergedData.bank_branch && !formData.bank_branch) finalUpdates.bank_branch = mergedData.bank_branch;
-      if (mergedData.bank_account_number && !formData.bank_account_number) finalUpdates.bank_account_number = mergedData.bank_account_number;
+      // For newly uploaded documents, allow OCR data to override existing form values
+      if (mergedData.company_id) finalUpdates.company_id = mergedData.company_id;
+      if (mergedData.phone) finalUpdates.phone = mergedData.phone;
+      if (mergedData.mobile) finalUpdates.mobile = mergedData.mobile;
+      if (mergedData.city) finalUpdates.city = mergedData.city;
+      if (mergedData.street) finalUpdates.street = mergedData.street;
+      if (mergedData.street_number) finalUpdates.street_number = mergedData.street_number;
+      if (mergedData.postal_code) finalUpdates.postal_code = mergedData.postal_code;
+      if (mergedData.bank_name) finalUpdates.bank_name = mergedData.bank_name;
+      if (mergedData.bank_branch) finalUpdates.bank_branch = mergedData.bank_branch;
+      if (mergedData.bank_account_number) finalUpdates.bank_account_number = mergedData.bank_account_number;
       
       const appliedFieldsCount = Object.keys(finalUpdates).length;
       
