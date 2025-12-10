@@ -68,18 +68,18 @@ export default function VendorStatus() {
       }
       
       try {
-        const { data, error } = await supabase
-          .from('vendor_requests')
-          .select('vendor_name, status, created_at, updated_at')
-          .eq('secure_token', token)
-          .maybeSingle();
+        const { data, error } = await supabase.functions.invoke('vendor-status', {
+          body: { token },
+        });
 
         if (error) throw error;
         
-        if (!data) {
+        if (data?.error === 'not_found' || !data?.data) {
           setNotFound(true);
+        } else if (data?.success && data?.data) {
+          setStatusData(data.data as VendorStatusData);
         } else {
-          setStatusData(data as VendorStatusData);
+          setNotFound(true);
         }
       } catch (error) {
         console.error('Error fetching status:', error);

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.extract-document-text]
 verify_jwt = false
+
+[functions.vendor-status]
+verify_jwt = false
