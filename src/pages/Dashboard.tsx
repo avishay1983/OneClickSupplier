@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading, signOut } = useAuth();
+  const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<VendorRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -349,15 +349,17 @@ export default function Dashboard() {
               <span className="text-white/70 text-sm hidden sm:inline">
                 {user.email}
               </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setApprovalsOpen(true)}
-                className="text-white hover:bg-white/10"
-                title="בקשות הרשמה"
-              >
-                <Users className="h-5 w-5" />
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setApprovalsOpen(true)}
+                  className="text-white hover:bg-white/10"
+                  title="בקשות הרשמה"
+                >
+                  <Users className="h-5 w-5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
