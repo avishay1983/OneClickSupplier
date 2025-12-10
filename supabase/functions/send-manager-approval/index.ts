@@ -10,6 +10,7 @@ const corsHeaders = {
 interface SendManagerApprovalRequest {
   vendorRequestId: string;
   targetRole?: 'procurement_manager' | 'vp';
+  forceResend?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,8 +21,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { vendorRequestId, targetRole }: SendManagerApprovalRequest = await req.json();
-    console.log("Processing approval request for vendor:", vendorRequestId, "Target role:", targetRole || 'all');
+    const { vendorRequestId, targetRole, forceResend }: SendManagerApprovalRequest = await req.json();
+    console.log("Processing approval request for vendor:", vendorRequestId, "Target role:", targetRole || 'all', "Force resend:", forceResend);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -139,10 +140,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     let emailsSent = 0;
 
-    // Send email to procurement manager only if they haven't responded yet and target matches
-    const shouldSendToProcurement = (!targetRole || targetRole === 'procurement_manager') && 
-                                     procurementManagerEmail && 
-                                     vendorRequest.procurement_manager_approved === null;
+    // For individual sends (targetRole specified), forceResend allows sending even if already responded
+    // For "send to all pending" (no targetRole), only send to those who haven't responded
+    const shouldSendToProcurement = targetRole === 'procurement_manager' 
+      ? (forceResend || vendorRequest.procurement_manager_approved === null) && procurementManagerEmail
+      : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null);
     
     if (shouldSendToProcurement) {
       console.log("Sending approval email to procurement manager:", procurementManagerEmail, "Name:", procurementManagerName);
@@ -155,14 +157,14 @@ const handler = async (req: Request): Promise<Response> => {
       });
       console.log("Email sent to procurement manager");
       emailsSent++;
-    } else if (targetRole === 'procurement_manager') {
-      console.log("Skipping procurement manager - already responded:", vendorRequest.procurement_manager_approved);
+    } else {
+      console.log("Skipping procurement manager - condition not met");
     }
 
-    // Send email to VP only if they haven't responded yet and target matches
-    const shouldSendToVp = (!targetRole || targetRole === 'vp') && 
-                           vpEmail && 
-                           vendorRequest.vp_approved === null;
+    // Same logic for VP
+    const shouldSendToVp = targetRole === 'vp'
+      ? (forceResend || vendorRequest.vp_approved === null) && vpEmail
+      : (!targetRole && vpEmail && vendorRequest.vp_approved === null);
     
     if (shouldSendToVp) {
       console.log("Sending approval email to VP:", vpEmail, "Name:", vpName);
@@ -175,8 +177,8 @@ const handler = async (req: Request): Promise<Response> => {
       });
       console.log("Email sent to VP");
       emailsSent++;
-    } else if (targetRole === 'vp') {
-      console.log("Skipping VP - already responded:", vendorRequest.vp_approved);
+    } else {
+      console.log("Skipping VP - condition not met");
     }
 
     await client.close();
