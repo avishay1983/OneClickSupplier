@@ -19,33 +19,65 @@ function encodeBase64(str: string): string {
   return btoa(String.fromCharCode(...data));
 }
 
-// Send email via raw SMTP with proper UTF-8 encoding
+// Send email via raw SMTP with PDF attachment
 async function sendEmailViaSMTP(
   gmailUser: string,
   gmailPassword: string,
   to: string,
   subject: string,
-  htmlContent: string
+  htmlContent: string,
+  attachment?: { filename: string; content: Uint8Array } | null
 ): Promise<void> {
   const subjectBase64 = encodeBase64(subject);
   const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
 
   const boundary = "----=_Part_" + Date.now();
-  const rawEmail = [
-    `From: ${gmailUser}`,
-    `To: ${to}`,
-    `Subject: ${encodedSubject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    ``,
-    `--${boundary}`,
-    `Content-Type: text/html; charset=UTF-8`,
-    `Content-Transfer-Encoding: base64`,
-    ``,
-    encodeBase64(htmlContent),
-    ``,
-    `--${boundary}--`,
-  ].join("\r\n");
+  
+  let rawEmail: string;
+  
+  if (attachment) {
+    // Email with attachment
+    const attachmentBase64 = btoa(String.fromCharCode(...attachment.content));
+    rawEmail = [
+      `From: ${gmailUser}`,
+      `To: ${to}`,
+      `Subject: ${encodedSubject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      encodeBase64(htmlContent),
+      ``,
+      `--${boundary}`,
+      `Content-Type: application/pdf; name="${attachment.filename}"`,
+      `Content-Disposition: attachment; filename="${attachment.filename}"`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      attachmentBase64,
+      ``,
+      `--${boundary}--`,
+    ].join("\r\n");
+  } else {
+    // Email without attachment
+    rawEmail = [
+      `From: ${gmailUser}`,
+      `To: ${to}`,
+      `Subject: ${encodedSubject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      encodeBase64(htmlContent),
+      ``,
+      `--${boundary}--`,
+    ].join("\r\n");
+  }
 
   const conn = await Deno.connectTls({
     hostname: "smtp.gmail.com",
@@ -133,8 +165,26 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Gmail credentials not configured");
     }
 
-    const procurementToken = crypto.randomUUID();
-    const vpToken = crypto.randomUUID();
+    // Download contract PDF if exists
+    let contractAttachment: { filename: string; content: Uint8Array } | null = null;
+    
+    if (vendorRequest.requires_contract_signature && vendorRequest.contract_file_path) {
+      console.log("Downloading contract file:", vendorRequest.contract_file_path);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("vendor_documents")
+        .download(vendorRequest.contract_file_path);
+      
+      if (downloadError) {
+        console.error("Error downloading contract:", downloadError);
+      } else if (fileData) {
+        const arrayBuffer = await fileData.arrayBuffer();
+        contractAttachment = {
+          filename: `contract_${vendorRequest.vendor_name}.pdf`,
+          content: new Uint8Array(arrayBuffer),
+        };
+        console.log("Contract file downloaded successfully");
+      }
+    }
 
     await supabase
       .from("vendor_requests")
@@ -143,12 +193,24 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .eq("id", vendorRequestId);
 
-    const baseUrl = Deno.env.get("SUPABASE_URL")!.replace('.supabase.co', '');
-    const projectRef = baseUrl.split('//')[1];
+    // Get the app URL for signing link
+    const appUrl = "https://id-preview--ijyqtemnhlbamxmgjuzp.lovable.app";
 
-    const createApprovalEmail = (role: 'procurement_manager' | 'vp', token: string, recipientName: string) => {
-      const approveLink = `https://${projectRef}.supabase.co/functions/v1/handle-manager-approval?action=approve&role=${role}&vendorId=${vendorRequestId}&token=${token}`;
-      const rejectLink = `https://${projectRef}.supabase.co/functions/v1/handle-manager-approval?action=reject&role=${role}&vendorId=${vendorRequestId}&token=${token}`;
+    const createApprovalEmail = (role: 'procurement_manager' | 'vp', recipientName: string, hasContract: boolean) => {
+      const signingLink = `${appUrl}/dashboard`;
+      
+      // Different content based on whether contract signature is required
+      const actionSection = hasContract 
+        ? `<div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <h3 style="margin: 0 0 15px 0; color: #0369a1;">נדרשת חתימה דיגיטלית</h3>
+            <p style="margin: 10px 0; color: #333;">החוזה מצורף למייל זה.</p>
+            <p style="margin: 10px 0; color: #333;">אנא פתח את הקובץ המצורף, חתום עליו דיגיטלית, וצרף את הקובץ החתום במערכת.</p>
+            <a href="${signingLink}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px;">היכנס למערכת לחתימה</a>
+          </div>`
+        : `<div style="background: #f0fdf4; border: 2px solid #16a34a; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <p style="margin: 10px 0; color: #333;">אנא היכנס למערכת לאישור הבקשה.</p>
+            <a href="${signingLink}" style="display: inline-block; background: #16a34a; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px;">היכנס למערכת</a>
+          </div>`;
 
       return `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -159,11 +221,11 @@ const handler = async (req: Request): Promise<Response> => {
 <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
 <div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
 <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
-<h1 style="margin: 0; text-align: center; color: white;">אישור הקמת ספק</h1>
+<h1 style="margin: 0; text-align: center; color: white;">${hasContract ? 'חוזה לחתימה - הקמת ספק' : 'אישור הקמת ספק'}</h1>
 </div>
 <div style="padding: 30px;">
 <p style="margin: 12px 0;">שלום ${recipientName},</p>
-<p style="margin: 12px 0;">ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.</p>
+<p style="margin: 12px 0;">${hasContract ? 'ספק חדש דורש את חתימתך על החוזה המצורף.' : 'ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.'}</p>
 <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
 <h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי הספק:</h3>
 <table style="width: 100%; border-collapse: collapse;">
@@ -177,10 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
 <tr><td style="padding: 8px 0;"><strong>חשבון:</strong></td><td style="padding: 8px 0;">${vendorRequest.bank_account_number || '-'}</td></tr>
 </table>
 </div>
-<div style="text-align: center; margin: 30px 0;">
-<a href="${approveLink}" style="display: inline-block; background: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 10px;">אשר ספק ✓</a>
-<a href="${rejectLink}" style="display: inline-block; background: #ef4444; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 10px;">דחה ספק ✗</a>
-</div>
+${actionSection}
 <p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
 </div>
 </div>
@@ -189,14 +248,19 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     let emailsSent = 0;
+    const hasContract = !!contractAttachment;
 
     const shouldSendToProcurement = targetRole === 'procurement_manager' 
-      ? (forceResend || vendorRequest.procurement_manager_approved === null) && procurementManagerEmail
-      : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null);
+      ? (forceResend || (vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true)) && procurementManagerEmail
+      : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true);
     
     if (shouldSendToProcurement) {
-      const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementToken, procurementManagerName);
-      await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail, `אישור הקמת ספק - ${vendorRequest.vendor_name}`, procurementEmailHtml);
+      const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementManagerName, hasContract);
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail, 
+        hasContract ? `חוזה לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
+        procurementEmailHtml, 
+        contractAttachment
+      );
       console.log("Email sent to procurement manager");
       emailsSent++;
     } else {
@@ -204,12 +268,16 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const shouldSendToVp = targetRole === 'vp'
-      ? (forceResend || vendorRequest.vp_approved === null) && vpEmail
-      : (!targetRole && vpEmail && vendorRequest.vp_approved === null);
+      ? (forceResend || (vendorRequest.vp_approved === null && vendorRequest.ceo_signed !== true)) && vpEmail
+      : (!targetRole && vpEmail && vendorRequest.vp_approved === null && vendorRequest.ceo_signed !== true);
     
     if (shouldSendToVp) {
-      const vpEmailHtml = createApprovalEmail('vp', vpToken, vpName);
-      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail, `אישור הקמת ספק - ${vendorRequest.vendor_name}`, vpEmailHtml);
+      const vpEmailHtml = createApprovalEmail('vp', vpName, hasContract);
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail, 
+        hasContract ? `חוזה לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
+        vpEmailHtml, 
+        contractAttachment
+      );
       console.log("Email sent to VP");
       emailsSent++;
     } else {
