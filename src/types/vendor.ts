@@ -1,5 +1,7 @@
 export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent' | 'first_review' | 'rejected';
 
+export type CRMVendorStatus = 'active' | 'suspended' | 'closed' | 'vip';
+
 export interface VendorRequest {
   id: string;
   created_at: string;
@@ -49,6 +51,9 @@ export interface VendorRequest {
   // Payment
   payment_method: 'check' | 'invoice' | 'transfer' | null;
   payment_terms: string;
+  
+  // CRM
+  crm_status: CRMVendorStatus | null;
 }
 
 export interface VendorDocument {
@@ -110,4 +115,11 @@ export const CLAIMS_SUB_CATEGORY_LABELS: Record<string, string> = {
   // Home
   plumber: 'שרברב',
   management: 'חברת ניהול',
+};
+
+export const CRM_STATUS_LABELS: Record<CRMVendorStatus, string> = {
+  active: 'פעיל',
+  suspended: 'מושהה',
+  closed: 'סגור',
+  vip: 'VIP',
 };

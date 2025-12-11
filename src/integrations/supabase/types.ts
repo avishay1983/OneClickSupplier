@@ -38,6 +38,47 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_history: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          vendor_request_id: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          vendor_request_id: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          vendor_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_history_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_approvals: {
         Row: {
           approval_token: string
@@ -175,6 +216,7 @@ export type Database = {
           company_id: string | null
           contract_signed: boolean | null
           created_at: string
+          crm_status: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending: number | null
           expires_at: string | null
           fax: string | null
@@ -235,6 +277,7 @@ export type Database = {
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string
+          crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
@@ -295,6 +338,7 @@ export type Database = {
           company_id?: string | null
           contract_signed?: boolean | null
           created_at?: string
+          crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
           expires_at?: string | null
           fax?: string | null
@@ -394,6 +438,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      crm_vendor_status: "active" | "suspended" | "closed" | "vip"
       document_type:
         | "bookkeeping_cert"
         | "tax_cert"
@@ -536,6 +581,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      crm_vendor_status: ["active", "suspended", "closed", "vip"],
       document_type: [
         "bookkeeping_cert",
         "tax_cert",

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2 } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
@@ -358,6 +358,14 @@ export default function Dashboard() {
               <span className="text-white/70 text-sm hidden sm:inline">
                 {user.email}
               </span>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/crm')}
+                className="text-white hover:bg-white/10 gap-2"
+              >
+                <Building2 className="h-5 w-5" />
+                <span className="hidden sm:inline">CRM ספקים</span>
+              </Button>
               {isAdmin && (
                 <Button
                   variant="ghost"

@@ -9,6 +9,7 @@ import VendorForm from "./pages/VendorForm";
 import VendorStatus from "./pages/VendorStatus";
 import Auth from "./pages/Auth";
 import ManagerApprovalResult from "./pages/ManagerApprovalResult";
+import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/crm" element={<CRM />} />
             <Route path="/vendor/:token" element={<VendorForm />} />
             <Route path="/vendor-status/:token" element={<VendorStatus />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
