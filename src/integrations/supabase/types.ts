@@ -210,11 +210,16 @@ export type Database = {
           bank_account_number: string | null
           bank_branch: string | null
           bank_name: string | null
+          ceo_signed: boolean | null
+          ceo_signed_at: string | null
+          ceo_signed_by: string | null
           city: string | null
           claims_area: string | null
           claims_sub_category: string | null
           company_id: string | null
+          contract_file_path: string | null
           contract_signed: boolean | null
+          contract_uploaded_at: string | null
           created_at: string
           crm_status: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending: number | null
@@ -245,7 +250,11 @@ export type Database = {
           procurement_manager_approved: boolean | null
           procurement_manager_approved_at: string | null
           procurement_manager_approved_by: string | null
+          procurement_manager_signed: boolean | null
+          procurement_manager_signed_at: string | null
+          procurement_manager_signed_by: string | null
           quote_received: boolean | null
+          requires_contract_signature: boolean | null
           sales_contact_name: string | null
           sales_contact_phone: string | null
           second_signature_approved: boolean | null
@@ -271,11 +280,16 @@ export type Database = {
           bank_account_number?: string | null
           bank_branch?: string | null
           bank_name?: string | null
+          ceo_signed?: boolean | null
+          ceo_signed_at?: string | null
+          ceo_signed_by?: string | null
           city?: string | null
           claims_area?: string | null
           claims_sub_category?: string | null
           company_id?: string | null
+          contract_file_path?: string | null
           contract_signed?: boolean | null
+          contract_uploaded_at?: string | null
           created_at?: string
           crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
@@ -306,7 +320,11 @@ export type Database = {
           procurement_manager_approved?: boolean | null
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
+          procurement_manager_signed?: boolean | null
+          procurement_manager_signed_at?: string | null
+          procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
+          requires_contract_signature?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
           second_signature_approved?: boolean | null
@@ -332,11 +350,16 @@ export type Database = {
           bank_account_number?: string | null
           bank_branch?: string | null
           bank_name?: string | null
+          ceo_signed?: boolean | null
+          ceo_signed_at?: string | null
+          ceo_signed_by?: string | null
           city?: string | null
           claims_area?: string | null
           claims_sub_category?: string | null
           company_id?: string | null
+          contract_file_path?: string | null
           contract_signed?: boolean | null
+          contract_uploaded_at?: string | null
           created_at?: string
           crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
@@ -367,7 +390,11 @@ export type Database = {
           procurement_manager_approved?: boolean | null
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
+          procurement_manager_signed?: boolean | null
+          procurement_manager_signed_at?: string | null
+          procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
+          requires_contract_signature?: boolean | null
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
           second_signature_approved?: boolean | null

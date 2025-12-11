@@ -33,6 +33,7 @@ export interface NewRequestData {
   claims_sub_category: string | null;
   handler_name: string;
   handler_email: string;
+  requires_contract_signature: boolean;
 }
 
 export interface BulkVendorData {
@@ -66,6 +67,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     claims_sub_category: null,
     handler_name: '',
     handler_email: '',
+    requires_contract_signature: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -128,6 +130,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       claims_sub_category: null,
       handler_name: '',
       handler_email: '',
+      requires_contract_signature: false,
     });
     setBulkVendors([]);
     setUploadedFileName('');
@@ -583,6 +586,19 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       checked={formData.is_sensitive}
                       onCheckedChange={(checked) => 
                         setFormData({ ...formData, is_sensitive: checked as boolean })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 justify-end col-span-2 mt-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                    <Label htmlFor="requires_contract_signature" className="cursor-pointer text-warning-foreground">
+                      נדרשת חתימה על הסכם (מנכ"ל + מנהל רכש)
+                    </Label>
+                    <Checkbox
+                      id="requires_contract_signature"
+                      checked={formData.requires_contract_signature}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, requires_contract_signature: checked as boolean })
                       }
                     />
                   </div>
