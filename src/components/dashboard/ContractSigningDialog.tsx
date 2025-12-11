@@ -231,13 +231,20 @@ export function ContractSigningDialog({
       const lastPage = pages[pages.length - 1];
       
       // Calculate signature position based on role
+      // Position signatures at the bottom of the page, side by side
       const sigWidth = 150;
       const sigHeight = 60;
       const margin = 50;
-      const yPosition = margin;
+      const pageHeight = lastPage.getHeight();
+      const pageWidth = lastPage.getWidth();
+      
+      // VP signature on the right side, Procurement on the left
+      const yPosition = 100; // 100 points from bottom
       const xPosition = signerRole === 'ceo' 
-        ? lastPage.getWidth() - sigWidth - margin 
-        : margin;
+        ? pageWidth - sigWidth - margin  // Right side for VP
+        : margin;  // Left side for Procurement Manager
+      
+      console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight });
       
       // Draw signature
       lastPage.drawImage(signatureImage, {
