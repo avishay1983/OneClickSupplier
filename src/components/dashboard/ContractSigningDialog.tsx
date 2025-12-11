@@ -231,18 +231,17 @@ export function ContractSigningDialog({
       const lastPage = pages[pages.length - 1];
       
       // Calculate signature position based on role
-      // Position signatures at the bottom of the page, side by side
-      const sigWidth = 150;
-      const sigHeight = 60;
-      const margin = 50;
+      // Position signature above the signature line at bottom of page
+      const sigWidth = 120;
+      const sigHeight = 50;
       const pageHeight = lastPage.getHeight();
       const pageWidth = lastPage.getWidth();
       
-      // VP signature on the right side, Procurement on the left
-      const yPosition = 100; // 100 points from bottom
-      const xPosition = signerRole === 'ceo' 
-        ? pageWidth - sigWidth - margin  // Right side for VP
-        : margin;  // Left side for Procurement Manager
+      // VP signature centered above the signature line
+      // The signature line "סמנכ"ל" is approximately 50-60 points from bottom
+      // Place signature just above it (around 70-100 from bottom)
+      const yPosition = 75; // Just above the signature line text
+      const xPosition = (pageWidth - sigWidth) / 2; // Centered horizontally
       
       console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight });
       
@@ -254,20 +253,11 @@ export function ContractSigningDialog({
         height: sigHeight,
       });
       
-      // Add signature label in English (Hebrew not supported by pdf-lib standard fonts)
-      const roleLabel = signerRole === 'ceo' ? 'VP' : 'Procurement Manager';
-      lastPage.drawText(roleLabel, {
-        x: xPosition + sigWidth / 2 - 20,
-        y: yPosition + sigHeight + 5,
-        size: 10,
-        color: rgb(0, 0, 0),
-      });
-      
-      // Add date in international format
+      // Add date below signature in international format
       const dateStr = new Date().toLocaleDateString('en-GB');
       lastPage.drawText(dateStr, {
-        x: xPosition + sigWidth / 2 - 25,
-        y: yPosition - 15,
+        x: xPosition + sigWidth / 2 - 20,
+        y: yPosition - 12,
         size: 8,
         color: rgb(0.3, 0.3, 0.3),
       });
