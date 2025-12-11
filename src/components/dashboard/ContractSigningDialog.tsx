@@ -231,19 +231,26 @@ export function ContractSigningDialog({
       const lastPage = pages[pages.length - 1];
       
       // Calculate signature position based on role
-      // Position signature above the signature line at bottom of page
-      const sigWidth = 120;
-      const sigHeight = 50;
+      // There are 3 signature areas: VP (left), Procurement (center), Vendor (right)
+      const sigWidth = 100;
+      const sigHeight = 40;
       const pageHeight = lastPage.getHeight();
       const pageWidth = lastPage.getWidth();
       
-      // VP signature centered above the signature line
-      // The signature line "סמנכ"ל" is approximately 50-60 points from bottom
-      // Place signature just above it (around 70-100 from bottom)
-      const yPosition = 75; // Just above the signature line text
-      const xPosition = (pageWidth - sigWidth) / 2; // Centered horizontally
+      // The signature lines are approximately at 55% from bottom of page
+      // VP is on the LEFT (in Hebrew RTL layout), Procurement in CENTER
+      const yPosition = pageHeight * 0.52; // About 52% from bottom (above the signature lines)
       
-      console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight });
+      let xPosition: number;
+      if (signerRole === 'ceo') {
+        // VP signature on the LEFT side (under "סמנכ"ל")
+        xPosition = 50;
+      } else {
+        // Procurement signature in the CENTER (under "מנהל רכש")
+        xPosition = (pageWidth - sigWidth) / 2;
+      }
+      
+      console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight, signerRole });
       
       // Draw signature
       lastPage.drawImage(signatureImage, {
@@ -253,12 +260,12 @@ export function ContractSigningDialog({
         height: sigHeight,
       });
       
-      // Add date below signature in international format
+      // Add date below signature
       const dateStr = new Date().toLocaleDateString('en-GB');
       lastPage.drawText(dateStr, {
         x: xPosition + sigWidth / 2 - 20,
-        y: yPosition - 12,
-        size: 8,
+        y: yPosition - 10,
+        size: 7,
         color: rgb(0.3, 0.3, 0.3),
       });
 
