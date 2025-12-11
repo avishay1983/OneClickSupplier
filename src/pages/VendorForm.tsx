@@ -1180,30 +1180,32 @@ export default function VendorForm() {
     );
   }
 
-  // Contract upload handler
+  // Contract upload handler - uses Edge Function for unauthenticated vendor access
   const handleContractUpload = async () => {
     if (!contractFile || !token || !request) return;
     
     setIsUploadingContract(true);
     try {
-      const filePath = `contracts/${request.id}/${contractFile.name}`;
+      const formData = new FormData();
+      formData.append('token', token);
+      formData.append('documentType', 'contract');
+      formData.append('file', contractFile);
+
+      const response = await fetch(
+        `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Upload failed');
+      }
       
-      const { error: uploadError } = await supabase.storage
-        .from('vendor_documents')
-        .upload(filePath, contractFile, { upsert: true });
-      
-      if (uploadError) throw uploadError;
-      
-      // Update the vendor request with contract path
-      const { error: updateError } = await supabase
-        .from('vendor_requests')
-        .update({
-          contract_file_path: filePath,
-          contract_uploaded_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
-      
-      if (updateError) throw updateError;
+      // The Edge Function already updates contract_file_path
       
       toast({
         title: 'החוזה הועלה בהצלחה',
