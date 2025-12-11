@@ -37,25 +37,36 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [showUserExistsMessage, setShowUserExistsMessage] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [showUpdatePassword, setShowUpdatePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        // Don't redirect if we're in password recovery mode
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const type = hashParams.get('type');
+        if (type !== 'recovery') {
+          navigate('/');
+        }
       }
     };
     checkSession();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+      if (event === 'PASSWORD_RECOVERY') {
+        setShowUpdatePassword(true);
+      } else if (session && !showUpdatePassword) {
         navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, showUpdatePassword]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,6 +257,131 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    if (newPassword.length < 6) {
+      setErrors({ newPassword: 'סיסמה חייבת להכיל לפחות 6 תווים' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrors({ confirmPassword: 'הסיסמאות אינן תואמות' });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        toast({
+          title: 'שגיאה',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'הסיסמה עודכנה בהצלחה',
+        description: 'כעת תוכל להתחבר עם הסיסמה החדשה',
+      });
+
+      // Sign out and redirect to login
+      await supabase.auth.signOut();
+      setShowUpdatePassword(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      console.error('Update password error:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'אירעה שגיאה בעדכון הסיסמה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update password form (after clicking email link)
+  if (showUpdatePassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4" dir="rtl">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <img 
+                src="/images/bituach-yashir-logo.png" 
+                alt="ביטוח ישיר" 
+                className="h-12 mx-auto"
+              />
+            </div>
+            <CardTitle className="text-2xl">עדכון סיסמה</CardTitle>
+            <CardDescription>הזן את הסיסמה החדשה שלך</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">סיסמה חדשה</Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="new-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-10 pl-10"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">אימות סיסמה</Label>
+                <div className="relative">
+                  <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-10 pl-10"
+                    dir="ltr"
+                  />
+                </div>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    מעדכן...
+                  </>
+                ) : (
+                  'עדכן סיסמה'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Reset password form
   if (showResetPassword) {
