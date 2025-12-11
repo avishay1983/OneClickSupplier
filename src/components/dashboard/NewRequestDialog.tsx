@@ -25,7 +25,6 @@ export interface NewRequestData {
   quote_received: boolean;
   contract_signed: boolean;
   legal_approved: boolean;
-  approver_name: string;
   is_consultant: boolean;
   is_sensitive: boolean;
   expires_in_days: number;
@@ -57,7 +56,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     quote_received: false,
     contract_signed: false,
     legal_approved: false,
-    approver_name: '',
     is_consultant: false,
     is_sensitive: false,
     expires_in_days: 7,
@@ -120,7 +118,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       quote_received: false,
       contract_signed: false,
       legal_approved: false,
-      approver_name: '',
       is_consultant: false,
       is_sensitive: false,
       expires_in_days: 7,
@@ -489,16 +486,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="approver_name" className="block text-right">שם המאשר</Label>
-                  <Input
-                    id="approver_name"
-                    className="text-right"
-                    value={formData.approver_name}
-                    onChange={(e) => setFormData({ ...formData, approver_name: e.target.value })}
-                    placeholder="הכנס שם מאשר"
-                  />
-                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="expires_in_days" className="block text-right">תוקף הקישור</Label>
