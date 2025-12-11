@@ -204,8 +204,9 @@ export default function Dashboard() {
             status: 'with_vendor',
             payment_terms: 'שוטף + 60',
             expires_at: expiresAt.toISOString(),
-            handler_name: currentUserName,
+            handler_name: vendor.handler_name || currentUserName,
             handler_email: user?.email || null,
+            vendor_type: vendor.vendor_type || 'general',
           });
 
         if (error) {

@@ -39,6 +39,8 @@ export interface BulkVendorData {
   vendor_name: string;
   vendor_email: string;
   expires_in_days: number;
+  handler_name: string;
+  vendor_type: 'general' | 'claims';
 }
 
 const emailSchema = z.string().email('כתובת אימייל לא תקינה');
@@ -170,12 +172,16 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
         return;
       }
 
-      // Try to find name and email columns (support Hebrew and English)
+      // Try to find columns (support Hebrew and English)
       const nameHeaders = ['שם ספק', 'שם הספק', 'vendor_name', 'name', 'שם'];
       const emailHeaders = ['אימייל', 'מייל', 'vendor_email', 'email', 'דוא"ל'];
+      const handlerHeaders = ['מטפל בתיק', 'מטפל', 'handler_name', 'handler'];
+      const typeHeaders = ['סוג ספק', 'סוג', 'vendor_type', 'type'];
 
       let nameColIndex = -1;
       let emailColIndex = -1;
+      let handlerColIndex = -1;
+      let typeColIndex = -1;
 
       headerRow.forEach((header, index) => {
         const lowerHeader = String(header).toLowerCase().trim();
@@ -185,11 +191,19 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
         if (emailHeaders.some(h => lowerHeader.includes(h.toLowerCase()))) {
           emailColIndex = index;
         }
+        if (handlerHeaders.some(h => lowerHeader.includes(h.toLowerCase()))) {
+          handlerColIndex = index;
+        }
+        if (typeHeaders.some(h => lowerHeader.includes(h.toLowerCase()))) {
+          typeColIndex = index;
+        }
       });
 
-      // If not found by header, assume first two columns
+      // If not found by header, assume first columns
       if (nameColIndex === -1) nameColIndex = 0;
       if (emailColIndex === -1) emailColIndex = 1;
+      if (handlerColIndex === -1) handlerColIndex = 2;
+      if (typeColIndex === -1) typeColIndex = 3;
 
       const vendors: BulkVendorData[] = [];
       const invalidRows: number[] = [];
@@ -200,6 +214,14 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
         const name = String(row[nameColIndex] || '').trim();
         const email = String(row[emailColIndex] || '').trim();
+        const handler = String(row[handlerColIndex] || '').trim();
+        const typeRaw = String(row[typeColIndex] || '').trim().toLowerCase();
+        
+        // Map Hebrew vendor type to English
+        let vendorType: 'general' | 'claims' = 'general';
+        if (typeRaw === 'תביעות' || typeRaw === 'claims') {
+          vendorType = 'claims';
+        }
 
         if (!name || !email) continue;
 
@@ -213,6 +235,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
           vendor_name: name,
           vendor_email: email,
           expires_in_days: bulkExpiresInDays,
+          handler_name: handler,
+          vendor_type: vendorType,
         });
       }
 
@@ -303,8 +327,9 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['שם ספק', 'אימייל'],
-      ['ספק לדוגמא', 'example@vendor.com'],
+      ['שם ספק', 'אימייל', 'מטפל בתיק', 'סוג ספק'],
+      ['ספק לדוגמא', 'example@vendor.com', 'ישראל ישראלי', 'כללי'],
+      ['ספק תביעות לדוגמא', 'claims@vendor.com', 'יוסי כהן', 'תביעות'],
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'ספקים');
