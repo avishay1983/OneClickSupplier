@@ -43,6 +43,7 @@ export function ContractSigningDialog({
   const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null);
   const [signerRole, setSignerRole] = useState<'ceo' | 'procurement' | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [userRole, setUserRole] = useState<'ceo' | 'procurement' | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
 
@@ -52,15 +53,41 @@ export function ContractSigningDialog({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Get current user name
+        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
+        let currentUserEmail = '';
+        
         if (user) {
+          currentUserEmail = user.email || '';
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)
             .maybeSingle();
           setUserName(profile?.full_name || user.email || 'משתמש');
+        }
+
+        // Get app settings to determine user role
+        const { data: settings } = await supabase
+          .from('app_settings')
+          .select('setting_key, setting_value');
+        
+        const settingsMap: Record<string, string> = {};
+        settings?.forEach((s) => {
+          settingsMap[s.setting_key] = s.setting_value;
+        });
+
+        const vpEmail = settingsMap.vp_email?.toLowerCase();
+        const procurementEmail = settingsMap.car_manager_email?.toLowerCase();
+        const userEmailLower = currentUserEmail.toLowerCase();
+
+        // Determine user's role based on their email
+        if (userEmailLower === vpEmail) {
+          setUserRole('ceo');
+        } else if (userEmailLower === procurementEmail) {
+          setUserRole('procurement');
+        } else {
+          setUserRole(null);
         }
 
         // Get contract status
@@ -395,63 +422,75 @@ export function ContractSigningDialog({
               </div>
             </div>
 
-            {/* CEO Signature */}
-            <div className={`p-4 border rounded-lg ${signatureStatus.ceoSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {signatureStatus.ceoSigned ? (
-                    <CheckCircle className="h-6 w-6 text-success" />
-                  ) : (
-                    <Pen className="h-6 w-6 text-muted-foreground" />
-                  )}
-                  <div>
-                    <h4 className="font-medium">חתימת סמנכ"ל</h4>
+            {/* VP Signature - show only to VP */}
+            {userRole === 'ceo' && (
+              <div className={`p-4 border rounded-lg ${signatureStatus.ceoSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     {signatureStatus.ceoSigned ? (
-                      <p className="text-sm text-success">
-                        נחתם ע"י {signatureStatus.ceoSignedBy} ב-{formatDate(signatureStatus.ceoSignedAt)}
-                      </p>
+                      <CheckCircle className="h-6 w-6 text-success" />
                     ) : (
-                      <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
+                      <Pen className="h-6 w-6 text-muted-foreground" />
                     )}
+                    <div>
+                      <h4 className="font-medium">חתימת סמנכ"ל</h4>
+                      {signatureStatus.ceoSigned ? (
+                        <p className="text-sm text-success">
+                          נחתם ע"י {signatureStatus.ceoSignedBy} ב-{formatDate(signatureStatus.ceoSignedAt)}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {!signatureStatus.ceoSigned && (
-                  <Button onClick={() => setSignerRole('ceo')} className="gap-2">
-                    <Pen className="h-4 w-4" />
-                    חתום כסמנכ"ל
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Procurement Manager Signature */}
-            <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {signatureStatus.procurementSigned ? (
-                    <CheckCircle className="h-6 w-6 text-success" />
-                  ) : (
-                    <Pen className="h-6 w-6 text-muted-foreground" />
+                  {!signatureStatus.ceoSigned && (
+                    <Button onClick={() => setSignerRole('ceo')} className="gap-2">
+                      <Pen className="h-4 w-4" />
+                      חתום כסמנכ"ל
+                    </Button>
                   )}
-                  <div>
-                    <h4 className="font-medium">חתימת מנהל רכש</h4>
-                    {signatureStatus.procurementSigned ? (
-                      <p className="text-sm text-success">
-                        נחתם ע"י {signatureStatus.procurementSignedBy} ב-{formatDate(signatureStatus.procurementSignedAt)}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
-                    )}
-                  </div>
                 </div>
-                {!signatureStatus.procurementSigned && (
-                  <Button onClick={() => setSignerRole('procurement')} className="gap-2">
-                    <Pen className="h-4 w-4" />
-                    חתום כמנהל רכש
-                  </Button>
-                )}
               </div>
-            </div>
+            )}
+
+            {/* Procurement Manager Signature - show only to Procurement Manager */}
+            {userRole === 'procurement' && (
+              <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {signatureStatus.procurementSigned ? (
+                      <CheckCircle className="h-6 w-6 text-success" />
+                    ) : (
+                      <Pen className="h-6 w-6 text-muted-foreground" />
+                    )}
+                    <div>
+                      <h4 className="font-medium">חתימת מנהל רכש</h4>
+                      {signatureStatus.procurementSigned ? (
+                        <p className="text-sm text-success">
+                          נחתם ע"י {signatureStatus.procurementSignedBy} ב-{formatDate(signatureStatus.procurementSignedAt)}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
+                      )}
+                    </div>
+                  </div>
+                  {!signatureStatus.procurementSigned && (
+                    <Button onClick={() => setSignerRole('procurement')} className="gap-2">
+                      <Pen className="h-4 w-4" />
+                      חתום כמנהל רכש
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Show message if user is not authorized to sign */}
+            {userRole === null && (
+              <div className="text-center p-4 bg-warning/10 rounded-lg border border-warning/30">
+                <p className="text-warning-foreground">אינך מורשה לחתום על הסכם זה</p>
+                <p className="text-sm text-muted-foreground mt-1">רק מנהל רכש או סמנכ"ל יכולים לחתום</p>
+              </div>
+            )}
 
             {/* Status summary */}
             {signatureStatus.ceoSigned && signatureStatus.procurementSigned && (
