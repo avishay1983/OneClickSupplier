@@ -274,15 +274,27 @@ export function ContractSigningDialog({
 
       // Save the modified PDF
       const modifiedPdfBytes = await pdfDoc.save();
-      const modifiedPdfBlob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: 'application/pdf' });
+      console.log('Modified PDF size:', modifiedPdfBytes.byteLength, 'bytes');
       
-      // Upload the signed PDF (overwrite)
-      const { error: uploadError } = await supabase.storage
+      const modifiedPdfBlob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: 'application/pdf' });
+      console.log('Blob size:', modifiedPdfBlob.size, 'bytes');
+      
+      // Upload the signed PDF (overwrite) - use update method for existing files
+      console.log('Uploading to path:', signatureStatus.contractFilePath);
+      
+      // First remove the old file, then upload new one
+      await supabase.storage
+        .from('vendor_documents')
+        .remove([signatureStatus.contractFilePath]);
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vendor_documents')
         .upload(signatureStatus.contractFilePath, modifiedPdfBlob, {
+          cacheControl: '0',
           upsert: true,
         });
 
+      console.log('Upload result:', uploadData, 'Error:', uploadError);
       if (uploadError) throw uploadError;
 
       // Update database with signature info
@@ -376,16 +388,24 @@ export function ContractSigningDialog({
     if (!signatureStatus?.contractFilePath) return;
 
     try {
+      // Add cache-busting timestamp to force fresh download
+      const timestamp = Date.now();
+      console.log('Downloading contract with cache-bust:', timestamp);
+      
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(signatureStatus.contractFilePath);
+        .download(signatureStatus.contractFilePath, {
+          transform: {
+            quality: 100,
+          },
+        });
 
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `contract_${vendorName}.pdf`;
+      a.download = `contract_${vendorName}_${timestamp}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
