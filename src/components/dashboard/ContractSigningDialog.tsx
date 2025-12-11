@@ -553,12 +553,10 @@ export function ContractSigningDialog({
                       )}
                     </div>
                   </div>
-                  {!signatureStatus.ceoSigned && (
-                    <Button onClick={() => setSignerRole('ceo')} className="gap-2">
-                      <Pen className="h-4 w-4" />
-                      חתום כסמנכ"ל
-                    </Button>
-                  )}
+                  <Button onClick={() => setSignerRole('ceo')} className="gap-2" variant={signatureStatus.ceoSigned ? "outline" : "default"}>
+                    <Pen className="h-4 w-4" />
+                    {signatureStatus.ceoSigned ? 'חתום מחדש' : 'חתום כסמנכ"ל'}
+                  </Button>
                 </div>
               </div>
             )}
