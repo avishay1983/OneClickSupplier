@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.send-handler-notification]
 verify_jwt = false
+
+[functions.send-vendor-rejection]
+verify_jwt = false
