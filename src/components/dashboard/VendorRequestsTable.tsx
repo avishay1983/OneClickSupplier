@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info, FileSignature } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -24,6 +24,7 @@ import { StatusHistoryDialog } from './StatusHistoryDialog';
 import { EditRequestDialog } from './EditRequestDialog';
 import { ManagerApprovalStatusDialog } from './ManagerApprovalStatusDialog';
 import { HandlerApprovalDialog } from './HandlerApprovalDialog';
+import { ContractSigningDialog } from './ContractSigningDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -86,6 +87,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [approvalStatusDialogOpen, setApprovalStatusDialogOpen] = useState(false);
   const [handlerApprovalDialogOpen, setHandlerApprovalDialogOpen] = useState(false);
+  const [contractSigningDialogOpen, setContractSigningDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -481,6 +483,20 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                         <ClipboardCheck className="h-4 w-4" />
                       </Button>
                     )}
+                    {request.requires_contract_signature && request.contract_file_path && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setContractSigningDialogOpen(true);
+                        }}
+                        title="חתימה על הסכם"
+                        className={`${request.ceo_signed && request.procurement_manager_signed ? 'text-success' : 'text-warning'}`}
+                      >
+                        <FileSignature className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -594,6 +610,13 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             vendorName={selectedRequest.vendor_name}
             vendorEmail={selectedRequest.vendor_email}
             onActionComplete={() => { onRefresh ? onRefresh() : window.location.reload(); }}
+          />
+          <ContractSigningDialog
+            open={contractSigningDialogOpen}
+            onOpenChange={setContractSigningDialogOpen}
+            vendorRequestId={selectedRequest.id}
+            vendorName={selectedRequest.vendor_name}
+            onSignComplete={() => { onRefresh ? onRefresh() : window.location.reload(); }}
           />
         </>
       )}

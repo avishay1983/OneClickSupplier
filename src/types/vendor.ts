@@ -26,6 +26,17 @@ export interface VendorRequest {
   handler_name: string | null;
   handler_rejection_reason: string | null;
   
+  // Contract signature fields
+  requires_contract_signature: boolean;
+  contract_file_path: string | null;
+  contract_uploaded_at: string | null;
+  ceo_signed: boolean;
+  ceo_signed_at: string | null;
+  ceo_signed_by: string | null;
+  procurement_manager_signed: boolean;
+  procurement_manager_signed_at: string | null;
+  procurement_manager_signed_by: string | null;
+  
   // Vendor fields
   company_id: string | null;
   phone: string | null;
