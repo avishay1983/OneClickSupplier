@@ -125,44 +125,46 @@ export function ContractSigningDialog({
 
   // Initialize signature pad when role is selected
   useEffect(() => {
-    if (signerRole && canvasRef.current) {
-      // Wait for next frame to ensure canvas is rendered
-      const timeoutId = setTimeout(() => {
-        if (canvasRef.current) {
-          const canvas = canvasRef.current;
-          const container = canvas.parentElement;
-          
-          if (container) {
-            // Get container dimensions
-            const rect = container.getBoundingClientRect();
-            
-            // Set canvas dimensions directly (no devicePixelRatio scaling)
-            // This prevents offset issues with mouse/touch input
-            canvas.width = rect.width;
-            canvas.height = 200;
-            canvas.style.width = `${rect.width}px`;
-            canvas.style.height = '200px';
-            
-            console.log('Canvas initialized:', { width: canvas.width, height: canvas.height });
-          }
-          
-          // Initialize SignaturePad after canvas is sized
-          signaturePadRef.current = new SignaturePad(canvas, {
-            backgroundColor: 'rgb(255, 255, 255)',
-            penColor: 'rgb(0, 0, 100)',
-            minWidth: 1,
-            maxWidth: 3,
-          });
-          
-          // Clear to apply background color
-          signaturePadRef.current.clear();
-          
-          console.log('SignaturePad initialized successfully');
-        }
-      }, 150);
-      
-      return () => clearTimeout(timeoutId);
+    if (!signerRole || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const container = canvas.parentElement;
+    
+    if (!container) return;
+    
+    // Get container dimensions
+    const rect = container.getBoundingClientRect();
+    
+    // Set canvas dimensions
+    canvas.width = rect.width;
+    canvas.height = 200;
+    
+    console.log('Canvas dimensions set:', { width: canvas.width, height: canvas.height });
+    
+    // Destroy previous instance if exists
+    if (signaturePadRef.current) {
+      signaturePadRef.current.off();
     }
+    
+    // Initialize SignaturePad
+    signaturePadRef.current = new SignaturePad(canvas, {
+      backgroundColor: 'rgb(255, 255, 255)',
+      penColor: 'rgb(0, 0, 100)',
+      minWidth: 0.5,
+      maxWidth: 2.5,
+      throttle: 16,
+    });
+    
+    // Clear to set background
+    signaturePadRef.current.clear();
+    
+    console.log('SignaturePad initialized:', signaturePadRef.current);
+    
+    return () => {
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+      }
+    };
   }, [signerRole]);
 
   const clearSignature = () => {
@@ -416,10 +418,15 @@ export function ContractSigningDialog({
               <p className="text-sm text-muted-foreground">{userName}</p>
             </div>
             
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '200px' }}>
               <canvas
                 ref={canvasRef}
-                className="w-full h-[200px] touch-none"
+                style={{ 
+                  width: '100%', 
+                  height: '200px',
+                  cursor: 'crosshair',
+                  touchAction: 'none'
+                }}
               />
             </div>
             
