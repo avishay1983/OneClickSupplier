@@ -131,14 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: handlerEmail,
       subject: `ספק חדש ממתין לבדיקה: ${vendorName}`,
-      html: htmlContent,
-      mimeContent: [
-        {
-          mimeType: "text/html; charset=UTF-8",
-          content: htmlContent,
-          transferEncoding: "base64",
-        },
-      ],
+      content: htmlContent,
     });
 
     await client.close();

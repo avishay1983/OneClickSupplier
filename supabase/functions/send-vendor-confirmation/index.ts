@@ -72,14 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: vendorEmail,
       subject: "הפרטים שלך התקבלו - ביטוח ישיר",
-      html: emailHtml,
-      mimeContent: [
-        {
-          mimeType: "text/html; charset=UTF-8",
-          content: emailHtml,
-          transferEncoding: "base64",
-        },
-      ],
+      content: emailHtml,
     });
 
     await client.close();

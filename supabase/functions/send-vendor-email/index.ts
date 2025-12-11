@@ -123,14 +123,7 @@ ${reasonSection}
       from: gmailUser,
       to: vendorEmail,
       subject: includeReason ? "נדרשים תיקונים בטופס הספק" : "בקשה להקמת ספק - נדרשים פרטים",
-      html: emailHtml,
-      mimeContent: [
-        {
-          mimeType: "text/html; charset=UTF-8",
-          content: emailHtml,
-          transferEncoding: "base64",
-        },
-      ],
+      content: emailHtml,
     });
 
     await client.close();
