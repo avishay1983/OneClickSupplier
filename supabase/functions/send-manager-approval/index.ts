@@ -147,13 +147,19 @@ const handler = async (req: Request): Promise<Response> => {
       : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null);
     
     if (shouldSendToProcurement) {
-      console.log("Sending approval email to procurement manager:", procurementManagerEmail, "Name:", procurementManagerName);
+      const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementToken, procurementManagerName);
       await client.send({
         from: gmailUser,
         to: procurementManagerEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: "auto",
-        html: createApprovalEmail('procurement_manager', procurementToken, procurementManagerName),
+        html: procurementEmailHtml,
+        mimeContent: [
+          {
+            mimeType: "text/html; charset=UTF-8",
+            content: procurementEmailHtml,
+            transferEncoding: "base64",
+          },
+        ],
       });
       console.log("Email sent to procurement manager");
       emailsSent++;
@@ -167,13 +173,19 @@ const handler = async (req: Request): Promise<Response> => {
       : (!targetRole && vpEmail && vendorRequest.vp_approved === null);
     
     if (shouldSendToVp) {
-      console.log("Sending approval email to VP:", vpEmail, "Name:", vpName);
+      const vpEmailHtml = createApprovalEmail('vp', vpToken, vpName);
       await client.send({
         from: gmailUser,
         to: vpEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: "auto",
-        html: createApprovalEmail('vp', vpToken, vpName),
+        html: vpEmailHtml,
+        mimeContent: [
+          {
+            mimeType: "text/html; charset=UTF-8",
+            content: vpEmailHtml,
+            transferEncoding: "base64",
+          },
+        ],
       });
       console.log("Email sent to VP");
       emailsSent++;
