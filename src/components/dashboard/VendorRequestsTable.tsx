@@ -310,6 +310,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             <SelectContent>
               <SelectItem value="all">הכל</SelectItem>
               <SelectItem value="with_vendor">ממתין לספק</SelectItem>
+              <SelectItem value="first_review">בקרה ראשונה</SelectItem>
               <SelectItem value="submitted">ממתין לאישור</SelectItem>
               <SelectItem value="resent">נשלח מחדש</SelectItem>
               <SelectItem value="approved">אושר</SelectItem>
@@ -426,16 +427,17 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   <div className="flex gap-2">
                     {request.status === 'first_review' && (
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="default"
+                        size="sm"
                         onClick={() => {
                           setSelectedRequest(request);
                           setHandlerApprovalDialogOpen(true);
                         }}
-                        title="בקרה ראשונה"
-                        className="text-blue-500"
+                        title="בקרה ראשונה - לחץ לאישור"
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1 animate-pulse"
                       >
                         <UserCheck className="h-4 w-4" />
+                        <span>אישור מטפל</span>
                       </Button>
                     )}
                     {request.status === 'submitted' && (
