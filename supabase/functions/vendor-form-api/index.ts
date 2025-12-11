@@ -113,12 +113,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case 'submit': {
-        // Update vendor request with final data and set status to submitted
+        // Update vendor request with final data and set status to first_review
+        // The handler needs to approve before it goes to procurement manager and VP
         const { error: updateError } = await supabase
           .from("vendor_requests")
           .update({
             ...data,
-            status: 'submitted',
+            status: 'first_review',
             updated_at: new Date().toISOString(),
           })
           .eq("id", vendorRequest.id);
@@ -128,27 +129,8 @@ const handler = async (req: Request): Promise<Response> => {
           throw updateError;
         }
 
-        // Send approval emails to procurement manager and VP
-        try {
-          const baseUrl = supabaseUrl.replace('/rest/v1', '');
-          const response = await fetch(`${baseUrl}/functions/v1/send-manager-approval`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-            },
-            body: JSON.stringify({ vendorRequestId: vendorRequest.id }),
-          });
-          
-          if (!response.ok) {
-            console.error("Failed to send manager approval emails");
-          } else {
-            console.log("Manager approval emails sent successfully");
-          }
-        } catch (emailError) {
-          console.error("Error sending manager approval emails:", emailError);
-          // Don't fail the submission if emails fail
-        }
+        // Note: Manager approval emails will be sent when handler approves the request
+        // This is done through the HandlerApprovalDialog in the dashboard
 
         return new Response(
           JSON.stringify({ success: true, vendorName: vendorRequest.vendor_name, vendorEmail: vendorRequest.vendor_email }),

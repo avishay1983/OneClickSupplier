@@ -1,4 +1,4 @@
-export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent';
+export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent' | 'first_review';
 
 export interface VendorRequest {
   id: string;
@@ -67,7 +67,8 @@ export interface VendorDocument {
 export const STATUS_LABELS: Record<VendorStatus, string> = {
   pending: 'ממתין לספק',
   with_vendor: 'ממתין לספק',
-  submitted: 'ממתין לאישור הקמת ספק',
+  first_review: 'בקרה ראשונה',
+  submitted: 'ממתין לאישור מנהלים',
   approved: 'אושר',
   resent: 'נשלח מחדש',
 };
