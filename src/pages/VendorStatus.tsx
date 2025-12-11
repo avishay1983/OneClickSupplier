@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
-type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent';
+type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'first_review' | 'approved' | 'resent';
 
 interface VendorStatusData {
   vendor_name: string;
@@ -28,8 +28,9 @@ const getVendorFriendlyStatus = (status: VendorStatus): { label: string; descrip
         color: 'text-amber-500'
       };
     case 'submitted':
+    case 'first_review':
       return {
-        label: 'בבדיקה',
+        label: 'בטיפול',
         description: 'הפרטים שלך התקבלו ונמצאים בבדיקה. נעדכן אותך כשהתהליך יושלם.',
         icon: <FileText className="h-16 w-16" />,
         color: 'text-blue-500'
