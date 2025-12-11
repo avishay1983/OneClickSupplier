@@ -116,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       vendorName = vendorRequest.vendor_name;
       vendorEmail = vendorRequest.vendor_email;
-      secureLink = `https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor-form/${vendorRequest.secure_token}`;
+      secureLink = `https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor/${vendorRequest.secure_token}`;
     }
 
     if (!vendorName || !vendorEmail || !secureLink) {
