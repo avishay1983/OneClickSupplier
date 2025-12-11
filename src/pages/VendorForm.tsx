@@ -765,7 +765,14 @@ export default function VendorForm() {
       const warnings = await validateOcrData(finalUpdates);
       setOcrValidationWarnings(warnings);
       
+      // Also set errors state for immediate visual feedback (red border)
       if (warnings.length > 0) {
+        const newErrors: Record<string, string> = {};
+        warnings.forEach(warning => {
+          newErrors[warning.field] = warning.message;
+        });
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        
         console.log('OCR validation warnings:', warnings);
         // Show warnings in toast
         toast({
@@ -1442,7 +1449,7 @@ export default function VendorForm() {
                       clearFieldWarning('company_id');
                     }}
                     placeholder="הכנס מספר ח.פ או עוסק מורשה"
-                    className={hasFieldWarning('company_id') ? 'border-destructive' : ''}
+                    className={(hasFieldWarning('company_id') || errors.company_id) ? 'border-destructive' : ''}
                   />
                   {hasFieldWarning('company_id') && <p className="text-sm text-destructive">{getFieldWarning('company_id')}</p>}
                   {errors.company_id && <p className="text-sm text-destructive">{errors.company_id}</p>}
@@ -1467,7 +1474,7 @@ export default function VendorForm() {
                       clearFieldWarning('mobile');
                     }}
                     placeholder="טלפון נייד"
-                    className={`ltr text-right ${hasFieldWarning('mobile') ? 'border-destructive' : ''}`}
+                    className={`ltr text-right ${(hasFieldWarning('mobile') || errors.mobile) ? 'border-destructive' : ''}`}
                   />
                   {hasFieldWarning('mobile') && <p className="text-sm text-destructive">{getFieldWarning('mobile')}</p>}
                   {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
@@ -1486,7 +1493,7 @@ export default function VendorForm() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="city">עיר *</Label>
-                    <div className={hasFieldWarning('city') ? 'rounded-md border border-destructive' : ''}>
+                    <div className={(hasFieldWarning('city') || errors.city) ? 'rounded-md border border-destructive' : ''}>
                       <CityAutocomplete
                         id="city"
                         value={formData.city}
@@ -1502,7 +1509,7 @@ export default function VendorForm() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street">רחוב</Label>
-                    <div className={hasFieldWarning('street') ? 'rounded-md border border-destructive' : ''}>
+                    <div className={(hasFieldWarning('street') || errors.street) ? 'rounded-md border border-destructive' : ''}>
                       <StreetAutocomplete
                         id="street"
                         value={formData.street}
@@ -1617,7 +1624,7 @@ export default function VendorForm() {
               <CardContent className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="bank_name">שם הבנק *</Label>
-                  <div className={hasFieldWarning('bank_name') ? 'rounded-md border border-destructive' : ''}>
+                  <div className={(hasFieldWarning('bank_name') || errors.bank_name) ? 'rounded-md border border-destructive' : ''}>
                     <BankAutocomplete
                       id="bank_name"
                       value={formData.bank_name}
@@ -1633,7 +1640,7 @@ export default function VendorForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bank_branch">סניף *</Label>
-                  <div className={hasFieldWarning('bank_branch') ? 'rounded-md border border-destructive' : ''}>
+                  <div className={(hasFieldWarning('bank_branch') || errors.bank_branch) ? 'rounded-md border border-destructive' : ''}>
                     <BranchAutocomplete
                       id="bank_branch"
                       value={formData.bank_branch}
@@ -1687,7 +1694,7 @@ export default function VendorForm() {
                       }
                     }}
                     placeholder={formData.bank_name ? `${getBankByName(formData.bank_name)?.accountDigits || '6-9'} ספרות` : 'מספר חשבון'}
-                    className={`ltr text-right ${hasFieldWarning('bank_account_number') ? 'border-destructive' : ''}`}
+                    className={`ltr text-right ${(hasFieldWarning('bank_account_number') || errors.bank_account_number) ? 'border-destructive' : ''}`}
                     maxLength={9}
                   />
                   {formData.bank_name && getBankByName(formData.bank_name) && (
