@@ -126,31 +126,59 @@ export function ContractSigningDialog({
   // Initialize signature pad when role is selected
   useEffect(() => {
     if (signerRole && canvasRef.current) {
-      signaturePadRef.current = new SignaturePad(canvasRef.current, {
-        backgroundColor: 'rgb(255, 255, 255)',
-        penColor: 'rgb(0, 0, 100)',
-      });
-      
-      // Resize canvas to container
-      const resizeCanvas = () => {
+      // Wait for next frame to ensure canvas is rendered
+      const timeoutId = setTimeout(() => {
         if (canvasRef.current) {
-          const ratio = Math.max(window.devicePixelRatio || 1, 1);
-          canvasRef.current.width = canvasRef.current.offsetWidth * ratio;
-          canvasRef.current.height = canvasRef.current.offsetHeight * ratio;
-          const context = canvasRef.current.getContext('2d');
-          if (context) {
-            context.scale(ratio, ratio);
+          const canvas = canvasRef.current;
+          const container = canvas.parentElement;
+          
+          if (container) {
+            // Set canvas size to match container
+            const rect = container.getBoundingClientRect();
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            
+            canvas.width = rect.width * ratio;
+            canvas.height = 200 * ratio;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = '200px';
+            
+            const context = canvas.getContext('2d');
+            if (context) {
+              context.scale(ratio, ratio);
+            }
           }
-          signaturePadRef.current?.clear();
+          
+          // Initialize SignaturePad after canvas is sized
+          signaturePadRef.current = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 100)',
+            minWidth: 1,
+            maxWidth: 3,
+          });
+          
+          // Fill background
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = 'rgb(255, 255, 255)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
         }
-      };
+      }, 100);
       
-      resizeCanvas();
+      return () => clearTimeout(timeoutId);
     }
   }, [signerRole]);
 
   const clearSignature = () => {
-    signaturePadRef.current?.clear();
+    if (signaturePadRef.current && canvasRef.current) {
+      signaturePadRef.current.clear();
+      // Fill background after clearing
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = 'rgb(255, 255, 255)';
+        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
   };
 
   const handleSign = async () => {
