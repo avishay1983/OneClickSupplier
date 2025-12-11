@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const dashboardUrl = "https://ijyqtemnhlbamxmgjuzp.lovable.app/";
+    const dashboardUrl = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/";
 
     const htmlContent = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
