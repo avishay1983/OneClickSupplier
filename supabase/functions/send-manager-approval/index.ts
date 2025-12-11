@@ -250,9 +250,13 @@ ${actionSection}
     let emailsSent = 0;
     const hasContract = !!contractAttachment;
 
+    // Procurement manager email is only sent AFTER VP has signed (ceo_signed = true)
+    // This check is for contracts requiring signature
+    const vpHasSigned = vendorRequest.ceo_signed === true;
+    
     const shouldSendToProcurement = targetRole === 'procurement_manager' 
-      ? (forceResend || (vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true)) && procurementManagerEmail
-      : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true);
+      ? (forceResend || (vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true)) && procurementManagerEmail && vpHasSigned
+      : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true && (!hasContract || vpHasSigned));
     
     if (shouldSendToProcurement) {
       const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementManagerName, hasContract);
@@ -264,7 +268,7 @@ ${actionSection}
       console.log("Email sent to procurement manager");
       emailsSent++;
     } else {
-      console.log("Skipping procurement manager - condition not met");
+      console.log("Skipping procurement manager - condition not met (vpHasSigned:", vpHasSigned, ")");
     }
 
     const shouldSendToVp = targetRole === 'vp'

@@ -261,6 +261,20 @@ export function ContractSigningDialog({
 
       if (updateError) throw updateError;
 
+      // If VP (CEO) just signed, send email to procurement manager
+      if (signerRole === 'ceo') {
+        try {
+          console.log('VP signed, sending email to procurement manager...');
+          await supabase.functions.invoke('send-manager-approval', {
+            body: { vendorRequestId, targetRole: 'procurement_manager' },
+          });
+          console.log('Email sent to procurement manager');
+        } catch (emailError) {
+          console.error('Error sending email to procurement manager:', emailError);
+          // Don't fail the signing process if email fails
+        }
+      }
+
       // Check if both signatures are complete
       const bothSigned = (signerRole === 'ceo' && signatureStatus.procurementSigned) ||
                         (signerRole === 'procurement' && signatureStatus.ceoSigned);
@@ -453,8 +467,8 @@ export function ContractSigningDialog({
               </div>
             )}
 
-            {/* Procurement Manager Signature - show only to Procurement Manager */}
-            {userRole === 'procurement' && (
+            {/* Procurement Manager Signature - show only to Procurement Manager AND only after VP signed */}
+            {userRole === 'procurement' && signatureStatus.ceoSigned && (
               <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -481,6 +495,13 @@ export function ContractSigningDialog({
                     </Button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Show waiting message for Procurement Manager if VP hasn't signed yet */}
+            {userRole === 'procurement' && !signatureStatus.ceoSigned && (
+              <div className="text-center p-4 bg-muted/50 rounded-lg border">
+                <p className="text-muted-foreground">ממתין לחתימת הסמנכ"ל לפני שתוכל לחתום</p>
               </div>
             )}
 
