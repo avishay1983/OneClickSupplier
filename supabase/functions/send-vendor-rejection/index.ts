@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get vendor request details
     const { data: vendorRequest, error: fetchError } = await supabase
       .from("vendor_requests")
-      .select("vendor_name, vendor_email, secure_token")
+      .select("vendor_name, vendor_email, secure_token, handler_name")
       .eq("id", vendorRequestId)
       .single();
 
@@ -115,6 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const statusUrl = `https://ijyqtemnhlbamxmgjuzp.lovableproject.com/vendor-status/${vendorRequest.secure_token}`;
+    const handlerName = vendorRequest.handler_name || "הנציג המטפל בתיק";
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -141,16 +142,11 @@ const handler = async (req: Request): Promise<Response> => {
         אנו מצטערים להודיע כי בקשתך להקמה כספק בביטוח ישיר נדחתה.
       </p>
       
-      <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 20px 0;">
-        <h3 style="color: #dc2626; margin-top: 0; text-align: right;">סיבת הדחייה:</h3>
-        <p style="text-align: right; color: #374151; line-height: 1.6; margin-bottom: 0;">
-          ${reason}
+      <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="text-align: right; color: #374151; line-height: 1.6; margin: 0;">
+          לקבלת הסבר על סיבת הדחייה, אנא פנה ל<strong>${handlerName}</strong> - הנציג המטפל בתיק שלך.
         </p>
       </div>
-      
-      <p style="text-align: right; color: #374151; line-height: 1.6;">
-        לשאלות או בירורים נוספים, אנא פנה לאיש הקשר שלך בחברה.
-      </p>
       
       <div style="text-align: center; margin-top: 30px;">
         <a href="${statusUrl}" style="display: inline-block; background-color: #1a2b5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
