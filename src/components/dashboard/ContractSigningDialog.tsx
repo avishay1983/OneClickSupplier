@@ -186,7 +186,7 @@ export function ContractSigningDialog({
       });
       
       // Add signature label
-      lastPage.drawText(signerRole === 'ceo' ? 'מנכ"ל' : 'מנהל רכש', {
+      lastPage.drawText(signerRole === 'ceo' ? 'סמנכ"ל' : 'מנהל רכש', {
         x: xPosition + sigWidth / 2 - 20,
         y: yPosition + sigHeight + 5,
         size: 10,
@@ -329,7 +329,7 @@ export function ContractSigningDialog({
           <div className="space-y-4">
             <div className="text-center mb-2">
               <p className="font-medium">
-                חתימה כ{signerRole === 'ceo' ? 'מנכ"ל' : 'מנהל רכש'}
+                חתימה כ{signerRole === 'ceo' ? 'סמנכ"ל' : 'מנהל רכש'}
               </p>
               <p className="text-sm text-muted-foreground">{userName}</p>
             </div>
@@ -405,7 +405,7 @@ export function ContractSigningDialog({
                     <Pen className="h-6 w-6 text-muted-foreground" />
                   )}
                   <div>
-                    <h4 className="font-medium">חתימת מנכ"ל</h4>
+                    <h4 className="font-medium">חתימת סמנכ"ל</h4>
                     {signatureStatus.ceoSigned ? (
                       <p className="text-sm text-success">
                         נחתם ע"י {signatureStatus.ceoSignedBy} ב-{formatDate(signatureStatus.ceoSignedAt)}
@@ -418,7 +418,7 @@ export function ContractSigningDialog({
                 {!signatureStatus.ceoSigned && (
                   <Button onClick={() => setSignerRole('ceo')} className="gap-2">
                     <Pen className="h-4 w-4" />
-                    חתום כמנכ"ל
+                    חתום כסמנכ"ל
                   </Button>
                 )}
               </div>
