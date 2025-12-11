@@ -133,19 +133,17 @@ export function ContractSigningDialog({
           const container = canvas.parentElement;
           
           if (container) {
-            // Set canvas size to match container
+            // Get container dimensions
             const rect = container.getBoundingClientRect();
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
             
-            canvas.width = rect.width * ratio;
-            canvas.height = 200 * ratio;
+            // Set canvas dimensions directly (no devicePixelRatio scaling)
+            // This prevents offset issues with mouse/touch input
+            canvas.width = rect.width;
+            canvas.height = 200;
             canvas.style.width = `${rect.width}px`;
             canvas.style.height = '200px';
             
-            const context = canvas.getContext('2d');
-            if (context) {
-              context.scale(ratio, ratio);
-            }
+            console.log('Canvas initialized:', { width: canvas.width, height: canvas.height });
           }
           
           // Initialize SignaturePad after canvas is sized
@@ -156,28 +154,21 @@ export function ContractSigningDialog({
             maxWidth: 3,
           });
           
-          // Fill background
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = 'rgb(255, 255, 255)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-          }
+          // Clear to apply background color
+          signaturePadRef.current.clear();
+          
+          console.log('SignaturePad initialized successfully');
         }
-      }, 100);
+      }, 150);
       
       return () => clearTimeout(timeoutId);
     }
   }, [signerRole]);
 
   const clearSignature = () => {
-    if (signaturePadRef.current && canvasRef.current) {
+    if (signaturePadRef.current) {
       signaturePadRef.current.clear();
-      // Fill background after clearing
-      const ctx = canvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      }
+      console.log('Signature cleared');
     }
   };
 
