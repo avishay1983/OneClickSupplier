@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +12,13 @@ interface OTPRequest {
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Encode email content to Base64 for proper UTF-8 handling
+function encodeBase64(str: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return btoa(String.fromCharCode(...data));
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -122,29 +128,84 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailAppPassword,
-        },
-      },
+    // Encode subject with RFC 2047 for UTF-8
+    const subjectBase64 = encodeBase64("קוד אימות לטופס ספק");
+    const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
+
+    // Build raw MIME message
+    const boundary = "----=_Part_" + Date.now();
+    const rawEmail = [
+      `From: ${gmailUser}`,
+      `To: ${vendorRequest.vendor_email}`,
+      `Subject: ${encodedSubject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      ``,
+      `--${boundary}`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      encodeBase64(emailHtml),
+      ``,
+      `--${boundary}--`,
+    ].join("\r\n");
+
+    // Send via Gmail SMTP using raw socket
+    const conn = await Deno.connectTls({
+      hostname: "smtp.gmail.com",
+      port: 465,
     });
 
-    await client.send({
-      from: gmailUser,
-      to: vendorRequest.vendor_email,
-      subject: "קוד אימות לטופס ספק",
-      content: "auto",
-      html: emailHtml,
-    });
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    await client.close();
+    async function sendCommand(cmd: string): Promise<string> {
+      await conn.write(encoder.encode(cmd + "\r\n"));
+      const buf = new Uint8Array(4096);
+      const n = await conn.read(buf);
+      const response = decoder.decode(buf.subarray(0, n || 0));
+      console.log("SMTP Response:", response.trim());
+      return response;
+    }
 
-    console.log("OTP email sent successfully via Gmail SMTP");
+    async function readResponse(): Promise<string> {
+      const buf = new Uint8Array(4096);
+      const n = await conn.read(buf);
+      const response = decoder.decode(buf.subarray(0, n || 0));
+      console.log("SMTP Response:", response.trim());
+      return response;
+    }
+
+    // Read greeting
+    await readResponse();
+
+    // EHLO
+    await sendCommand(`EHLO ${gmailUser.split('@')[1]}`);
+
+    // AUTH LOGIN
+    await sendCommand("AUTH LOGIN");
+    await sendCommand(btoa(gmailUser));
+    await sendCommand(btoa(gmailAppPassword));
+
+    // MAIL FROM
+    await sendCommand(`MAIL FROM:<${gmailUser}>`);
+
+    // RCPT TO
+    await sendCommand(`RCPT TO:<${vendorRequest.vendor_email}>`);
+
+    // DATA
+    await sendCommand("DATA");
+
+    // Send email content
+    await conn.write(encoder.encode(rawEmail + "\r\n.\r\n"));
+    await readResponse();
+
+    // QUIT
+    await sendCommand("QUIT");
+
+    conn.close();
+
+    console.log("OTP email sent successfully via raw SMTP");
 
     return new Response(
       JSON.stringify({ 
