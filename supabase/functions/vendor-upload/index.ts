@@ -80,9 +80,15 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("document_type", documentType);
     }
 
-    // Upload new file
+    // Upload new file - handle contract uploads separately
     const fileExt = file.name.split('.').pop();
-    const filePath = `${vendorRequest.id}/${documentType}_${Date.now()}.${fileExt}`;
+    let filePath: string;
+    
+    if (documentType === 'contract') {
+      filePath = `contracts/${vendorRequest.id}/contract_${Date.now()}.${fileExt}`;
+    } else {
+      filePath = `${vendorRequest.id}/${documentType}_${Date.now()}.${fileExt}`;
+    }
     
     const arrayBuffer = await file.arrayBuffer();
     const { error: uploadError } = await supabase.storage
@@ -97,32 +103,53 @@ const handler = async (req: Request): Promise<Response> => {
       throw uploadError;
     }
 
-    // Create document record
-    const documentData: any = {
-      vendor_request_id: vendorRequest.id,
-      document_type: documentType,
-      file_name: file.name,
-      file_path: filePath,
-    };
+    // For contract uploads, update the vendor_requests table
+    if (documentType === 'contract') {
+      const { error: updateError } = await supabase
+        .from("vendor_requests")
+        .update({
+          contract_file_path: filePath,
+          contract_uploaded_at: new Date().toISOString(),
+        })
+        .eq("id", vendorRequest.id);
 
-    if (extractedTags) {
-      try {
-        documentData.extracted_tags = JSON.parse(extractedTags);
-      } catch (e) {
-        console.error("Error parsing extracted tags:", e);
+      if (updateError) {
+        console.error("Error updating contract path:", updateError);
+        throw updateError;
+      }
+    } else {
+      // Create document record for non-contract documents
+      const documentData: any = {
+        vendor_request_id: vendorRequest.id,
+        document_type: documentType,
+        file_name: file.name,
+        file_path: filePath,
+      };
+
+      if (extractedTags) {
+        try {
+          documentData.extracted_tags = JSON.parse(extractedTags);
+        } catch (e) {
+          console.error("Error parsing extracted tags:", e);
+        }
+      }
+
+      const { error: insertError } = await supabase
+        .from("vendor_documents")
+        .insert(documentData);
+
+      if (insertError) {
+        console.error("Error inserting document record:", insertError);
+        throw insertError;
       }
     }
 
-    const { error: insertError } = await supabase
-      .from("vendor_documents")
-      .insert(documentData);
-
-    if (insertError) {
-      console.error("Error inserting document record:", insertError);
-      throw insertError;
-    }
-
     console.log("File uploaded successfully:", filePath);
+
+    return new Response(
+      JSON.stringify({ success: true, filePath }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
 
     return new Response(
       JSON.stringify({ success: true, filePath }),
