@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, Download, FileText, Pen, Trash2, Eye } from 'lucide-react';
+import { Loader2, CheckCircle, Download, FileText, Pen, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SignaturePad from 'signature_pad';
@@ -493,20 +493,14 @@ export function ContractSigningDialog({
                         ? 'כל החתימות הושלמו' 
                         : signatureStatus.ceoSigned 
                           ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
-                          : 'צפה או הורד את החוזה'}
+                          : 'הורד את החוזה לצפייה'}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleViewContract} className="gap-2">
-                    <Eye className="h-4 w-4" />
-                    צפייה
-                  </Button>
-                  <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    הורדה
-                  </Button>
-                </div>
+                <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  הורדה
+                </Button>
               </div>
             </div>
 
