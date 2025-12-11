@@ -87,7 +87,14 @@ interface CRMVendor {
   claims_area: string | null;
   claims_sub_category: string | null;
   handler_name: string | null;
+  handler_email: string | null;
   expected_spending: number | null;
+  quote_received: boolean | null;
+  contract_signed: boolean | null;
+  legal_approved: boolean | null;
+  is_consultant: boolean | null;
+  is_sensitive: boolean | null;
+  approver_name: string | null;
   crm_status: 'active' | 'suspended' | 'closed' | 'vip' | null;
   created_at: string;
   updated_at: string;
@@ -120,6 +127,28 @@ const CRM_STATUS_COLORS: Record<string, string> = {
 const VENDOR_TYPE_LABELS: Record<string, string> = {
   general: 'כללי',
   claims: 'תביעות',
+};
+
+const CLAIMS_AREA_LABELS: Record<string, string> = {
+  home: 'דירה',
+  car: 'רכב',
+  life: 'חיים',
+  health: 'בריאות',
+};
+
+const CLAIMS_SUB_CATEGORY_LABELS: Record<string, string> = {
+  garage: 'מוסך',
+  appraiser: 'שמאי',
+  doctor: 'רופא',
+  lawyer: 'עורך דין',
+  plumber: 'שרברב',
+  management: 'חברת ניהול',
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  check: 'המחאה',
+  invoice: 'מס"ב',
+  transfer: 'העברה בנקאית',
 };
 
 export default function CRM() {
@@ -284,7 +313,10 @@ export default function CRM() {
         'accounting_contact_name', 'accounting_contact_phone',
         'sales_contact_name', 'sales_contact_phone',
         'bank_name', 'bank_branch', 'bank_account_number',
-        'payment_method', 'payment_terms'
+        'payment_method', 'payment_terms',
+        'handler_name', 'handler_email', 'vendor_type', 'claims_area', 'claims_sub_category',
+        'expected_spending', 'approver_name', 'quote_received', 'contract_signed',
+        'legal_approved', 'is_consultant', 'is_sensitive'
       ];
 
       for (const field of fieldsToTrack) {
@@ -605,11 +637,13 @@ export default function CRM() {
           </DialogHeader>
           
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="basic">פרטים בסיסיים</TabsTrigger>
+              <TabsTrigger value="creation">פרטי הקמה</TabsTrigger>
               <TabsTrigger value="address">כתובת</TabsTrigger>
               <TabsTrigger value="contacts">אנשי קשר</TabsTrigger>
               <TabsTrigger value="bank">פרטי בנק</TabsTrigger>
+              <TabsTrigger value="accounting">הנהלת חשבונות</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 mt-4">
@@ -660,6 +694,136 @@ export default function CRM() {
                     value={editForm.fax || ''}
                     onChange={(e) => setEditForm({ ...editForm, fax: e.target.value })}
                   />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="creation" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>מטפל בתהליך</Label>
+                  <Input
+                    value={editForm.handler_name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, handler_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>אימייל מטפל</Label>
+                  <Input
+                    dir="ltr"
+                    value={editForm.handler_email || ''}
+                    onChange={(e) => setEditForm({ ...editForm, handler_email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>סוג ספק</Label>
+                  <Select 
+                    value={editForm.vendor_type || 'general'} 
+                    onValueChange={(value) => setEditForm({ ...editForm, vendor_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">כללי</SelectItem>
+                      <SelectItem value="claims">תביעות</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {editForm.vendor_type === 'claims' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>תחום תביעות</Label>
+                      <Select 
+                        value={editForm.claims_area || ''} 
+                        onValueChange={(value) => setEditForm({ ...editForm, claims_area: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="בחר תחום" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="home">דירה</SelectItem>
+                          <SelectItem value="car">רכב</SelectItem>
+                          <SelectItem value="life">חיים</SelectItem>
+                          <SelectItem value="health">בריאות</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>תת קטגוריה</Label>
+                      <Input
+                        value={editForm.claims_sub_category || ''}
+                        onChange={(e) => setEditForm({ ...editForm, claims_sub_category: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label>סכום הוצאה צפויה (₪)</Label>
+                  <Input
+                    type="number"
+                    dir="ltr"
+                    value={editForm.expected_spending || ''}
+                    onChange={(e) => setEditForm({ ...editForm, expected_spending: Number(e.target.value) || null })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>שם מאשר</Label>
+                  <Input
+                    value={editForm.approver_name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, approver_name: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4 mt-4">
+                <h4 className="font-medium mb-4">סטטוסים</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.quote_received || false}
+                      onChange={(e) => setEditForm({ ...editForm, quote_received: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label className="cursor-pointer">קיימת הצעת מחיר</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.contract_signed || false}
+                      onChange={(e) => setEditForm({ ...editForm, contract_signed: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label className="cursor-pointer">קיים הסכם</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.legal_approved || false}
+                      onChange={(e) => setEditForm({ ...editForm, legal_approved: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label className="cursor-pointer">אושר משפטית</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.is_consultant || false}
+                      onChange={(e) => setEditForm({ ...editForm, is_consultant: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label className="cursor-pointer">ספק יועץ</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.is_sensitive || false}
+                      onChange={(e) => setEditForm({ ...editForm, is_sensitive: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label className="cursor-pointer">ספק רגיש</Label>
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -764,11 +928,121 @@ export default function CRM() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>אמצעי תשלום</Label>
+                  <Select 
+                    value={editForm.payment_method || ''} 
+                    onValueChange={(value) => setEditForm({ ...editForm, payment_method: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר אמצעי תשלום" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="check">המחאה</SelectItem>
+                      <SelectItem value="invoice">מס"ב</SelectItem>
+                      <SelectItem value="transfer">העברה בנקאית</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>תנאי תשלום</Label>
                   <Input
                     value={editForm.payment_terms || ''}
                     onChange={(e) => setEditForm({ ...editForm, payment_terms: e.target.value })}
                   />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="accounting" className="space-y-4 mt-4">
+              <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                <h4 className="font-semibold text-lg mb-2">פרטי חשבון להעברה ל-SAP</h4>
+                <p className="text-sm text-muted-foreground">מידע זה ישמש להקמת הספק במערכת SAP הנהלת חשבונות</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1 p-3 bg-card border rounded-lg">
+                  <Label className="text-xs text-muted-foreground">שם הספק</Label>
+                  <p className="font-medium">{selectedVendor?.vendor_name || '-'}</p>
+                </div>
+                <div className="space-y-1 p-3 bg-card border rounded-lg">
+                  <Label className="text-xs text-muted-foreground">ח.פ / ע.מ</Label>
+                  <p className="font-medium">{selectedVendor?.company_id || '-'}</p>
+                </div>
+                <div className="space-y-1 p-3 bg-card border rounded-lg">
+                  <Label className="text-xs text-muted-foreground">אימייל</Label>
+                  <p className="font-medium" dir="ltr">{selectedVendor?.vendor_email || '-'}</p>
+                </div>
+                <div className="space-y-1 p-3 bg-card border rounded-lg">
+                  <Label className="text-xs text-muted-foreground">טלפון</Label>
+                  <p className="font-medium" dir="ltr">{selectedVendor?.phone || selectedVendor?.mobile || '-'}</p>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h5 className="font-medium mb-3">כתובת למשלוח</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">עיר</Label>
+                    <p className="font-medium">{selectedVendor?.city || '-'}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">רחוב ומספר</Label>
+                    <p className="font-medium">
+                      {selectedVendor?.street 
+                        ? `${selectedVendor.street} ${selectedVendor.street_number || ''}`.trim()
+                        : selectedVendor?.po_box ? `ת.ד ${selectedVendor.po_box}` : '-'}
+                    </p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">מיקוד</Label>
+                    <p className="font-medium">{selectedVendor?.postal_code || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h5 className="font-medium mb-3">פרטי בנק</h5>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">בנק</Label>
+                    <p className="font-medium">{selectedVendor?.bank_name || '-'}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">סניף</Label>
+                    <p className="font-medium">{selectedVendor?.bank_branch || '-'}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">מספר חשבון</Label>
+                    <p className="font-medium" dir="ltr">{selectedVendor?.bank_account_number || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h5 className="font-medium mb-3">פרטי תשלום</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">אמצעי תשלום</Label>
+                    <p className="font-medium">{PAYMENT_METHOD_LABELS[selectedVendor?.payment_method || ''] || '-'}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">תנאי תשלום</Label>
+                    <p className="font-medium">{selectedVendor?.payment_terms || 'שוטף + 60'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h5 className="font-medium mb-3">איש קשר הנהלת חשבונות</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">שם</Label>
+                    <p className="font-medium">{selectedVendor?.accounting_contact_name || '-'}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-card border rounded-lg">
+                    <Label className="text-xs text-muted-foreground">טלפון</Label>
+                    <p className="font-medium" dir="ltr">{selectedVendor?.accounting_contact_phone || '-'}</p>
+                  </div>
                 </div>
               </div>
             </TabsContent>
