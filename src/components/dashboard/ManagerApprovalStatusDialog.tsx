@@ -7,9 +7,10 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, CheckCircle2, XCircle, Clock, Mail } from 'lucide-react';
+import { Loader2, RefreshCw, CheckCircle2, XCircle, Clock, Mail, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ManagerApprovalStatusDialogProps {
   open: boolean;
@@ -19,6 +20,9 @@ interface ManagerApprovalStatusDialogProps {
 }
 
 interface ApprovalStatus {
+  handler_approved: boolean | null;
+  handler_approved_at: string | null;
+  handler_approved_by: string | null;
   procurement_manager_approved: boolean | null;
   procurement_manager_approved_at: string | null;
   procurement_manager_approved_by: string | null;
@@ -37,6 +41,22 @@ export function ManagerApprovalStatusDialog({
   const [status, setStatus] = useState<ApprovalStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sendingTarget, setSendingTarget] = useState<'all' | 'procurement_manager' | 'vp' | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      if (data?.full_name) setUserName(data.full_name);
+    };
+    fetchUserName();
+  }, [user]);
 
   useEffect(() => {
     if (open && vendorRequestId) {
@@ -51,16 +71,70 @@ export function ManagerApprovalStatusDialog({
     try {
       const { data, error } = await supabase
         .from('vendor_requests')
-        .select('procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, vp_approved, vp_approved_at, vp_approved_by, approval_email_sent_at')
+        .select('first_review_approved, first_review_approved_at, first_review_approved_by, procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, vp_approved, vp_approved_at, vp_approved_by, approval_email_sent_at')
         .eq('id', vendorRequestId)
         .single();
 
       if (error) throw error;
-      setStatus(data);
+      setStatus({
+        handler_approved: data.first_review_approved,
+        handler_approved_at: data.first_review_approved_at,
+        handler_approved_by: data.first_review_approved_by,
+        procurement_manager_approved: data.procurement_manager_approved,
+        procurement_manager_approved_at: data.procurement_manager_approved_at,
+        procurement_manager_approved_by: data.procurement_manager_approved_by,
+        vp_approved: data.vp_approved,
+        vp_approved_at: data.vp_approved_at,
+        vp_approved_by: data.vp_approved_by,
+        approval_email_sent_at: data.approval_email_sent_at,
+      });
     } catch (error) {
       console.error('Error fetching approval status:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleHandlerApproval = async () => {
+    if (!vendorRequestId) return;
+    
+    setIsApproving(true);
+    try {
+      // Update handler approval
+      const { error: updateError } = await supabase
+        .from('vendor_requests')
+        .update({
+          first_review_approved: true,
+          first_review_approved_at: new Date().toISOString(),
+          first_review_approved_by: userName || 'מטפל',
+        })
+        .eq('id', vendorRequestId);
+
+      if (updateError) throw updateError;
+
+      // Send approval emails to managers
+      const { data, error: emailError } = await supabase.functions.invoke('send-manager-approval', {
+        body: { vendorRequestId },
+      });
+
+      if (emailError) throw emailError;
+      if (data && !data.success) throw new Error(data.error);
+
+      toast({
+        title: 'הבקשה אושרה',
+        description: 'מייל אישור נשלח למנהל הרכש ולסמנכ"ל',
+      });
+      
+      fetchStatus();
+    } catch (error: any) {
+      console.error('Error approving request:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לאשר את הבקשה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -145,19 +219,21 @@ export function ManagerApprovalStatusDialog({
         </div>
         <div className="flex items-center gap-2">
           {statusBadge}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => sendApprovalEmails(role, true)}
-            disabled={sendingTarget !== null}
-            title={`שלח מייל ל${label}`}
-          >
-            {sendingTarget === role ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4" />
-            )}
-          </Button>
+          {status?.handler_approved && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => sendApprovalEmails(role, true)}
+              disabled={sendingTarget !== null}
+              title={`שלח מייל ל${label}`}
+            >
+              {sendingTarget === role ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -186,47 +262,107 @@ export function ManagerApprovalStatusDialog({
           </div>
         ) : status ? (
           <div className="space-y-4 py-4">
-            {status.approval_email_sent_at && (
-              <p className="text-sm text-muted-foreground text-center">
-                מייל אישור נשלח בתאריך: {new Date(status.approval_email_sent_at).toLocaleDateString('he-IL')}
-              </p>
-            )}
-            
-            {renderApprovalStatus(
-              'מנהל רכש',
-              'procurement_manager',
-              status.procurement_manager_approved,
-              status.procurement_manager_approved_at,
-              status.procurement_manager_approved_by
-            )}
-            
-            {renderApprovalStatus(
-              'סמנכ"ל',
-              'vp',
-              status.vp_approved,
-              status.vp_approved_at,
-              status.vp_approved_by
+            {/* Handler Approval Step */}
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+              <div className="flex items-center gap-4">
+                {status.handler_approved ? (
+                  <CheckCircle2 className="h-8 w-8 text-success" />
+                ) : (
+                  <Clock className="h-8 w-8 text-muted-foreground" />
+                )}
+                <div>
+                  <h4 className="font-medium">אישור מטפל בבקשה</h4>
+                  {status.handler_approved_at && (
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(status.handler_approved_at).toLocaleDateString('he-IL')} בשעה {new Date(status.handler_approved_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                  {status.handler_approved_by && (
+                    <p className="text-sm text-muted-foreground">
+                      על ידי: {status.handler_approved_by}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {status.handler_approved ? (
+                  <Badge className="bg-success text-success-foreground gap-1">
+                    <CheckCircle2 className="h-3 w-3" />אושר
+                  </Badge>
+                ) : (
+                  <Button
+                    onClick={handleHandlerApproval}
+                    disabled={isApproving}
+                    size="sm"
+                  >
+                    {isApproving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        מאשר...
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="h-4 w-4 ml-2" />
+                        אשר ושלח למנהלים
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Manager Approvals - only show after handler approval */}
+            {status.handler_approved && (
+              <>
+                {status.approval_email_sent_at && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    מייל אישור נשלח בתאריך: {new Date(status.approval_email_sent_at).toLocaleDateString('he-IL')}
+                  </p>
+                )}
+                
+                {renderApprovalStatus(
+                  'מנהל רכש',
+                  'procurement_manager',
+                  status.procurement_manager_approved,
+                  status.procurement_manager_approved_at,
+                  status.procurement_manager_approved_by
+                )}
+                
+                {renderApprovalStatus(
+                  'סמנכ"ל',
+                  'vp',
+                  status.vp_approved,
+                  status.vp_approved_at,
+                  status.vp_approved_by
+                )}
+
+                {(status.procurement_manager_approved === null || status.vp_approved === null) && (
+                  <Button
+                    onClick={() => sendApprovalEmails()}
+                    disabled={sendingTarget !== null}
+                    className="w-full mt-4"
+                    variant="outline"
+                  >
+                    {sendingTarget === 'all' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        שולח...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-4 w-4 ml-2" />
+                        שלח מייל לכל הממתינים
+                      </>
+                    )}
+                  </Button>
+                )}
+              </>
             )}
 
-            {(status.procurement_manager_approved === null || status.vp_approved === null) && (
-              <Button
-                onClick={() => sendApprovalEmails()}
-                disabled={sendingTarget !== null}
-                className="w-full mt-4"
-                variant="outline"
-              >
-                {sendingTarget === 'all' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    שולח...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-4 w-4 ml-2" />
-                    שלח מייל לכל הממתינים
-                  </>
-                )}
-              </Button>
+            {!status.handler_approved && (
+              <p className="text-sm text-muted-foreground text-center border-t pt-4">
+                יש לאשר את הבקשה כדי לשלוח מייל למנהל הרכש ולסמנכ"ל
+              </p>
             )}
           </div>
         ) : (
