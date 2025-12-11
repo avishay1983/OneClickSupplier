@@ -23,9 +23,10 @@ const ManagerApprovalResult = () => {
           bgColor: "bg-red-500",
           iconColor: "text-white",
         };
+      case "info":
       case "already_handled":
         return {
-          icon: AlertCircle,
+          icon: CheckCircle,
           bgColor: "bg-blue-500",
           iconColor: "text-white",
         };
