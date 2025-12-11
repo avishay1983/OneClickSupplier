@@ -1613,8 +1613,10 @@ export default function VendorForm() {
                     {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="street">רחוב</Label>
-                    <div className={(hasFieldWarning('street') || errors.street) ? 'rounded-md border border-destructive' : ''}>
+                    <Label htmlFor="street">
+                      רחוב {!formData.po_box.trim() && <span className="text-destructive">*</span>}
+                    </Label>
+                    <div className={(hasFieldWarning('street') || errors.street || errors.address) ? 'rounded-md border border-destructive' : ''}>
                       <StreetAutocomplete
                         id="street"
                         value={formData.street}
@@ -1627,6 +1629,7 @@ export default function VendorForm() {
                       />
                     </div>
                     {hasFieldWarning('street') && <p className="text-sm text-destructive">{getFieldWarning('street')}</p>}
+                    {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street_number">מספר</Label>
@@ -1647,12 +1650,15 @@ export default function VendorForm() {
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="po_box">ת.ד</Label>
+                    <Label htmlFor="po_box">
+                      ת.ד {!formData.street.trim() && <span className="text-destructive">*</span>}
+                    </Label>
                     <Input
                       id="po_box"
                       value={formData.po_box}
                       onChange={(e) => setFormData({ ...formData, po_box: e.target.value })}
                       placeholder="תיבת דואר"
+                      className={errors.address && !formData.street.trim() ? 'border-destructive' : ''}
                     />
                   </div>
                 </div>
