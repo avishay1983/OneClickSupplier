@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.vendor-status]
 verify_jwt = false
+
+[functions.send-handler-notification]
+verify_jwt = false

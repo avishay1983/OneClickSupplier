@@ -123,10 +123,16 @@ export default function Dashboard() {
     // Remove expires_in_days from data as it's not a DB column
     const { expires_in_days, ...dbData } = data;
     
+    // Set handler_email to current user's email if handler_name is the current user
+    const requestData = {
+      ...dbData,
+      handler_email: user?.email || null,
+    };
+    
     const { error } = await supabase
       .from('vendor_requests')
       .insert({
-        ...dbData,
+        ...requestData,
         secure_token: secureToken,
         status: 'with_vendor',
         payment_terms: 'שוטף + 60',
@@ -198,6 +204,8 @@ export default function Dashboard() {
             status: 'with_vendor',
             payment_terms: 'שוטף + 60',
             expires_at: expiresAt.toISOString(),
+            handler_name: currentUserName,
+            handler_email: user?.email || null,
           });
 
         if (error) {

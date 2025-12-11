@@ -33,6 +33,7 @@ export interface NewRequestData {
   claims_area: string | null;
   claims_sub_category: string | null;
   handler_name: string;
+  handler_email: string;
 }
 
 export interface BulkVendorData {
@@ -64,6 +65,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     claims_area: null,
     claims_sub_category: null,
     handler_name: '',
+    handler_email: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -126,6 +128,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       claims_area: null,
       claims_sub_category: null,
       handler_name: '',
+      handler_email: '',
     });
     setBulkVendors([]);
     setUploadedFileName('');
