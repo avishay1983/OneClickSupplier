@@ -247,16 +247,17 @@ export function ContractSigningDialog({
         height: sigHeight,
       });
       
-      // Add signature label
-      lastPage.drawText(signerRole === 'ceo' ? 'סמנכ"ל' : 'מנהל רכש', {
+      // Add signature label in English (Hebrew not supported by pdf-lib standard fonts)
+      const roleLabel = signerRole === 'ceo' ? 'VP' : 'Procurement Manager';
+      lastPage.drawText(roleLabel, {
         x: xPosition + sigWidth / 2 - 20,
         y: yPosition + sigHeight + 5,
         size: 10,
         color: rgb(0, 0, 0),
       });
       
-      // Add date
-      const dateStr = new Date().toLocaleDateString('he-IL');
+      // Add date in international format
+      const dateStr = new Date().toLocaleDateString('en-GB');
       lastPage.drawText(dateStr, {
         x: xPosition + sigWidth / 2 - 25,
         y: yPosition - 15,
