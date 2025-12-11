@@ -497,6 +497,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       <SelectValue placeholder="בחר תוקף" className="text-right" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="0.007">10 דקות</SelectItem>
                       <SelectItem value="3">3 ימים</SelectItem>
                       <SelectItem value="7">7 ימים</SelectItem>
                       <SelectItem value="14">14 ימים</SelectItem>
