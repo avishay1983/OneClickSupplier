@@ -443,6 +443,49 @@ export default function Auth() {
                   </p>
                 </div>
                 <Button 
+                  variant="default" 
+                  className="w-full"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                      const redirectUrl = `${window.location.origin}/auth`;
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: redirectUrl,
+                      });
+                      if (error) {
+                        toast({
+                          title: 'שגיאה',
+                          description: error.message,
+                          variant: 'destructive',
+                        });
+                      } else {
+                        toast({
+                          title: 'נשלח בהצלחה',
+                          description: 'מייל איפוס נשלח שוב',
+                        });
+                      }
+                    } catch (error) {
+                      toast({
+                        title: 'שגיאה',
+                        description: 'אירעה שגיאה בשליחה',
+                        variant: 'destructive',
+                      });
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      שולח...
+                    </>
+                  ) : (
+                    'שלח שוב'
+                  )}
+                </Button>
+                <Button 
                   variant="outline" 
                   className="w-full gap-2"
                   onClick={() => {
