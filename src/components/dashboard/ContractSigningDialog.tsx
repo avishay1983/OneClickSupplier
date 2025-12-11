@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, Download, FileText, Pen, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, Download, FileText, Pen, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SignaturePad from 'signature_pad';
@@ -307,6 +307,28 @@ export function ContractSigningDialog({
     }
   };
 
+  const handleViewContract = async () => {
+    if (!signatureStatus?.contractFilePath) return;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('vendor_documents')
+        .download(signatureStatus.contractFilePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error viewing contract:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לפתוח את החוזה',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDownloadContract = async () => {
     if (!signatureStatus?.contractFilePath) return;
 
@@ -419,20 +441,32 @@ export function ContractSigningDialog({
         ) : (
           // Status and action view
           <div className="space-y-6">
-            {/* Contract download */}
+            {/* Contract view/download */}
             <div className="p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <FileText className="h-6 w-6 text-primary" />
                   <div>
-                    <h4 className="font-medium">חוזה חתום מהספק</h4>
-                    <p className="text-sm text-muted-foreground">הורד לצפייה לפני החתימה</p>
+                    <h4 className="font-medium">חוזה {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתום' : 'מהספק'}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {signatureStatus.ceoSigned && signatureStatus.procurementSigned 
+                        ? 'כל החתימות הושלמו' 
+                        : signatureStatus.ceoSigned 
+                          ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
+                          : 'צפה או הורד את החוזה'}
+                    </p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  הורד
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleViewContract} className="gap-2">
+                    <Eye className="h-4 w-4" />
+                    צפייה
+                  </Button>
+                  <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    הורדה
+                  </Button>
+                </div>
               </div>
             </div>
 
