@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info, FileSignature } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -392,6 +392,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     סטטוס
                   </Button>
                 </TableHead>
+                <TableHead className="text-right font-semibold">חתימות חוזה</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
@@ -448,6 +449,56 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                       </TooltipProvider>
                     )}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {request.requires_contract_signature ? (
+                    <div className="flex flex-col gap-1 text-xs">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1">
+                              {request.ceo_signed ? (
+                                <Check className="h-4 w-4 text-success" />
+                              ) : (
+                                <X className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span>סמנכ"ל</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" dir="rtl">
+                            {request.ceo_signed ? (
+                              <p>חתם: {request.ceo_signed_by} בתאריך {request.ceo_signed_at ? new Date(request.ceo_signed_at).toLocaleDateString('he-IL') : ''}</p>
+                            ) : (
+                              <p>טרם חתם</p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1">
+                              {request.procurement_manager_signed ? (
+                                <Check className="h-4 w-4 text-success" />
+                              ) : (
+                                <X className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span>מנהל רכש</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" dir="rtl">
+                            {request.procurement_manager_signed ? (
+                              <p>חתם: {request.procurement_manager_signed_by} בתאריך {request.procurement_manager_signed_at ? new Date(request.procurement_manager_signed_at).toLocaleDateString('he-IL') : ''}</p>
+                            ) : (
+                              <p>טרם חתם</p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">לא נדרש</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {new Date(request.created_at).toLocaleDateString('he-IL')}
