@@ -42,26 +42,53 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Don't redirect if we're in password recovery mode
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    // Check URL hash for recovery token on initial load
+    const checkRecoveryToken = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
         const type = hashParams.get('type');
-        if (type !== 'recovery') {
-          navigate('/');
+        const accessToken = hashParams.get('access_token');
+        
+        if (type === 'recovery' && accessToken) {
+          // Set the session from the recovery token
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: hashParams.get('refresh_token') || '',
+          }).then(() => {
+            setShowUpdatePassword(true);
+            // Clear hash from URL
+            window.history.replaceState(null, '', window.location.pathname);
+          });
+          return true;
         }
       }
+      return false;
     };
-    checkSession();
+
+    const isRecovery = checkRecoveryToken();
+
+    // Check if user is already logged in (only if not in recovery mode)
+    if (!isRecovery) {
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && !showUpdatePassword) {
+          navigate('/');
+        }
+      };
+      checkSession();
+    }
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setShowUpdatePassword(true);
       } else if (session && !showUpdatePassword) {
-        navigate('/');
+        // Don't redirect if we're showing the update password form
+        const hash = window.location.hash;
+        if (!hash.includes('type=recovery')) {
+          navigate('/');
+        }
       }
     });
 
