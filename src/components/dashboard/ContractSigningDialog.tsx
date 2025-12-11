@@ -388,17 +388,12 @@ export function ContractSigningDialog({
     if (!signatureStatus?.contractFilePath) return;
 
     try {
-      // Add cache-busting timestamp to force fresh download
       const timestamp = Date.now();
-      console.log('Downloading contract with cache-bust:', timestamp);
+      console.log('Downloading contract:', signatureStatus.contractFilePath);
       
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(signatureStatus.contractFilePath, {
-          transform: {
-            quality: 100,
-          },
-        });
+        .download(signatureStatus.contractFilePath);
 
       if (error) throw error;
 
