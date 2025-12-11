@@ -72,14 +72,18 @@ export function ViewDocumentsDialog({
     }
   };
 
+  // Check if file can be viewed inline in browser
+  const canViewInline = (fileName: string): boolean => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+  };
+
   const openDocument = (filePath: string) => {
     const { data } = supabase.storage
       .from('vendor_documents')
       .getPublicUrl(filePath);
     
-    // Remove any download parameter to force inline viewing
-    const viewUrl = data.publicUrl.split('?')[0];
-    window.open(viewUrl, '_blank');
+    window.open(data.publicUrl, '_blank');
   };
 
   const downloadDocument = async (filePath: string, fileName: string) => {
@@ -208,15 +212,17 @@ export function ViewDocumentsDialog({
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDocument(vendorData.contract_file_path!)}
-                          className="gap-1"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          <span className="hidden sm:inline">צפה</span>
-                        </Button>
+                        {canViewInline(vendorData.contract_file_path!) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDocument(vendorData.contract_file_path!)}
+                            className="gap-1"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            <span className="hidden sm:inline">צפה</span>
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -299,15 +305,17 @@ export function ViewDocumentsDialog({
                                 </PopoverContent>
                               </Popover>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openDocument(doc.file_path)}
-                              className="gap-1"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              <span className="hidden sm:inline">צפה</span>
-                            </Button>
+                            {canViewInline(doc.file_name) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDocument(doc.file_path)}
+                                className="gap-1"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                                <span className="hidden sm:inline">צפה</span>
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
