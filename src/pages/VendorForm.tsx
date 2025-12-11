@@ -934,7 +934,9 @@ export default function VendorForm() {
         const data = response.request;
         const docs = response.documents || [];
         
-        if (data.otp_verified) {
+        // OTP is verified only if previously verified AND status is not 'resent'
+        // When status is 'resent', vendor must re-verify via OTP
+        if (data.otp_verified && data.status !== 'resent') {
           setOtpVerified(true);
         }
         
