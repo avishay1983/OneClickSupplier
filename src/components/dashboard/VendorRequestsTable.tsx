@@ -10,13 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
 import { EditRequestDialog } from './EditRequestDialog';
 import { ManagerApprovalStatusDialog } from './ManagerApprovalStatusDialog';
+import { HandlerApprovalDialog } from './HandlerApprovalDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -57,6 +58,8 @@ const getStatusClass = (status: VendorStatus) => {
       return 'bg-success text-success-foreground';
     case 'submitted':
       return 'bg-warning text-warning-foreground';
+    case 'first_review':
+      return 'bg-blue-500 text-white';
     default:
       return '';
   }
@@ -72,6 +75,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [approvalStatusDialogOpen, setApprovalStatusDialogOpen] = useState(false);
+  const [handlerApprovalDialogOpen, setHandlerApprovalDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -420,6 +424,20 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
+                    {request.status === 'first_review' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setHandlerApprovalDialogOpen(true);
+                        }}
+                        title="בקרה ראשונה"
+                        className="text-blue-500"
+                      >
+                        <UserCheck className="h-4 w-4" />
+                      </Button>
+                    )}
                     {request.status === 'submitted' && (
                       <Button
                         variant="ghost"
@@ -539,6 +557,14 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             onOpenChange={setApprovalStatusDialogOpen}
             vendorRequestId={selectedRequest.id}
             vendorName={selectedRequest.vendor_name}
+          />
+          <HandlerApprovalDialog
+            open={handlerApprovalDialogOpen}
+            onOpenChange={setHandlerApprovalDialogOpen}
+            vendorRequestId={selectedRequest.id}
+            vendorName={selectedRequest.vendor_name}
+            vendorEmail={selectedRequest.vendor_email}
+            onActionComplete={() => { onRefresh ? onRefresh() : window.location.reload(); }}
           />
         </>
       )}

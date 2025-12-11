@@ -185,6 +185,7 @@ export type Database = {
           first_signature_approved_at: string | null
           first_signature_approved_by: string | null
           handler_name: string | null
+          handler_rejection_reason: string | null
           id: string
           is_consultant: boolean | null
           is_sensitive: boolean | null
@@ -243,6 +244,7 @@ export type Database = {
           first_signature_approved_at?: string | null
           first_signature_approved_by?: string | null
           handler_name?: string | null
+          handler_rejection_reason?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
@@ -301,6 +303,7 @@ export type Database = {
           first_signature_approved_at?: string | null
           first_signature_approved_by?: string | null
           handler_name?: string | null
+          handler_rejection_reason?: string | null
           id?: string
           is_consultant?: boolean | null
           is_sensitive?: boolean | null
@@ -398,6 +401,7 @@ export type Database = {
         | "pending"
         | "with_vendor"
         | "submitted"
+        | "first_review"
         | "approved"
         | "resent"
     }
@@ -539,6 +543,7 @@ export const Constants = {
         "pending",
         "with_vendor",
         "submitted",
+        "first_review",
         "approved",
         "resent",
       ],

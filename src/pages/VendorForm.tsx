@@ -938,7 +938,7 @@ export default function VendorForm() {
           setOtpVerified(true);
         }
         
-        if (data.status === 'submitted' || data.status === 'approved') {
+        if (data.status === 'submitted' || data.status === 'approved' || data.status === 'first_review') {
           setSubmitted(true);
           setRequest(data as VendorRequest);
         } else {
