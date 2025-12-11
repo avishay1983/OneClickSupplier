@@ -9,11 +9,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface HandlerApprovalDialogProps {
   open: boolean;
@@ -22,6 +23,11 @@ interface HandlerApprovalDialogProps {
   vendorName: string;
   vendorEmail: string;
   onActionComplete: () => void;
+}
+
+interface VendorRequestData {
+  requires_contract_signature: boolean | null;
+  contract_file_path: string | null;
 }
 
 export function HandlerApprovalDialog({
@@ -38,6 +44,7 @@ export function HandlerApprovalDialog({
   const [rejectReason, setRejectReason] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [vendorRequestData, setVendorRequestData] = useState<VendorRequestData | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -53,8 +60,27 @@ export function HandlerApprovalDialog({
     fetchUserName();
   }, [user]);
 
+  // Fetch vendor request data to check contract status
+  useEffect(() => {
+    const fetchVendorRequest = async () => {
+      if (!vendorRequestId || !open) return;
+      const { data } = await supabase
+        .from('vendor_requests')
+        .select('requires_contract_signature, contract_file_path')
+        .eq('id', vendorRequestId)
+        .single();
+      if (data) setVendorRequestData(data);
+    };
+    fetchVendorRequest();
+  }, [vendorRequestId, open]);
+
+  // Check if approval is blocked due to missing contract
+  const requiresContract = vendorRequestData?.requires_contract_signature === true;
+  const contractUploaded = !!vendorRequestData?.contract_file_path;
+  const canApprove = !requiresContract || contractUploaded;
+
   const handleApprove = async () => {
-    if (!vendorRequestId) return;
+    if (!vendorRequestId || !canApprove) return;
     
     setIsLoading(true);
     setAction('approve');
@@ -72,7 +98,7 @@ export function HandlerApprovalDialog({
 
       if (updateError) throw updateError;
 
-      // Send approval emails to managers
+      // Send emails with contract to managers for signing
       const { data, error: emailError } = await supabase.functions.invoke('send-manager-approval', {
         body: { vendorRequestId },
       });
@@ -82,7 +108,7 @@ export function HandlerApprovalDialog({
 
       toast({
         title: 'הבקשה אושרה',
-        description: 'מייל אישור נשלח למנהל הרכש ולסמנכ"ל',
+        description: 'מייל עם החוזה נשלח למנהל הרכש ולסמנכ"ל לחתימה',
       });
       
       onOpenChange(false);
@@ -231,21 +257,33 @@ export function HandlerApprovalDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Contract Required Warning */}
+          {requiresContract && !contractUploaded && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                לא ניתן לאשר את הבקשה - הספק טרם העלה את החוזה החתום
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Approve Button */}
-          <div className="p-4 border rounded-lg bg-success/10 border-success/20">
+          <div className={`p-4 border rounded-lg ${canApprove ? 'bg-success/10 border-success/20' : 'bg-muted/50 border-muted'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CheckCircle className="h-6 w-6 text-success" />
+                <CheckCircle className={`h-6 w-6 ${canApprove ? 'text-success' : 'text-muted-foreground'}`} />
                 <div>
                   <h4 className="font-medium">אשר ושלח למנהלים</h4>
                   <p className="text-sm text-muted-foreground">
-                    הבקשה תועבר לאישור מנהל רכש וסמנכ"ל
+                    {requiresContract 
+                      ? 'החוזה יישלח למנהל רכש ולסמנכ"ל לחתימה דיגיטלית'
+                      : 'הבקשה תועבר לאישור מנהל רכש וסמנכ"ל'}
                   </p>
                 </div>
               </div>
               <Button 
                 onClick={handleApprove}
-                disabled={isLoading}
+                disabled={isLoading || !canApprove}
                 className="bg-success hover:bg-success/90"
               >
                 {action === 'approve' ? (
