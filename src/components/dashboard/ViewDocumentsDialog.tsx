@@ -177,12 +177,64 @@ export function ViewDocumentsDialog({
         ) : (
           <Tabs defaultValue="documents" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="documents">מסמכים ({documents.length})</TabsTrigger>
+              <TabsTrigger value="documents">
+                מסמכים ({documents.length + (vendorData?.contract_file_path ? 1 : 0)})
+              </TabsTrigger>
               <TabsTrigger value="details">פרטי ספק</TabsTrigger>
             </TabsList>
 
             <TabsContent value="documents">
-              {documents.length === 0 ? (
+              {/* Contract File Section */}
+              {vendorData?.requires_contract_signature && vendorData?.contract_file_path && (
+                <div className="mb-4">
+                  <div className="rounded-lg border-2 border-primary bg-primary/5 p-4">
+                    <div className="flex flex-row-reverse items-center justify-between gap-3">
+                      <div className="flex flex-row-reverse items-center gap-3 flex-1 min-w-0">
+                        <div className="bg-primary rounded-lg p-2 shrink-0">
+                          <FileText className="h-5 w-5 text-primary-foreground" />
+                        </div>
+                        <div className="text-right min-w-0">
+                          <Badge className="mb-1">חוזה חתום</Badge>
+                          <p className="font-semibold truncate">
+                            {vendorData.contract_file_path.split('/').pop() || 'contract.pdf'}
+                          </p>
+                          {vendorData.contract_uploaded_at && (
+                            <p className="text-xs text-muted-foreground">
+                              הועלה: {new Date(vendorData.contract_uploaded_at).toLocaleDateString('he-IL')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(vendorData.contract_file_path!)}
+                          className="gap-1"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span className="hidden sm:inline">צפה</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadDocument(
+                            vendorData.contract_file_path!,
+                            vendorData.contract_file_path!.split('/').pop() || 'contract.pdf'
+                          )}
+                          className="gap-1"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span className="hidden sm:inline">הורד</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other Documents */}
+              {documents.length === 0 && !vendorData?.contract_file_path ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>לא נמצאו מסמכים עבור ספק זה</p>
