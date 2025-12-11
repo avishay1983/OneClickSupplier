@@ -223,6 +223,8 @@ function createHtmlResponse(status: string, title: string, message: string): Res
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
     },
   });
 }
