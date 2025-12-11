@@ -62,6 +62,24 @@ const handler = async (req: Request): Promise<Response> => {
         return createRedirectToApp("error", "שגיאה", "לא ניתן לעדכן את האישור");
       }
 
+      // Check if both managers have approved - if so, update status to approved
+      const otherApprovalField = role === 'procurement_manager' ? 'vp_approved' : 'procurement_manager_approved';
+      const otherApproved = vendorRequest[otherApprovalField] === true;
+      
+      if (otherApproved) {
+        // Both have approved, update status to approved
+        const { error: statusError } = await supabase
+          .from("vendor_requests")
+          .update({ status: 'approved' })
+          .eq("id", vendorId);
+        
+        if (statusError) {
+          console.error("Error updating status to approved:", statusError);
+        } else {
+          console.log(`Vendor ${vendorId} status updated to approved (both managers approved)`);
+        }
+      }
+
       console.log(`Vendor ${vendorId} approved by ${role}`);
       return createRedirectToApp(
         "success",
