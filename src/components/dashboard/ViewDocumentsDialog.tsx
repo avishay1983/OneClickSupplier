@@ -77,7 +77,9 @@ export function ViewDocumentsDialog({
       .from('vendor_documents')
       .getPublicUrl(filePath);
     
-    window.open(data.publicUrl, '_blank');
+    // Remove any download parameter to force inline viewing
+    const viewUrl = data.publicUrl.split('?')[0];
+    window.open(viewUrl, '_blank');
   };
 
   const downloadDocument = async (filePath: string, fileName: string) => {
