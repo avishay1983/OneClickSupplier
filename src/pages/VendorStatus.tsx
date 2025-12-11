@@ -6,7 +6,7 @@ import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
-type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'first_review' | 'approved' | 'resent';
+type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'first_review' | 'approved' | 'resent' | 'rejected';
 
 interface VendorStatusData {
   vendor_name: string;
@@ -41,6 +41,13 @@ const getVendorFriendlyStatus = (status: VendorStatus): { label: string; descrip
         description: 'הבקשה אושרה! הקמת הספק הושלמה בהצלחה.',
         icon: <CheckCircle className="h-16 w-16" />,
         color: 'text-green-500'
+      };
+    case 'rejected':
+      return {
+        label: 'נדחתה',
+        description: 'הבקשה נדחתה. לפרטים נוספים יש לפנות לאיש הקשר בחברה.',
+        icon: <AlertCircle className="h-16 w-16" />,
+        color: 'text-red-500'
       };
     default:
       return {

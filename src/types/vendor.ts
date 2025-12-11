@@ -1,4 +1,4 @@
-export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent' | 'first_review';
+export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent' | 'first_review' | 'rejected';
 
 export interface VendorRequest {
   id: string;
@@ -22,6 +22,7 @@ export interface VendorRequest {
   claims_area: 'home' | 'car' | 'life' | 'health' | null;
   claims_sub_category: string | null;
   handler_name: string | null;
+  handler_rejection_reason: string | null;
   
   // Vendor fields
   company_id: string | null;
@@ -71,6 +72,7 @@ export const STATUS_LABELS: Record<VendorStatus, string> = {
   submitted: 'ממתין לאישור מנהלים',
   approved: 'אושר',
   resent: 'נשלח מחדש',
+  rejected: 'נדחה',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {

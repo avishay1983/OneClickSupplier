@@ -35,6 +35,7 @@ export function HandlerApprovalDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [action, setAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
   const [resendReason, setResendReason] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const { user } = useAuth();
@@ -101,28 +102,53 @@ export function HandlerApprovalDialog({
 
   const handleReject = async () => {
     if (!vendorRequestId) return;
+    if (!rejectReason.trim()) {
+      toast({
+        title: 'שגיאה',
+        description: 'יש להזין סיבת דחייה',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setIsLoading(true);
     setAction('reject');
     try {
+      // Update status to rejected and save reason
       const { error: updateError } = await supabase
         .from('vendor_requests')
         .update({
+          status: 'rejected',
           first_review_approved: false,
           first_review_approved_at: new Date().toISOString(),
           first_review_approved_by: userName || 'מטפל',
+          handler_rejection_reason: rejectReason,
         })
         .eq('id', vendorRequestId);
 
       if (updateError) throw updateError;
 
+      // Send rejection email to vendor
+      const { error: emailError } = await supabase.functions.invoke('send-vendor-rejection', {
+        body: { 
+          vendorRequestId,
+          reason: rejectReason,
+        },
+      });
+
+      if (emailError) {
+        console.error('Error sending rejection email:', emailError);
+        // Don't fail the whole operation if email fails
+      }
+
       toast({
         title: 'הבקשה נדחתה',
-        description: 'הבקשה נדחתה על ידי המטפל',
+        description: 'הספק יקבל הודעה במייל על הדחייה',
       });
       
       onOpenChange(false);
       onActionComplete();
+      setRejectReason('');
     } catch (error: any) {
       console.error('Error rejecting request:', error);
       toast({
@@ -237,22 +263,33 @@ export function HandlerApprovalDialog({
             </div>
           </div>
 
-          {/* Reject Button */}
+          {/* Reject Section */}
           <div className="p-4 border rounded-lg bg-destructive/10 border-destructive/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <XCircle className="h-6 w-6 text-destructive" />
-                <div>
-                  <h4 className="font-medium">דחה בקשה</h4>
-                  <p className="text-sm text-muted-foreground">
-                    הבקשה תידחה ולא תועבר למנהלים
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 mb-4">
+              <XCircle className="h-6 w-6 text-destructive" />
+              <div>
+                <h4 className="font-medium">דחה בקשה</h4>
+                <p className="text-sm text-muted-foreground">
+                  הבקשה תידחה והספק יקבל הודעה במייל
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="rejectReason">סיבת הדחייה *</Label>
+                <Textarea
+                  id="rejectReason"
+                  placeholder="הסבר לספק למה הבקשה נדחתה..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={3}
+                />
               </div>
               <Button 
                 onClick={handleReject}
-                disabled={isLoading}
+                disabled={isLoading || !rejectReason.trim()}
                 variant="destructive"
+                className="w-full"
               >
                 {action === 'reject' ? (
                   <>
@@ -260,7 +297,10 @@ export function HandlerApprovalDialog({
                     דוחה...
                   </>
                 ) : (
-                  'דחה'
+                  <>
+                    <XCircle className="h-4 w-4 ml-2" />
+                    דחה בקשה
+                  </>
                 )}
               </Button>
             </div>

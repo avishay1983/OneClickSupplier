@@ -10,7 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -47,6 +53,8 @@ const getStatusVariant = (status: VendorStatus) => {
       return 'outline';
     case 'approved':
       return 'default';
+    case 'rejected':
+      return 'destructive';
     default:
       return 'secondary';
   }
@@ -60,6 +68,8 @@ const getStatusClass = (status: VendorStatus) => {
       return 'bg-warning text-warning-foreground';
     case 'first_review':
       return 'bg-blue-500 text-white';
+    case 'rejected':
+      return 'bg-destructive text-destructive-foreground';
     default:
       return '';
   }
@@ -413,12 +423,29 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={getStatusVariant(request.status)}
-                    className={getStatusClass(request.status)}
-                  >
-                    {STATUS_LABELS[request.status]}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge 
+                      variant={getStatusVariant(request.status)}
+                      className={getStatusClass(request.status)}
+                    >
+                      {STATUS_LABELS[request.status]}
+                    </Badge>
+                    {request.status === 'rejected' && request.handler_rejection_reason && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Info className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs text-right" dir="rtl">
+                            <p className="font-medium mb-1">סיבת הדחייה:</p>
+                            <p>{request.handler_rejection_reason}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {new Date(request.created_at).toLocaleDateString('he-IL')}
