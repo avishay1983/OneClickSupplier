@@ -129,8 +129,34 @@ const handler = async (req: Request): Promise<Response> => {
           throw updateError;
         }
 
-        // Note: Manager approval emails will be sent when handler approves the request
-        // This is done through the HandlerApprovalDialog in the dashboard
+        // Send notification to handler if handler_email is set
+        if (vendorRequest.handler_email) {
+          try {
+            console.log(`Sending notification to handler: ${vendorRequest.handler_email}`);
+            const notificationResponse = await fetch(`${supabaseUrl}/functions/v1/send-handler-notification`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({
+                handlerEmail: vendorRequest.handler_email,
+                handlerName: vendorRequest.handler_name || '',
+                vendorName: vendorRequest.vendor_name,
+                vendorId: vendorRequest.id,
+              }),
+            });
+            
+            if (!notificationResponse.ok) {
+              console.error("Handler notification failed:", await notificationResponse.text());
+            } else {
+              console.log("Handler notification sent successfully");
+            }
+          } catch (notifyError) {
+            console.error("Error sending handler notification:", notifyError);
+            // Don't fail the submit if notification fails
+          }
+        }
 
         return new Response(
           JSON.stringify({ success: true, vendorName: vendorRequest.vendor_name, vendorEmail: vendorRequest.vendor_email }),

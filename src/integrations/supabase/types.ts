@@ -184,6 +184,7 @@ export type Database = {
           first_signature_approved: boolean | null
           first_signature_approved_at: string | null
           first_signature_approved_by: string | null
+          handler_email: string | null
           handler_name: string | null
           handler_rejection_reason: string | null
           id: string
@@ -243,6 +244,7 @@ export type Database = {
           first_signature_approved?: boolean | null
           first_signature_approved_at?: string | null
           first_signature_approved_by?: string | null
+          handler_email?: string | null
           handler_name?: string | null
           handler_rejection_reason?: string | null
           id?: string
@@ -302,6 +304,7 @@ export type Database = {
           first_signature_approved?: boolean | null
           first_signature_approved_at?: string | null
           first_signature_approved_by?: string | null
+          handler_email?: string | null
           handler_name?: string | null
           handler_rejection_reason?: string | null
           id?: string
