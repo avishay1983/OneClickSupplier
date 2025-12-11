@@ -152,7 +152,8 @@ const handler = async (req: Request): Promise<Response> => {
         from: gmailUser,
         to: procurementManagerEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: procurementEmailHtml,
+        content: "auto",
+        html: procurementEmailHtml,
       });
       console.log("Email sent to procurement manager");
       emailsSent++;
@@ -171,7 +172,8 @@ const handler = async (req: Request): Promise<Response> => {
         from: gmailUser,
         to: vpEmail,
         subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: vpEmailHtml,
+        content: "auto",
+        html: vpEmailHtml,
       });
       console.log("Email sent to VP");
       emailsSent++;
