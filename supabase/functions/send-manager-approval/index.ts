@@ -194,7 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", vendorRequestId);
 
     // Get the app URL for signing link
-    const appUrl = "https://id-preview--ijyqtemnhlbamxmgjuzp.lovable.app";
+    const appUrl = "https://ijyqtemnhlbamxmgjuzp.lovable.app";
 
     const createApprovalEmail = (role: 'procurement_manager' | 'vp', recipientName: string, hasContract: boolean) => {
       const signingLink = `${appUrl}/dashboard`;
