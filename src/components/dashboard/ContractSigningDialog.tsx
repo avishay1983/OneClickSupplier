@@ -47,8 +47,22 @@ export function ContractSigningDialog({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
 
+  // Reset signerRole when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setSignerRole(null);
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+        signaturePadRef.current = null;
+      }
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open || !vendorRequestId) return;
+    
+    // Reset signerRole when dialog opens
+    setSignerRole(null);
     
     const fetchData = async () => {
       setIsLoading(true);
