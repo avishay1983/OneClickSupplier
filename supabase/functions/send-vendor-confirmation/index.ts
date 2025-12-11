@@ -72,7 +72,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: vendorEmail,
       subject: "הפרטים שלך התקבלו - ביטוח ישיר",
-      content: emailHtml,
+      content: "auto",
+      html: emailHtml,
     });
 
     await client.close();

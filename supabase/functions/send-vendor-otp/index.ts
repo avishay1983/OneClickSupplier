@@ -138,7 +138,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: gmailUser,
       to: vendorRequest.vendor_email,
       subject: "קוד אימות לטופס ספק",
-      content: emailHtml,
+      content: "auto",
+      html: emailHtml,
     });
 
     await client.close();
