@@ -9,10 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, RotateCcw, Mail } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 
 interface HandlerApprovalDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function HandlerApprovalDialog({
   const [action, setAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
   const [resendReason, setResendReason] = useState('');
   const [userName, setUserName] = useState<string | null>(null);
+  const [showDocuments, setShowDocuments] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -306,8 +308,40 @@ export function HandlerApprovalDialog({
               </Button>
             </div>
           </div>
+
+          {/* View Documents Button */}
+          <div className="p-4 border rounded-lg bg-primary/10 border-primary/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6 text-primary" />
+                <div>
+                  <h4 className="font-medium">צפה במסמכים ובפרטים</h4>
+                  <p className="text-sm text-muted-foreground">
+                    צפה במסמכים ובפרטים שהספק עדכן
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowDocuments(true)}
+                variant="outline"
+              >
+                <FileText className="h-4 w-4 ml-2" />
+                צפה
+              </Button>
+            </div>
+          </div>
         </div>
       </DialogContent>
+
+      {/* View Documents Dialog */}
+      {vendorRequestId && (
+        <ViewDocumentsDialog
+          open={showDocuments}
+          onOpenChange={setShowDocuments}
+          vendorRequestId={vendorRequestId}
+          vendorName={vendorName}
+        />
+      )}
     </Dialog>
   );
 }
