@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -11,6 +10,76 @@ interface SendManagerApprovalRequest {
   vendorRequestId: string;
   targetRole?: 'procurement_manager' | 'vp';
   forceResend?: boolean;
+}
+
+// Encode string to Base64 for proper UTF-8 handling
+function encodeBase64(str: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return btoa(String.fromCharCode(...data));
+}
+
+// Send email via raw SMTP with proper UTF-8 encoding
+async function sendEmailViaSMTP(
+  gmailUser: string,
+  gmailPassword: string,
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const subjectBase64 = encodeBase64(subject);
+  const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
+
+  const boundary = "----=_Part_" + Date.now();
+  const rawEmail = [
+    `From: ${gmailUser}`,
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    encodeBase64(htmlContent),
+    ``,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const conn = await Deno.connectTls({
+    hostname: "smtp.gmail.com",
+    port: 465,
+  });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(cmd: string): Promise<string> {
+    await conn.write(encoder.encode(cmd + "\r\n"));
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  async function readResponse(): Promise<string> {
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  await readResponse();
+  await sendCommand(`EHLO ${gmailUser.split('@')[1]}`);
+  await sendCommand("AUTH LOGIN");
+  await sendCommand(btoa(gmailUser));
+  await sendCommand(btoa(gmailPassword));
+  await sendCommand(`MAIL FROM:<${gmailUser}>`);
+  await sendCommand(`RCPT TO:<${to}>`);
+  await sendCommand("DATA");
+  await conn.write(encoder.encode(rawEmail + "\r\n.\r\n"));
+  await readResponse();
+  await sendCommand("QUIT");
+  conn.close();
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -28,7 +97,6 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get vendor request details
     const { data: vendorRequest, error: fetchError } = await supabase
       .from("vendor_requests")
       .select("*")
@@ -40,7 +108,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Vendor request not found");
     }
 
-    // Get app settings for email addresses
     const { data: settings } = await supabase
       .from("app_settings")
       .select("setting_key, setting_value");
@@ -66,23 +133,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Gmail credentials not configured");
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailAppPassword,
-        },
-      },
-    });
-
-    // Generate approval tokens
     const procurementToken = crypto.randomUUID();
     const vpToken = crypto.randomUUID();
 
-    // Store tokens in database
     await supabase
       .from("vendor_requests")
       .update({
@@ -111,7 +164,6 @@ const handler = async (req: Request): Promise<Response> => {
 <div style="padding: 30px;">
 <p style="margin: 12px 0;">שלום ${recipientName},</p>
 <p style="margin: 12px 0;">ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.</p>
-
 <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
 <h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי הספק:</h3>
 <table style="width: 100%; border-collapse: collapse;">
@@ -125,12 +177,10 @@ const handler = async (req: Request): Promise<Response> => {
 <tr><td style="padding: 8px 0;"><strong>חשבון:</strong></td><td style="padding: 8px 0;">${vendorRequest.bank_account_number || '-'}</td></tr>
 </table>
 </div>
-
 <div style="text-align: center; margin: 30px 0;">
 <a href="${approveLink}" style="display: inline-block; background: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 10px;">אשר ספק ✓</a>
 <a href="${rejectLink}" style="display: inline-block; background: #ef4444; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 10px;">דחה ספק ✗</a>
 </div>
-
 <p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
 </div>
 </div>
@@ -140,48 +190,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     let emailsSent = 0;
 
-    // For individual sends (targetRole specified), forceResend allows sending even if already responded
-    // For "send to all pending" (no targetRole), only send to those who haven't responded
     const shouldSendToProcurement = targetRole === 'procurement_manager' 
       ? (forceResend || vendorRequest.procurement_manager_approved === null) && procurementManagerEmail
       : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null);
     
     if (shouldSendToProcurement) {
       const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementToken, procurementManagerName);
-      await client.send({
-        from: gmailUser,
-        to: procurementManagerEmail,
-        subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: "auto",
-        html: procurementEmailHtml,
-      });
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail, `אישור הקמת ספק - ${vendorRequest.vendor_name}`, procurementEmailHtml);
       console.log("Email sent to procurement manager");
       emailsSent++;
     } else {
       console.log("Skipping procurement manager - condition not met");
     }
 
-    // Same logic for VP
     const shouldSendToVp = targetRole === 'vp'
       ? (forceResend || vendorRequest.vp_approved === null) && vpEmail
       : (!targetRole && vpEmail && vendorRequest.vp_approved === null);
     
     if (shouldSendToVp) {
       const vpEmailHtml = createApprovalEmail('vp', vpToken, vpName);
-      await client.send({
-        from: gmailUser,
-        to: vpEmail,
-        subject: `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
-        content: "auto",
-        html: vpEmailHtml,
-      });
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail, `אישור הקמת ספק - ${vendorRequest.vendor_name}`, vpEmailHtml);
       console.log("Email sent to VP");
       emailsSent++;
     } else {
       console.log("Skipping VP - condition not met");
     }
-
-    await client.close();
 
     return new Response(JSON.stringify({ success: true, emailsSent }), {
       status: 200,

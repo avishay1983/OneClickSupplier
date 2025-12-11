@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +10,76 @@ interface SendApprovalEmailRequest {
   userId: string;
   userEmail: string;
   userName: string;
+}
+
+// Encode string to Base64 for proper UTF-8 handling
+function encodeBase64(str: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return btoa(String.fromCharCode(...data));
+}
+
+// Send email via raw SMTP with proper UTF-8 encoding
+async function sendEmailViaSMTP(
+  gmailUser: string,
+  gmailPassword: string,
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const subjectBase64 = encodeBase64(subject);
+  const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
+
+  const boundary = "----=_Part_" + Date.now();
+  const rawEmail = [
+    `From: ${gmailUser}`,
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    encodeBase64(htmlContent),
+    ``,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const conn = await Deno.connectTls({
+    hostname: "smtp.gmail.com",
+    port: 465,
+  });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(cmd: string): Promise<string> {
+    await conn.write(encoder.encode(cmd + "\r\n"));
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  async function readResponse(): Promise<string> {
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  await readResponse();
+  await sendCommand(`EHLO ${gmailUser.split('@')[1]}`);
+  await sendCommand("AUTH LOGIN");
+  await sendCommand(btoa(gmailUser));
+  await sendCommand(btoa(gmailPassword));
+  await sendCommand(`MAIL FROM:<${gmailUser}>`);
+  await sendCommand(`RCPT TO:<${to}>`);
+  await sendCommand("DATA");
+  await conn.write(encoder.encode(rawEmail + "\r\n.\r\n"));
+  await readResponse();
+  await sendCommand("QUIT");
+  conn.close();
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -40,7 +109,6 @@ const handler = async (req: Request): Promise<Response> => {
     const { userId, userEmail, userName }: SendApprovalEmailRequest = await req.json();
     console.log("Processing approval request for:", userEmail, "userId:", userId);
 
-    // Get the approval token - search by user_id OR user_email (case-insensitive)
     const { data: approval, error: approvalError } = await supabase
       .from("pending_approvals")
       .select("approval_token")
@@ -61,7 +129,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Build approval links
     const approveLink = `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=approve`;
     const rejectLink = `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=reject`;
 
@@ -93,44 +160,21 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailAppPassword,
-        },
-      },
-    });
-
-    // Send to both admin emails
     const adminEmails = [adminEmail, "avishay.elankry@gmail.com"];
     console.log("Sending approval email to:", adminEmails);
 
     const subjectText = `בקשת הרשמה חדשה - ${userName || userEmail}`;
 
-    // Send to each admin email
     for (const email of adminEmails) {
       try {
-        await client.send({
-          from: gmailUser,
-          to: email,
-          subject: subjectText,
-          content: "auto",
-          html: emailHtml,
-        });
+        await sendEmailViaSMTP(gmailUser, gmailAppPassword, email, subjectText, emailHtml);
         console.log("Approval email sent to:", email);
       } catch (sendError) {
         console.error("Error sending to", email, ":", sendError);
-        // Continue to next email even if one fails
       }
     }
 
-    await client.close();
-
-    console.log("All approval emails sent successfully via Gmail SMTP");
+    console.log("All approval emails sent successfully via raw SMTP");
 
     return new Response(
       JSON.stringify({ success: true }),

@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +9,76 @@ interface SendConfirmationRequest {
   vendorName: string;
   vendorEmail: string;
   statusLink: string;
+}
+
+// Encode string to Base64 for proper UTF-8 handling
+function encodeBase64(str: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return btoa(String.fromCharCode(...data));
+}
+
+// Send email via raw SMTP with proper UTF-8 encoding
+async function sendEmailViaSMTP(
+  gmailUser: string,
+  gmailPassword: string,
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const subjectBase64 = encodeBase64(subject);
+  const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
+
+  const boundary = "----=_Part_" + Date.now();
+  const rawEmail = [
+    `From: ${gmailUser}`,
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    encodeBase64(htmlContent),
+    ``,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const conn = await Deno.connectTls({
+    hostname: "smtp.gmail.com",
+    port: 465,
+  });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(cmd: string): Promise<string> {
+    await conn.write(encoder.encode(cmd + "\r\n"));
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  async function readResponse(): Promise<string> {
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  await readResponse();
+  await sendCommand(`EHLO ${gmailUser.split('@')[1]}`);
+  await sendCommand("AUTH LOGIN");
+  await sendCommand(btoa(gmailUser));
+  await sendCommand(btoa(gmailPassword));
+  await sendCommand(`MAIL FROM:<${gmailUser}>`);
+  await sendCommand(`RCPT TO:<${to}>`);
+  await sendCommand("DATA");
+  await conn.write(encoder.encode(rawEmail + "\r\n.\r\n"));
+  await readResponse();
+  await sendCommand("QUIT");
+  conn.close();
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,18 +98,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (!gmailUser || !gmailAppPassword) {
       throw new Error("Gmail credentials not configured");
     }
-
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailAppPassword,
-        },
-      },
-    });
 
     const emailHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -68,17 +125,9 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
 
-    await client.send({
-      from: gmailUser,
-      to: vendorEmail,
-      subject: "הפרטים שלך התקבלו - ביטוח ישיר",
-      content: "auto",
-      html: emailHtml,
-    });
+    await sendEmailViaSMTP(gmailUser, gmailAppPassword, vendorEmail, "הפרטים שלך התקבלו - ביטוח ישיר", emailHtml);
 
-    await client.close();
-
-    console.log("Confirmation email sent successfully via Gmail SMTP");
+    console.log("Confirmation email sent successfully via raw SMTP");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
