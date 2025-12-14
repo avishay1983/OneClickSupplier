@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2 } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { PendingApprovalsDialog } from '@/components/dashboard/PendingApprovalsDialog';
 import { VendorRequest } from '@/types/vendor';
+import { ContractSigningDialog } from '@/components/dashboard/ContractSigningDialog';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -25,6 +26,10 @@ export default function Dashboard() {
   const [checkingApproval, setCheckingApproval] = useState(true);
   const [resendingApproval, setResendingApproval] = useState(false);
   const [currentUserName, setCurrentUserName] = useState<string>('');
+  const [userManagerRole, setUserManagerRole] = useState<'vp' | 'procurement' | null>(null);
+  const [pendingSignatures, setPendingSignatures] = useState<VendorRequest[]>([]);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [selectedContractRequest, setSelectedContractRequest] = useState<VendorRequest | null>(null);
 
   // Check if user is approved and get user name
   useEffect(() => {
@@ -60,6 +65,60 @@ export default function Dashboard() {
       checkApproval();
     }
   }, [user, authLoading]);
+
+  // Check if user is VP or Procurement Manager and find pending signatures
+  useEffect(() => {
+    const checkManagerRole = async () => {
+      if (!user || !requests.length) return;
+
+      try {
+        const { data: settings } = await supabase
+          .from('app_settings')
+          .select('setting_key, setting_value');
+        
+        const settingsMap: Record<string, string> = {};
+        settings?.forEach((s) => {
+          settingsMap[s.setting_key] = s.setting_value;
+        });
+
+        const vpEmail = settingsMap.vp_email?.toLowerCase().trim();
+        const procurementEmail = settingsMap.car_manager_email?.toLowerCase().trim();
+        const userEmail = user.email?.toLowerCase().trim();
+
+        let role: 'vp' | 'procurement' | null = null;
+        if (userEmail === vpEmail) {
+          role = 'vp';
+        } else if (userEmail === procurementEmail) {
+          role = 'procurement';
+        }
+        setUserManagerRole(role);
+
+        // Find requests pending this user's signature
+        if (role) {
+          const pendingForSignature = requests.filter(req => {
+            // Must have contract uploaded
+            if (!req.contract_file_path) return false;
+            
+            if (role === 'vp') {
+              // VP needs to sign and hasn't signed yet
+              return req.requires_vp_approval && !req.ceo_signed;
+            } else if (role === 'procurement') {
+              // Procurement needs to sign
+              // If VP approval required, VP must have signed first
+              if (req.requires_vp_approval && !req.ceo_signed) return false;
+              return !req.procurement_manager_signed;
+            }
+            return false;
+          });
+          setPendingSignatures(pendingForSignature);
+        }
+      } catch (error) {
+        console.error('Error checking manager role:', error);
+      }
+    };
+
+    checkManagerRole();
+  }, [user, requests]);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -412,6 +471,63 @@ export default function Dashboard() {
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Pending Signatures Banner for VP/Procurement Manager */}
+        {userManagerRole && pendingSignatures.length > 0 && (
+          <div className="mb-6 p-6 bg-primary/10 border-2 border-primary rounded-xl animate-pulse">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary rounded-full">
+                  <FileSignature className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-primary">
+                    {pendingSignatures.length === 1 
+                      ? 'יש חוזה אחד ממתין לחתימתך!'
+                      : `יש ${pendingSignatures.length} חוזים ממתינים לחתימתך!`
+                    }
+                  </h3>
+                  <p className="text-muted-foreground">
+                    לחץ על הכפתור כדי לחתום על החוזה{pendingSignatures.length > 1 ? 'ים' : ''}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                size="lg"
+                className="gap-3 text-lg px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-shadow"
+                onClick={() => {
+                  setSelectedContractRequest(pendingSignatures[0]);
+                  setContractDialogOpen(true);
+                }}
+              >
+                <Pen className="h-6 w-6" />
+                חתום עכשיו
+              </Button>
+            </div>
+            {pendingSignatures.length > 1 && (
+              <div className="mt-4 pt-4 border-t border-primary/20">
+                <p className="text-sm text-muted-foreground mb-2">חוזים ממתינים:</p>
+                <div className="flex flex-wrap gap-2">
+                  {pendingSignatures.map((req, idx) => (
+                    <Button
+                      key={req.id}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        setSelectedContractRequest(req);
+                        setContractDialogOpen(true);
+                      }}
+                    >
+                      <FileSignature className="h-4 w-4" />
+                      {req.vendor_name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -442,6 +558,17 @@ export default function Dashboard() {
       <PendingApprovalsDialog
         open={approvalsOpen}
         onOpenChange={setApprovalsOpen}
+      />
+
+      <ContractSigningDialog
+        open={contractDialogOpen}
+        onOpenChange={setContractDialogOpen}
+        vendorRequestId={selectedContractRequest?.id || null}
+        vendorName={selectedContractRequest?.vendor_name || ''}
+        onSignComplete={() => {
+          fetchRequests();
+          setContractDialogOpen(false);
+        }}
       />
     </div>
   );
