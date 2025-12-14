@@ -237,9 +237,10 @@ export function ContractSigningDialog({
       const pageHeight = lastPage.getHeight();
       const pageWidth = lastPage.getWidth();
       
-      // The signature lines are approximately at 55% from bottom of page
-      // VP is on the LEFT (in Hebrew RTL layout), Procurement in CENTER
-      const yPosition = pageHeight * 0.52; // About 52% from bottom (above the signature lines)
+      // Position signature ABOVE the signature line (not covering the title text)
+      // The signature line with titles is at about 50-55% from bottom
+      // Place signature higher - above the line, not on it
+      const yPosition = pageHeight * 0.58; // Higher position - above the signature line
       
       let xPosition: number;
       if (signerRole === 'ceo') {
