@@ -30,6 +30,7 @@ interface ApprovalStatus {
   vp_approved_at: string | null;
   vp_approved_by: string | null;
   approval_email_sent_at: string | null;
+  requires_vp_approval: boolean;
 }
 
 export function ManagerApprovalStatusDialog({
@@ -71,7 +72,7 @@ export function ManagerApprovalStatusDialog({
     try {
       const { data, error } = await supabase
         .from('vendor_requests')
-        .select('first_review_approved, first_review_approved_at, first_review_approved_by, procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, vp_approved, vp_approved_at, vp_approved_by, approval_email_sent_at')
+        .select('first_review_approved, first_review_approved_at, first_review_approved_by, procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, vp_approved, vp_approved_at, vp_approved_by, approval_email_sent_at, requires_vp_approval')
         .eq('id', vendorRequestId)
         .single();
 
@@ -87,6 +88,7 @@ export function ManagerApprovalStatusDialog({
         vp_approved_at: data.vp_approved_at,
         vp_approved_by: data.vp_approved_by,
         approval_email_sent_at: data.approval_email_sent_at,
+        requires_vp_approval: data.requires_vp_approval ?? true,
       });
     } catch (error) {
       console.error('Error fetching approval status:', error);
@@ -120,9 +122,11 @@ export function ManagerApprovalStatusDialog({
       if (emailError) throw emailError;
       if (data && !data.success) throw new Error(data.error);
 
+      const approvalTargets = status?.requires_vp_approval ? 'למנהל הרכש ולסמנכ"ל' : 'למנהל הרכש';
+
       toast({
         title: 'הבקשה אושרה',
-        description: 'מייל אישור נשלח למנהל הרכש ולסמנכ"ל',
+        description: `מייל אישור נשלח ${approvalTargets}`,
       });
       
       fetchStatus();
@@ -328,7 +332,8 @@ export function ManagerApprovalStatusDialog({
                   status.procurement_manager_approved_by
                 )}
                 
-                {renderApprovalStatus(
+                {/* Only show VP approval if requires_vp_approval is true */}
+                {status.requires_vp_approval && renderApprovalStatus(
                   'סמנכ"ל',
                   'vp',
                   status.vp_approved,
@@ -336,32 +341,58 @@ export function ManagerApprovalStatusDialog({
                   status.vp_approved_by
                 )}
 
-                {(status.procurement_manager_approved === null || status.vp_approved === null) && (
-                  <Button
-                    onClick={() => sendApprovalEmails()}
-                    disabled={sendingTarget !== null}
-                    className="w-full mt-4"
-                    variant="outline"
-                  >
-                    {sendingTarget === 'all' ? (
-                      <>
-                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                        שולח...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="h-4 w-4 ml-2" />
-                        שלח מייל לכל הממתינים
-                      </>
-                    )}
-                  </Button>
+                {/* Show resend button based on approval requirements */}
+                {status.requires_vp_approval ? (
+                  (status.procurement_manager_approved === null || status.vp_approved === null) && (
+                    <Button
+                      onClick={() => sendApprovalEmails()}
+                      disabled={sendingTarget !== null}
+                      className="w-full mt-4"
+                      variant="outline"
+                    >
+                      {sendingTarget === 'all' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                          שולח...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-4 w-4 ml-2" />
+                          שלח מייל לכל הממתינים
+                        </>
+                      )}
+                    </Button>
+                  )
+                ) : (
+                  status.procurement_manager_approved === null && (
+                    <Button
+                      onClick={() => sendApprovalEmails('procurement_manager')}
+                      disabled={sendingTarget !== null}
+                      className="w-full mt-4"
+                      variant="outline"
+                    >
+                      {sendingTarget === 'procurement_manager' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                          שולח...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-4 w-4 ml-2" />
+                          שלח מייל למנהל הרכש
+                        </>
+                      )}
+                    </Button>
+                  )
                 )}
               </>
             )}
 
             {!status.handler_approved && (
               <p className="text-sm text-muted-foreground text-center border-t pt-4">
-                יש לאשר את הבקשה כדי לשלוח מייל למנהל הרכש ולסמנכ"ל
+                {status.requires_vp_approval 
+                  ? 'יש לאשר את הבקשה כדי לשלוח מייל למנהל הרכש ולסמנכ"ל'
+                  : 'יש לאשר את הבקשה כדי לשלוח מייל למנהל הרכש'}
               </p>
             )}
           </div>
