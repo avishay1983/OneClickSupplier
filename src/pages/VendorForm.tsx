@@ -1292,15 +1292,19 @@ export default function VendorForm() {
               </div>
             )}
             
-            <p className="text-muted-foreground mb-4 mt-4">
-              שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
-            </p>
-            <a 
-              href={statusLink}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-            >
-              מעקב סטטוס הבקשה
-            </a>
+            {(!request?.requires_contract_signature || contractUploaded) && (
+              <>
+                <p className="text-muted-foreground mb-4 mt-4">
+                  שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
+                </p>
+                <a 
+                  href={statusLink}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                >
+                  מעקב סטטוס הבקשה
+                </a>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
