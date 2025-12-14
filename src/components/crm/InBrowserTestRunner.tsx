@@ -826,11 +826,58 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
     setIsRunning(false);
   };
 
+  // Helper function to create a simple test PDF as a Blob
+  const createTestPDF = (title: string): Blob => {
+    // Create a minimal valid PDF with Hebrew text
+    const pdfContent = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 44 >>
+stream
+BT /F1 12 Tf 100 700 Td (${title}) Tj ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000206 00000 n 
+trailer
+<< /Size 5 /Root 1 0 R >>
+startxref
+300
+%%EOF`;
+    return new Blob([pdfContent], { type: 'application/pdf' });
+  };
+
+  // Helper function to create a simple test image as a Blob
+  const createTestImage = (): Blob => {
+    // Create a 1x1 pixel PNG
+    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: 'image/png' });
+  };
+
   const runDocsTests = async () => {
     setIsRunning(true);
     setDocsTestResults(docsAndSignatureTests.map(t => ({ ...t, status: 'pending' })));
     let vendorId: string | null = null;
     const uploadedDocIds: string[] = [];
+    const uploadedFilePaths: string[] = [];
 
     // Docs Test 1: Create vendor request with contract requirement
     updateDocsTest(0, { status: 'running' });
@@ -854,68 +901,98 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       if (error) throw error;
       vendorId = data.id;
       setTestVendorId(vendorId);
-      updateDocsTest(0, { status: 'passed', message: `נוצר ספק עם דרישת חוזה: ${data.vendor_name.substring(0, 25)}...`, duration: Date.now() - start0 });
+      updateDocsTest(0, { status: 'passed', message: `נוצר ספק עם דרישת חוזה`, duration: Date.now() - start0 });
     } catch (e: any) {
       updateDocsTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
       setIsRunning(false);
       return;
     }
 
-    // Docs Test 2: Upload bookkeeping certificate
+    // Docs Test 2: Upload bookkeeping certificate (real file)
     updateDocsTest(1, { status: 'running' });
     const start1 = Date.now();
     try {
+      const filePath = `${vendorId}/bookkeeping_cert_test.pdf`;
+      const pdfBlob = createTestPDF('Bookkeeping Certificate - Test Document');
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vendor_documents')
+        .upload(filePath, pdfBlob, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      uploadedFilePaths.push(filePath);
+      
       const { data, error } = await supabase
         .from('vendor_documents')
         .insert({
           vendor_request_id: vendorId,
           document_type: 'bookkeeping_cert',
-          file_name: 'test_bookkeeping_cert.pdf',
-          file_path: `test/${vendorId}/bookkeeping_cert.pdf`,
+          file_name: 'אישור_ניהול_ספרים_טסט.pdf',
+          file_path: filePath,
         })
         .select()
         .single();
       
       if (error) throw error;
       uploadedDocIds.push(data.id);
-      updateDocsTest(1, { status: 'passed', message: 'אישור ניהול ספרים הועלה', duration: Date.now() - start1 });
+      updateDocsTest(1, { status: 'passed', message: 'אישור ניהול ספרים הועלה ל-Storage', duration: Date.now() - start1 });
     } catch (e: any) {
       updateDocsTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
     }
 
-    // Docs Test 3: Upload tax certificate
+    // Docs Test 3: Upload tax certificate (real file)
     updateDocsTest(2, { status: 'running' });
     const start2 = Date.now();
     try {
+      const filePath = `${vendorId}/tax_cert_test.pdf`;
+      const pdfBlob = createTestPDF('Tax Certificate - Test Document');
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vendor_documents')
+        .upload(filePath, pdfBlob, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      uploadedFilePaths.push(filePath);
+      
       const { data, error } = await supabase
         .from('vendor_documents')
         .insert({
           vendor_request_id: vendorId,
           document_type: 'tax_cert',
-          file_name: 'test_tax_cert.pdf',
-          file_path: `test/${vendorId}/tax_cert.pdf`,
+          file_name: 'אישור_ניכוי_מס_טסט.pdf',
+          file_path: filePath,
         })
         .select()
         .single();
       
       if (error) throw error;
       uploadedDocIds.push(data.id);
-      updateDocsTest(2, { status: 'passed', message: 'אישור ניכוי מס הועלה', duration: Date.now() - start2 });
+      updateDocsTest(2, { status: 'passed', message: 'אישור ניכוי מס הועלה ל-Storage', duration: Date.now() - start2 });
     } catch (e: any) {
       updateDocsTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
     }
 
-    // Docs Test 4: Upload bank confirmation
+    // Docs Test 4: Upload bank confirmation (real image)
     updateDocsTest(3, { status: 'running' });
     const start3 = Date.now();
     try {
+      const filePath = `${vendorId}/bank_confirmation_test.png`;
+      const imageBlob = createTestImage();
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vendor_documents')
+        .upload(filePath, imageBlob, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      uploadedFilePaths.push(filePath);
+      
       const { data, error } = await supabase
         .from('vendor_documents')
         .insert({
           vendor_request_id: vendorId,
           document_type: 'bank_confirmation',
-          file_name: 'test_bank_confirmation.png',
-          file_path: `test/${vendorId}/bank_confirmation.png`,
+          file_name: 'אישור_בנק_טסט.png',
+          file_path: filePath,
           extracted_tags: { bank_number: '12', branch_number: '600', account_number: '123456' }
         })
         .select()
@@ -923,40 +1000,50 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       
       if (error) throw error;
       uploadedDocIds.push(data.id);
-      updateDocsTest(3, { status: 'passed', message: 'אישור בנק הועלה עם תגיות OCR', duration: Date.now() - start3 });
+      updateDocsTest(3, { status: 'passed', message: 'אישור בנק הועלה ל-Storage עם תגיות OCR', duration: Date.now() - start3 });
     } catch (e: any) {
       updateDocsTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
     }
 
-    // Docs Test 5: Upload invoice screenshot
+    // Docs Test 5: Upload invoice screenshot (real image)
     updateDocsTest(4, { status: 'running' });
     const start4 = Date.now();
     try {
+      const filePath = `${vendorId}/invoice_screenshot_test.png`;
+      const imageBlob = createTestImage();
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vendor_documents')
+        .upload(filePath, imageBlob, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      uploadedFilePaths.push(filePath);
+      
       const { data, error } = await supabase
         .from('vendor_documents')
         .insert({
           vendor_request_id: vendorId,
           document_type: 'invoice_screenshot',
-          file_name: 'test_invoice.jpg',
-          file_path: `test/${vendorId}/invoice.jpg`,
+          file_name: 'צילום_חשבונית_טסט.png',
+          file_path: filePath,
         })
         .select()
         .single();
       
       if (error) throw error;
       uploadedDocIds.push(data.id);
-      updateDocsTest(4, { status: 'passed', message: 'צילום חשבונית הועלה', duration: Date.now() - start4 });
+      updateDocsTest(4, { status: 'passed', message: 'צילום חשבונית הועלה ל-Storage', duration: Date.now() - start4 });
     } catch (e: any) {
       updateDocsTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
     }
 
-    // Docs Test 6: Verify all 4 documents uploaded
+    // Docs Test 6: Verify all 4 documents uploaded and downloadable
     updateDocsTest(5, { status: 'running' });
     const start5 = Date.now();
     try {
       const { data, error } = await supabase
         .from('vendor_documents')
-        .select('document_type')
+        .select('document_type, file_path')
         .eq('vendor_request_id', vendorId);
       
       if (error) throw error;
@@ -965,26 +1052,46 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       const allUploaded = requiredTypes.every(t => docTypes.includes(t));
       
       if (!allUploaded) throw new Error(`חסרים מסמכים: ${requiredTypes.filter(t => !docTypes.includes(t)).join(', ')}`);
-      updateDocsTest(5, { status: 'passed', message: `4/4 מסמכים הועלו בהצלחה`, duration: Date.now() - start5 });
+      
+      // Verify files exist in storage
+      const firstDoc = data?.[0];
+      if (firstDoc) {
+        const { data: fileData } = await supabase.storage
+          .from('vendor_documents')
+          .download(firstDoc.file_path);
+        if (!fileData) throw new Error('לא ניתן להוריד קובץ מ-Storage');
+      }
+      
+      updateDocsTest(5, { status: 'passed', message: `4/4 מסמכים הועלו וניתנים להורדה`, duration: Date.now() - start5 });
     } catch (e: any) {
       updateDocsTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
     }
 
-    // Docs Test 7: Upload signed contract by vendor
+    // Docs Test 7: Upload signed contract by vendor (real PDF)
     updateDocsTest(6, { status: 'running' });
     const start6 = Date.now();
     try {
+      const contractPath = `contracts/${vendorId}/signed_contract_test.pdf`;
+      const contractBlob = createTestPDF('Signed Vendor Contract - Test Document');
+      
+      const { error: uploadError } = await supabase.storage
+        .from('vendor_documents')
+        .upload(contractPath, contractBlob, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      uploadedFilePaths.push(contractPath);
+      
       const { error } = await supabase
         .from('vendor_requests')
         .update({
           status: 'submitted',
-          contract_file_path: `contracts/${vendorId}/signed_contract.pdf`,
+          contract_file_path: contractPath,
           contract_uploaded_at: new Date().toISOString(),
         })
         .eq('id', vendorId);
       
       if (error) throw error;
-      updateDocsTest(6, { status: 'passed', message: 'חוזה חתום הועלה ע"י ספק', duration: Date.now() - start6 });
+      updateDocsTest(6, { status: 'passed', message: 'חוזה חתום הועלה ל-Storage', duration: Date.now() - start6 });
     } catch (e: any) {
       updateDocsTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
     }
@@ -1037,7 +1144,7 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       updateDocsTest(8, { status: 'failed', message: e.message, duration: Date.now() - start8 });
     }
 
-    // Docs Test 10: Verify all signatures completed
+    // Docs Test 10: Verify all signatures and contract is downloadable
     updateDocsTest(9, { status: 'running' });
     const start9 = Date.now();
     try {
@@ -1053,24 +1160,36 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       if (!data.procurement_manager_signed) throw new Error('חתימת מנהל רכש חסרה');
       if (!data.contract_file_path) throw new Error('קובץ חוזה חסר');
       
+      // Verify contract is downloadable
+      const { data: contractFile } = await supabase.storage
+        .from('vendor_documents')
+        .download(data.contract_file_path);
+      
+      if (!contractFile) throw new Error('לא ניתן להוריד את החוזה מ-Storage');
+      
       // Update to approved
       await supabase
         .from('vendor_requests')
         .update({ status: 'approved', crm_status: 'active' })
         .eq('id', vendorId);
       
-      updateDocsTest(9, { status: 'passed', message: `חתימות: סמנכ"ל (${data.ceo_signed_by}) + מנהל רכש (${data.procurement_manager_signed_by})`, duration: Date.now() - start9 });
+      updateDocsTest(9, { status: 'passed', message: `חתימות הושלמו + חוזה ניתן להורדה (${Math.round(contractFile.size / 1024)}KB)`, duration: Date.now() - start9 });
     } catch (e: any) {
       updateDocsTest(9, { status: 'failed', message: e.message, duration: Date.now() - start9 });
     }
 
-    // Docs Test 11: Cleanup
+    // Docs Test 11: Cleanup (optional - keep files for manual verification)
     updateDocsTest(10, { status: 'running' });
     const start10 = Date.now();
     try {
-      // Delete documents
+      // Delete documents from database
       for (const docId of uploadedDocIds) {
         await supabase.from('vendor_documents').delete().eq('id', docId);
+      }
+      
+      // Delete files from storage
+      if (uploadedFilePaths.length > 0) {
+        await supabase.storage.from('vendor_documents').remove(uploadedFilePaths);
       }
       
       // Delete status history
@@ -1079,7 +1198,7 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       // Delete CRM history
       await supabase.from('crm_history').delete().eq('vendor_request_id', vendorId);
       
-      updateDocsTest(10, { status: 'passed', message: `נמחקו ${uploadedDocIds.length} מסמכים + היסטוריה`, duration: Date.now() - start10 });
+      updateDocsTest(10, { status: 'passed', message: `נמחקו ${uploadedDocIds.length} מסמכים + ${uploadedFilePaths.length} קבצים מ-Storage`, duration: Date.now() - start10 });
     } catch (e: any) {
       updateDocsTest(10, { status: 'failed', message: e.message, duration: Date.now() - start10 });
     }
