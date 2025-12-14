@@ -53,8 +53,10 @@ import {
   XCircle,
   CheckCircle,
   Settings,
-  LogOut
+  LogOut,
+  FlaskConical
 } from 'lucide-react';
+import { TestRunnerDialog } from '@/components/crm/TestRunnerDialog';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -164,6 +166,7 @@ export default function CRM() {
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [testRunnerDialogOpen, setTestRunnerDialogOpen] = useState(false);
   const [history, setHistory] = useState<CRMHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   
@@ -413,6 +416,14 @@ export default function CRM() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setTestRunnerDialogOpen(true)}
+                className="text-white hover:bg-white/10 gap-2"
+              >
+                <FlaskConical className="h-4 w-4" />
+                הרצת טסטים
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => navigate('/')}
@@ -1123,6 +1134,12 @@ export default function CRM() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Test Runner Dialog */}
+      <TestRunnerDialog
+        open={testRunnerDialogOpen}
+        onOpenChange={setTestRunnerDialogOpen}
+      />
     </div>
   );
 }
