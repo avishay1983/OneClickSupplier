@@ -28,6 +28,7 @@ export interface VendorRequest {
   
   // Contract signature fields
   requires_contract_signature: boolean;
+  requires_vp_approval: boolean;
   contract_file_path: string | null;
   contract_uploaded_at: string | null;
   ceo_signed: boolean;
