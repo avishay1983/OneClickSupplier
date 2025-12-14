@@ -690,7 +690,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               )}
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
+            <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse justify-end">
               <Button 
                 onClick={handleBulkSubmit} 
                 disabled={isSubmitting || bulkVendors.length === 0}
