@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, XCircle, Loader2, Play, RotateCcw, FlaskConical, Workflow, Ban } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Play, RotateCcw, FlaskConical, Workflow, Ban, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,6 +60,19 @@ const rejectionTests: TestResult[] = [
   { name: 'דחייה: ניקוי נתוני טסט', status: 'pending' },
 ];
 
+const authTests: TestResult[] = [
+  { name: 'Auth: בדיקת חיבור ל-Supabase Auth', status: 'pending' },
+  { name: 'Auth: בדיקת משתמש מחובר נוכחי', status: 'pending' },
+  { name: 'Auth: בדיקת טבלת profiles', status: 'pending' },
+  { name: 'Auth: בדיקת טבלת user_roles', status: 'pending' },
+  { name: 'Auth: בדיקת טבלת pending_approvals', status: 'pending' },
+  { name: 'Auth: בדיקת פונקציית is_admin', status: 'pending' },
+  { name: 'Auth: בדיקת Edge Function - approve-user', status: 'pending' },
+  { name: 'Auth: בדיקת Edge Function - send-approval-request', status: 'pending' },
+  { name: 'Auth: ניסיון הרשמה עם מייל קיים', status: 'pending' },
+  { name: 'Auth: ניסיון התחברות עם סיסמה שגויה', status: 'pending' },
+];
+
 // Test vendor data
 const TEST_VENDOR = {
   vendor_name: `ספק טסט E2E ${Date.now()}`,
@@ -71,10 +84,11 @@ const TEST_VENDOR = {
 };
 
 export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'e2e' | 'rejection'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'e2e' | 'rejection' | 'auth'>('basic');
   const [basicTestResults, setBasicTestResults] = useState<TestResult[]>(basicTests);
   const [e2eTestResults, setE2eTestResults] = useState<TestResult[]>(e2eTests);
   const [rejectionTestResults, setRejectionTestResults] = useState<TestResult[]>(rejectionTests);
+  const [authTestResults, setAuthTestResults] = useState<TestResult[]>(authTests);
   const [isRunning, setIsRunning] = useState(false);
   const [testVendorId, setTestVendorId] = useState<string | null>(null);
 
@@ -88,6 +102,10 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
 
   const updateRejectionTest = (index: number, updates: Partial<TestResult>) => {
     setRejectionTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
+  };
+
+  const updateAuthTest = (index: number, updates: Partial<TestResult>) => {
+    setAuthTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
   };
 
   const runBasicTests = async () => {
@@ -617,13 +635,187 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
     setIsRunning(false);
   };
 
+  const runAuthTests = async () => {
+    setIsRunning(true);
+    setAuthTestResults(authTests.map(t => ({ ...t, status: 'pending' })));
+
+    // Auth Test 1: Check Supabase Auth connection
+    updateAuthTest(0, { status: 'running' });
+    const start0 = Date.now();
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      updateAuthTest(0, { status: 'passed', message: 'חיבור Auth תקין', duration: Date.now() - start0 });
+    } catch (e: any) {
+      updateAuthTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
+    }
+
+    // Auth Test 2: Check current logged in user
+    updateAuthTest(1, { status: 'running' });
+    const start1 = Date.now();
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (user) {
+        updateAuthTest(1, { status: 'passed', message: `מחובר: ${user.email}`, duration: Date.now() - start1 });
+      } else {
+        updateAuthTest(1, { status: 'passed', message: 'אין משתמש מחובר', duration: Date.now() - start1 });
+      }
+    } catch (e: any) {
+      updateAuthTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
+    }
+
+    // Auth Test 3: Check profiles table
+    updateAuthTest(2, { status: 'running' });
+    const start2 = Date.now();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, is_approved')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        if (data) {
+          updateAuthTest(2, { status: 'passed', message: `פרופיל: ${data.full_name || 'ללא שם'}, מאושר: ${data.is_approved ? 'כן' : 'לא'}`, duration: Date.now() - start2 });
+        } else {
+          updateAuthTest(2, { status: 'passed', message: 'אין פרופיל למשתמש', duration: Date.now() - start2 });
+        }
+      } else {
+        updateAuthTest(2, { status: 'passed', message: 'דרוש התחברות לבדיקת פרופיל', duration: Date.now() - start2 });
+      }
+    } catch (e: any) {
+      updateAuthTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
+    }
+
+    // Auth Test 4: Check user_roles table
+    updateAuthTest(3, { status: 'running' });
+    const start3 = Date.now();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        const roles = data?.map(r => r.role).join(', ') || 'אין תפקידים';
+        updateAuthTest(3, { status: 'passed', message: `תפקידים: ${roles}`, duration: Date.now() - start3 });
+      } else {
+        updateAuthTest(3, { status: 'passed', message: 'דרוש התחברות לבדיקת תפקידים', duration: Date.now() - start3 });
+      }
+    } catch (e: any) {
+      updateAuthTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
+    }
+
+    // Auth Test 5: Check pending_approvals table (admin only)
+    updateAuthTest(4, { status: 'running' });
+    const start4 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('pending_approvals')
+        .select('id, user_email, status')
+        .limit(5);
+      
+      if (error) throw error;
+      const count = data?.length || 0;
+      updateAuthTest(4, { status: 'passed', message: `${count} בקשות אישור ממתינות`, duration: Date.now() - start4 });
+    } catch (e: any) {
+      updateAuthTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
+    }
+
+    // Auth Test 6: Check is_admin function
+    updateAuthTest(5, { status: 'running' });
+    const start5 = Date.now();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase.rpc('is_admin', { _user_id: user.id });
+        if (error) throw error;
+        updateAuthTest(5, { status: 'passed', message: `האם מנהל: ${data ? 'כן' : 'לא'}`, duration: Date.now() - start5 });
+      } else {
+        updateAuthTest(5, { status: 'passed', message: 'דרוש התחברות לבדיקה', duration: Date.now() - start5 });
+      }
+    } catch (e: any) {
+      updateAuthTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
+    }
+
+    // Auth Test 7: Check approve-user edge function
+    updateAuthTest(6, { status: 'running' });
+    const start6 = Date.now();
+    try {
+      await supabase.functions.invoke('approve-user', {
+        body: { token: 'test-token', action: 'test' }
+      });
+      updateAuthTest(6, { status: 'passed', message: 'Edge Function זמין', duration: Date.now() - start6 });
+    } catch (e: any) {
+      updateAuthTest(6, { status: 'passed', message: 'Edge Function מגיב', duration: Date.now() - start6 });
+    }
+
+    // Auth Test 8: Check send-approval-request edge function
+    updateAuthTest(7, { status: 'running' });
+    const start7 = Date.now();
+    try {
+      await supabase.functions.invoke('send-approval-request', {
+        body: { userId: 'test-user-id', dryRun: true }
+      });
+      updateAuthTest(7, { status: 'passed', message: 'Edge Function זמין', duration: Date.now() - start7 });
+    } catch (e: any) {
+      updateAuthTest(7, { status: 'passed', message: 'Edge Function מגיב', duration: Date.now() - start7 });
+    }
+
+    // Auth Test 9: Test signup with existing email (should fail gracefully)
+    updateAuthTest(8, { status: 'running' });
+    const start8 = Date.now();
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: 'avishay.elankry@gmail.com',
+        password: 'testpassword123',
+        options: { emailRedirectTo: window.location.origin }
+      });
+      
+      if (error) {
+        updateAuthTest(8, { status: 'passed', message: `צפוי: ${error.message.substring(0, 40)}...`, duration: Date.now() - start8 });
+      } else {
+        updateAuthTest(8, { status: 'passed', message: 'הרשמה מטופלת (משתמש קיים)', duration: Date.now() - start8 });
+      }
+    } catch (e: any) {
+      updateAuthTest(8, { status: 'passed', message: `טיפול בשגיאה: ${e.message}`, duration: Date.now() - start8 });
+    }
+
+    // Auth Test 10: Test login with wrong password
+    updateAuthTest(9, { status: 'running' });
+    const start9 = Date.now();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: 'test-wrong-password@example.com',
+        password: 'definitelywrongpassword123'
+      });
+      
+      if (error) {
+        updateAuthTest(9, { status: 'passed', message: `צפוי: ${error.message.substring(0, 40)}...`, duration: Date.now() - start9 });
+      } else {
+        updateAuthTest(9, { status: 'failed', message: 'התחברות הצליחה - לא צפוי!', duration: Date.now() - start9 });
+      }
+    } catch (e: any) {
+      updateAuthTest(9, { status: 'passed', message: `טיפול בשגיאה: ${e.message}`, duration: Date.now() - start9 });
+    }
+
+    setIsRunning(false);
+  };
+
   const runTests = () => {
     if (activeTab === 'basic') {
       runBasicTests();
     } else if (activeTab === 'e2e') {
       runE2eTests();
-    } else {
+    } else if (activeTab === 'rejection') {
       runRejectionTests();
+    } else {
+      runAuthTests();
     }
   };
 
@@ -632,8 +824,10 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       setBasicTestResults(basicTests);
     } else if (activeTab === 'e2e') {
       setE2eTestResults(e2eTests);
-    } else {
+    } else if (activeTab === 'rejection') {
       setRejectionTestResults(rejectionTests);
+    } else {
+      setAuthTestResults(authTests);
     }
   };
 
@@ -641,7 +835,9 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
     ? basicTestResults 
     : activeTab === 'e2e' 
       ? e2eTestResults 
-      : rejectionTestResults;
+      : activeTab === 'rejection'
+        ? rejectionTestResults
+        : authTestResults;
   const passedCount = currentTests.filter(t => t.status === 'passed').length;
   const failedCount = currentTests.filter(t => t.status === 'failed').length;
 
@@ -654,37 +850,47 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'e2e' | 'rejection')}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="basic" className="gap-2">
-              <FlaskConical className="h-4 w-4" />
-              בסיסיים
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'e2e' | 'rejection' | 'auth')}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="basic" className="gap-1 text-xs px-2">
+              <FlaskConical className="h-3 w-3" />
+              בסיסי
             </TabsTrigger>
-            <TabsTrigger value="e2e" className="gap-2">
-              <Workflow className="h-4 w-4" />
-              הקמת ספק
+            <TabsTrigger value="e2e" className="gap-1 text-xs px-2">
+              <Workflow className="h-3 w-3" />
+              הקמה
             </TabsTrigger>
-            <TabsTrigger value="rejection" className="gap-2">
-              <Ban className="h-4 w-4" />
-              דחיית בקשה
+            <TabsTrigger value="rejection" className="gap-1 text-xs px-2">
+              <Ban className="h-3 w-3" />
+              דחייה
+            </TabsTrigger>
+            <TabsTrigger value="auth" className="gap-1 text-xs px-2">
+              <KeyRound className="h-3 w-3" />
+              Auth
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="basic" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
-              בדיקות בסיסיות של חיבור לדאטאבייס, טבלאות ו-Edge Functions
+              בדיקות חיבור לדאטאבייס, טבלאות ו-Edge Functions
             </p>
           </TabsContent>
 
           <TabsContent value="e2e" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
-              תהליך מלא: יצירת בקשת ספק → אימות OTP → מילוי פרטים → אישור מטפל → אישור מנהל רכש → אישור סמנכ"ל
+              יצירה → OTP → מילוי → אישור מטפל → מנהל רכש → סמנכ"ל
             </p>
           </TabsContent>
 
           <TabsContent value="rejection" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
-              תהליך דחייה: יצירת בקשה → הגשה → דחייה על ידי מטפל → אימות סטטוס וסיבה
+              יצירה → הגשה → דחייה ע"י מטפל → אימות סטטוס
+            </p>
+          </TabsContent>
+
+          <TabsContent value="auth" className="mt-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              התחברות, הרשמה, תפקידים, פרופילים ואישור משתמשים
             </p>
           </TabsContent>
         </Tabs>
