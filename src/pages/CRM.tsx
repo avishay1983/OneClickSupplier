@@ -54,9 +54,11 @@ import {
   CheckCircle,
   Settings,
   LogOut,
-  FlaskConical
+  FlaskConical,
+  Play
 } from 'lucide-react';
 import { TestRunnerDialog } from '@/components/crm/TestRunnerDialog';
+import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -167,6 +169,7 @@ export default function CRM() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [testRunnerDialogOpen, setTestRunnerDialogOpen] = useState(false);
+  const [inBrowserTestOpen, setInBrowserTestOpen] = useState(false);
   const [history, setHistory] = useState<CRMHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   
@@ -418,11 +421,19 @@ export default function CRM() {
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
+                onClick={() => setInBrowserTestOpen(true)}
+                className="text-white hover:bg-white/10 gap-2"
+              >
+                <Play className="h-4 w-4" />
+                טסטים בדפדפן
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setTestRunnerDialogOpen(true)}
                 className="text-white hover:bg-white/10 gap-2"
               >
                 <FlaskConical className="h-4 w-4" />
-                הרצת טסטים
+                טסטים Playwright
               </Button>
               <Button
                 variant="ghost"
@@ -1139,6 +1150,12 @@ export default function CRM() {
       <TestRunnerDialog
         open={testRunnerDialogOpen}
         onOpenChange={setTestRunnerDialogOpen}
+      />
+      
+      {/* In-Browser Test Runner */}
+      <InBrowserTestRunner
+        open={inBrowserTestOpen}
+        onOpenChange={setInBrowserTestOpen}
       />
     </div>
   );

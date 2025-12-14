@@ -70,7 +70,7 @@ export function TestRunnerDialog({ open, onOpenChange }: TestRunnerDialogProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Terminal className="h-5 w-5" />
-            הרצת טסטים אוטומטיים
+            הרצת טסטים (Playwright - לוקאלי)
           </DialogTitle>
         </DialogHeader>
 
