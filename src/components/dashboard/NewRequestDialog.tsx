@@ -503,22 +503,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expected_spending" className="block text-right">סכום הוצאה צפויה (₪)</Label>
-                  <Input
-                    id="expected_spending"
-                    type="number"
-                    className="text-right"
-                    value={formData.expected_spending || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      expected_spending: e.target.value ? Number(e.target.value) : null 
-                    })}
-                    placeholder="0"
-                  />
-                </div>
-
-
-                <div className="space-y-2">
                   <Label htmlFor="expires_in_days" className="block text-right">תוקף הקישור</Label>
                   <Select
                     value={String(formData.expires_in_days)}
@@ -537,106 +521,49 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Approval type selection */}
+                <div className="col-span-2 mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
+                  <Label className="font-medium block text-right">סוג אישור נדרש</Label>
+                  
                   <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="quote_received" className="cursor-pointer">קיימת הצעת מחיר</Label>
+                    <Label htmlFor="approval_pm_only" className="cursor-pointer">
+                      אישור מנהל רכש בלבד
+                    </Label>
                     <Checkbox
-                      id="quote_received"
-                      checked={formData.quote_received}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, quote_received: checked as boolean })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="contract_signed" className="cursor-pointer">קיים הסכם</Label>
-                    <Checkbox
-                      id="contract_signed"
-                      checked={formData.contract_signed}
+                      id="approval_pm_only"
+                      checked={!formData.requires_vp_approval}
                       onCheckedChange={(checked) => 
-                        setFormData({ ...formData, contract_signed: checked as boolean })
+                        setFormData({ ...formData, requires_vp_approval: !(checked as boolean) })
                       }
                     />
                   </div>
 
                   <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="legal_approved" className="cursor-pointer">אושר משפטית</Label>
+                    <Label htmlFor="approval_both" className="cursor-pointer">
+                      אישור מנהל רכש + סמנכ"ל
+                    </Label>
                     <Checkbox
-                      id="legal_approved"
-                      checked={formData.legal_approved}
+                      id="approval_both"
+                      checked={formData.requires_vp_approval}
                       onCheckedChange={(checked) => 
-                        setFormData({ ...formData, legal_approved: checked as boolean })
+                        setFormData({ ...formData, requires_vp_approval: checked as boolean })
                       }
                     />
                   </div>
-
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="is_consultant" className="cursor-pointer">ספק יועץ</Label>
-                    <Checkbox
-                      id="is_consultant"
-                      checked={formData.is_consultant}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, is_consultant: checked as boolean })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="is_sensitive" className="cursor-pointer">ספק רגיש</Label>
-                    <Checkbox
-                      id="is_sensitive"
-                      checked={formData.is_sensitive}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, is_sensitive: checked as boolean })
-                      }
-                    />
-                  </div>
-
-                  {/* Approval type selection */}
-                  <div className="col-span-2 mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
-                    <Label className="font-medium block text-right">סוג אישור נדרש</Label>
-                    
-                    <div className="flex items-center gap-2 justify-end">
-                      <Label htmlFor="approval_pm_only" className="cursor-pointer">
-                        אישור מנהל רכש בלבד
-                      </Label>
-                      <Checkbox
-                        id="approval_pm_only"
-                        checked={!formData.requires_vp_approval}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, requires_vp_approval: !(checked as boolean) })
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2 justify-end">
-                      <Label htmlFor="approval_both" className="cursor-pointer">
-                        אישור מנהל רכש + סמנכ"ל
-                      </Label>
-                      <Checkbox
-                        id="approval_both"
-                        checked={formData.requires_vp_approval}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, requires_vp_approval: checked as boolean })
-                        }
-                      />
-                    </div>
-                  </div>
-
                 </div>
+
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'יוצר...' : 'צור בקשה וקבל קישור'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  ביטול
-                </Button>
-              </DialogFooter>
-            </form>
-          </TabsContent>
+            <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'יוצר...' : 'צור בקשה וקבל קישור'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                ביטול
+              </Button>
+            </DialogFooter>
+          </form>
+        </TabsContent>
 
           <TabsContent value="bulk" className="mt-4 space-y-4">
             <div className="space-y-4">
