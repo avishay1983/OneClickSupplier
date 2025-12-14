@@ -1,44 +1,55 @@
 // Test data fixtures for E2E tests
 
 export const testVendor = {
-  name: 'ספק טסט אוטומטי',
-  email: 'vendor-test@example.com',
-  companyId: '123456789',
-  mobile: '0547502437',
-  phone: '0547961666',
-  city: 'ירושלים',
-  street: 'יפו',
-  streetNumber: '1',
-  postalCode: '9100000',
+  name: 'חברת דמה בע"מ',
+  email: 'demo.vendor@test-automation.local',
+  companyId: '512345678',
+  mobile: '0501234567',
+  phone: '031234567',
+  city: 'תל אביב - יפו',
+  street: 'רוטשילד',
+  streetNumber: '10',
+  postalCode: '6578901',
   bankName: 'בנק הפועלים',
-  bankBranch: '545',
-  bankAccount: '123456789',
-  accountingContactName: 'איש קשר חשבות',
-  accountingContactPhone: '0501234567',
-  salesContactName: 'איש קשר מכירות', 
-  salesContactPhone: '0509876543',
+  bankBranch: '612',
+  bankAccount: '123456',
+  accountingContactName: 'יוסי חשבון',
+  accountingContactPhone: '0521111111',
+  salesContactName: 'דנה מכירות',
+  salesContactPhone: '0522222222',
   paymentMethod: 'transfer' as const,
   paymentTerms: 'שוטף + 60',
 };
 
 export const testDashboardUser = {
-  email: 'test@example.com',
-  password: 'testpassword123',
-  fullName: 'משתמש טסט',
+  email: 'admin.test@automation.local',
+  password: 'TestPassword123!',
+  fullName: 'מנהל טסט אוטומטי',
 };
 
 export const testHandler = {
   name: 'מטפל טסט',
-  email: 'handler-test@example.com',
+  email: 'handler.test@automation.local',
+};
+
+export const testManagers = {
+  procurementManager: {
+    name: 'מנהל רכש טסט',
+    email: 'procurement.test@automation.local',
+  },
+  vp: {
+    name: 'סמנכל טסט',
+    email: 'vp.test@automation.local',
+  },
 };
 
 export const masterOtpCode = '111111';
 
 export const testDocuments = {
-  bookkeepingCert: 'fixtures/bookkeeping-cert.pdf',
-  taxCert: 'fixtures/tax-cert.pdf',
-  bankConfirmation: 'fixtures/bank-confirmation.png',
-  invoiceScreenshot: 'fixtures/invoice-screenshot.png',
+  bookkeepingCert: 'e2e/fixtures/bookkeeping-cert.pdf',
+  taxCert: 'e2e/fixtures/tax-cert.pdf',
+  bankConfirmation: 'e2e/fixtures/bank-confirmation.png',
+  invoiceScreenshot: 'e2e/fixtures/invoice-screenshot.png',
 };
 
 // Status mappings for verification
