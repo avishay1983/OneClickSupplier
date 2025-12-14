@@ -34,6 +34,7 @@ export interface NewRequestData {
   handler_name: string;
   handler_email: string;
   requires_contract_signature: boolean;
+  requires_vp_approval: boolean;
 }
 
 export interface BulkVendorData {
@@ -68,6 +69,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     handler_name: '',
     handler_email: '',
     requires_contract_signature: false,
+    requires_vp_approval: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -131,6 +133,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       handler_name: '',
       handler_email: '',
       requires_contract_signature: false,
+      requires_vp_approval: true,
     });
     setBulkVendors([]);
     setUploadedFileName('');
@@ -601,6 +604,37 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         setFormData({ ...formData, requires_contract_signature: checked as boolean })
                       }
                     />
+                  </div>
+
+                  {/* Approval type selection */}
+                  <div className="col-span-2 mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
+                    <Label className="font-medium block text-right">סוג אישור נדרש</Label>
+                    
+                    <div className="flex items-center gap-2 justify-end">
+                      <Label htmlFor="approval_pm_only" className="cursor-pointer">
+                        אישור מנהל רכש בלבד
+                      </Label>
+                      <Checkbox
+                        id="approval_pm_only"
+                        checked={!formData.requires_vp_approval}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, requires_vp_approval: !(checked as boolean) })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-end">
+                      <Label htmlFor="approval_both" className="cursor-pointer">
+                        אישור מנהל רכש + סמנכ"ל
+                      </Label>
+                      <Checkbox
+                        id="approval_both"
+                        checked={formData.requires_vp_approval}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, requires_vp_approval: checked as boolean })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

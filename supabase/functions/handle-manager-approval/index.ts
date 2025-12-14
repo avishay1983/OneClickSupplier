@@ -62,12 +62,19 @@ const handler = async (req: Request): Promise<Response> => {
         return createRedirectToApp("error", "שגיאה", "לא ניתן לעדכן את האישור");
       }
 
-      // Check if both managers have approved - if so, update status to approved
-      const otherApprovalField = role === 'procurement_manager' ? 'vp_approved' : 'procurement_manager_approved';
-      const otherApproved = vendorRequest[otherApprovalField] === true;
+      // Check if approval is complete based on requires_vp_approval setting
+      const requiresVpApproval = vendorRequest.requires_vp_approval !== false;
+      const procurementApproved = role === 'procurement_manager' ? true : vendorRequest.procurement_manager_approved === true;
+      const vpApproved = role === 'vp' ? true : vendorRequest.vp_approved === true;
       
-      if (otherApproved) {
-        // Both have approved, update status to approved
+      // If VP approval is not required, only check procurement manager approval
+      // If VP approval is required, check both
+      const isFullyApproved = requiresVpApproval 
+        ? (procurementApproved && vpApproved)
+        : procurementApproved;
+      
+      if (isFullyApproved) {
+        // Update status to approved
         const { error: statusError } = await supabase
           .from("vendor_requests")
           .update({ status: 'approved' })
@@ -76,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (statusError) {
           console.error("Error updating status to approved:", statusError);
         } else {
-          console.log(`Vendor ${vendorId} status updated to approved (both managers approved)`);
+          console.log(`Vendor ${vendorId} status updated to approved (all required approvals complete)`);
         }
       }
 

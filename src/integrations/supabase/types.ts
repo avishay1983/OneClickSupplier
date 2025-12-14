@@ -255,6 +255,7 @@ export type Database = {
           procurement_manager_signed_by: string | null
           quote_received: boolean | null
           requires_contract_signature: boolean | null
+          requires_vp_approval: boolean
           sales_contact_name: string | null
           sales_contact_phone: string | null
           second_signature_approved: boolean | null
@@ -325,6 +326,7 @@ export type Database = {
           procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
           requires_contract_signature?: boolean | null
+          requires_vp_approval?: boolean
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
           second_signature_approved?: boolean | null
@@ -395,6 +397,7 @@ export type Database = {
           procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
           requires_contract_signature?: boolean | null
+          requires_vp_approval?: boolean
           sales_contact_name?: string | null
           sales_contact_phone?: string | null
           second_signature_approved?: boolean | null
