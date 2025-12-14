@@ -593,19 +593,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 justify-end col-span-2 mt-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
-                    <Label htmlFor="requires_contract_signature" className="cursor-pointer text-warning-foreground">
-                      נדרשת חתימה על הסכם (סמנכ"ל + מנהל רכש)
-                    </Label>
-                    <Checkbox
-                      id="requires_contract_signature"
-                      checked={formData.requires_contract_signature}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, requires_contract_signature: checked as boolean })
-                      }
-                    />
-                  </div>
-
                   {/* Approval type selection */}
                   <div className="col-span-2 mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
                     <Label className="font-medium block text-right">סוג אישור נדרש</Label>
@@ -635,6 +622,22 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         }
                       />
                     </div>
+                  </div>
+
+                  {/* Contract signature checkbox */}
+                  <div className="flex items-center gap-2 justify-end col-span-2 mt-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                    <Label htmlFor="requires_contract_signature" className="cursor-pointer text-warning-foreground">
+                      {formData.requires_vp_approval 
+                        ? 'נדרשת חתימה על הסכם (סמנכ"ל + מנהל רכש)'
+                        : 'נדרשת חתימה על הסכם (מנהל רכש בלבד)'}
+                    </Label>
+                    <Checkbox
+                      id="requires_contract_signature"
+                      checked={formData.requires_contract_signature}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, requires_contract_signature: checked as boolean })
+                      }
+                    />
                   </div>
                 </div>
               </div>
