@@ -225,10 +225,11 @@ export function ContractSigningDialog({
       // Get signature as PNG
       const signatureDataUrl = signaturePadRef.current.toDataURL('image/png');
       
-      // Download the existing PDF
+      // Download the existing PDF with cache busting
+      const cacheBuster = `?t=${Date.now()}`;
       const { data: pdfData, error: downloadError } = await supabase.storage
         .from('vendor_documents')
-        .download(signatureStatus.contractFilePath);
+        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
 
       if (downloadError) throw downloadError;
 
@@ -373,9 +374,10 @@ export function ContractSigningDialog({
     if (!signatureStatus?.contractFilePath) return;
 
     try {
+      const cacheBuster = `?t=${Date.now()}`;
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(signatureStatus.contractFilePath);
+        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
 
       if (error) throw error;
 
@@ -398,9 +400,10 @@ export function ContractSigningDialog({
       const timestamp = Date.now();
       console.log('Downloading contract:', signatureStatus.contractFilePath);
       
+      const cacheBuster = `?t=${Date.now()}`;
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(signatureStatus.contractFilePath);
+        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
 
       if (error) throw error;
 
