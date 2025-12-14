@@ -624,12 +624,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     </div>
                   </div>
 
-                  {/* Contract signature checkbox */}
+                  {/* Contract signature checkbox - who signs is determined by approval type */}
                   <div className="flex items-center gap-2 justify-end col-span-2 mt-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
                     <Label htmlFor="requires_contract_signature" className="cursor-pointer text-warning-foreground">
-                      {formData.requires_vp_approval 
-                        ? 'נדרשת חתימה על הסכם (סמנכ"ל + מנהל רכש)'
-                        : 'נדרשת חתימה על הסכם (מנהל רכש בלבד)'}
+                      נדרשת חתימה על הסכם
                     </Label>
                     <Checkbox
                       id="requires_contract_signature"
