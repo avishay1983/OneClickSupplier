@@ -363,8 +363,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
           </TabsList>
 
           <TabsContent value="single" className="mt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-right">
+              <div className="flex flex-col gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="handler_name" className="block text-right">מטפל בתהליך</Label>
                   <Input
@@ -526,7 +526,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 {/* Approval type selection */}
-                <div className="col-span-2 mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
+                <div className="mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
                   <Label className="font-medium block text-right">סוג אישור נדרש</Label>
                   
                   <div className="flex items-center gap-2 justify-end">
