@@ -550,10 +550,22 @@ export function ContractSigningDialog({
                       )}
                     </div>
                   </div>
-                  <Button onClick={() => setSignerRole('ceo')} className="gap-2" variant={signatureStatus.ceoSigned ? "outline" : "default"}>
-                    <Pen className="h-4 w-4" />
-                    {signatureStatus.ceoSigned ? 'חתום מחדש' : 'חתום כסמנכ"ל'}
-                  </Button>
+                  {!signatureStatus.ceoSigned && (
+                    <Button 
+                      onClick={() => setSignerRole('ceo')} 
+                      className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
+                      size="lg"
+                    >
+                      <Pen className="h-5 w-5" />
+                      חתום כסמנכ"ל
+                    </Button>
+                  )}
+                  {signatureStatus.ceoSigned && (
+                    <Button onClick={() => setSignerRole('ceo')} className="gap-2" variant="outline">
+                      <Pen className="h-4 w-4" />
+                      חתום מחדש
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -590,8 +602,12 @@ export function ContractSigningDialog({
                         </div>
                       </div>
                       {!signatureStatus.procurementSigned && (
-                        <Button onClick={() => setSignerRole('procurement')} className="gap-2">
-                          <Pen className="h-4 w-4" />
+                        <Button 
+                          onClick={() => setSignerRole('procurement')} 
+                          className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
+                          size="lg"
+                        >
+                          <Pen className="h-5 w-5" />
                           חתום כמנהל רכש
                         </Button>
                       )}
