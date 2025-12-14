@@ -1581,6 +1581,11 @@ export default function VendorForm() {
                     onChange={(e) => {
                       setFormData({ ...formData, mobile: e.target.value });
                       clearFieldWarning('mobile');
+                      // Clear mobile error when user edits
+                      setErrors(prev => {
+                        const { mobile, ...rest } = prev;
+                        return rest;
+                      });
                     }}
                     placeholder="טלפון נייד"
                     className={`ltr text-right ${(hasFieldWarning('mobile') || errors.mobile) ? 'border-destructive' : ''}`}
@@ -1881,9 +1886,14 @@ export default function VendorForm() {
                   <Label htmlFor="payment_method">שיטת תשלום *</Label>
                   <Select
                     value={formData.payment_method}
-                    onValueChange={(value: 'check' | 'invoice' | 'transfer') => 
-                      setFormData({ ...formData, payment_method: value })
-                    }
+                    onValueChange={(value: 'check' | 'invoice' | 'transfer') => {
+                      setFormData({ ...formData, payment_method: value });
+                      // Clear payment_method error when user selects
+                      setErrors(prev => {
+                        const { payment_method, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="בחר שיטת תשלום" />
