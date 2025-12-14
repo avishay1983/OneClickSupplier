@@ -43,6 +43,7 @@ export interface BulkVendorData {
   expires_in_days: number;
   handler_name: string;
   vendor_type: 'general' | 'claims';
+  requires_vp_approval: boolean;
 }
 
 const emailSchema = z.string().email('כתובת אימייל לא תקינה');
@@ -76,6 +77,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
   // Bulk upload state
   const [bulkVendors, setBulkVendors] = useState<BulkVendorData[]>([]);
   const [bulkExpiresInDays, setBulkExpiresInDays] = useState(7);
+  const [bulkRequiresVpApproval, setBulkRequiresVpApproval] = useState(true);
   const [uploadedFileName, setUploadedFileName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -243,6 +245,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
           expires_in_days: bulkExpiresInDays,
           handler_name: handler,
           vendor_type: vendorType,
+          requires_vp_approval: bulkRequiresVpApproval,
         });
       }
 
@@ -307,10 +310,11 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
     setIsSubmitting(true);
     try {
-      // Update expires_in_days for all vendors
+      // Update expires_in_days and requires_vp_approval for all vendors
       const vendorsWithExpiry = bulkVendors.map(v => ({
         ...v,
         expires_in_days: bulkExpiresInDays,
+        requires_vp_approval: bulkRequiresVpApproval,
       }));
       
       await onBulkSubmit(vendorsWithExpiry);
@@ -605,6 +609,23 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     <SelectItem value="7">7 ימים</SelectItem>
                     <SelectItem value="14">14 ימים</SelectItem>
                     <SelectItem value="30">30 ימים</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Approval type selection */}
+              <div className="space-y-2">
+                <Label>סוג אישור נדרש</Label>
+                <Select
+                  value={bulkRequiresVpApproval ? 'vp' : 'procurement'}
+                  onValueChange={(value) => setBulkRequiresVpApproval(value === 'vp')}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר סוג אישור" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="procurement">אישור מנהל רכש בלבד</SelectItem>
+                    <SelectItem value="vp">אישור מנהל רכש + סמנכ"ל</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
