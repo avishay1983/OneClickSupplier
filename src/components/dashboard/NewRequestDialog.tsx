@@ -601,7 +601,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   value={String(bulkExpiresInDays)}
                   onValueChange={(value) => setBulkExpiresInDays(Number(value))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-right">
                     <SelectValue placeholder="בחר תוקף" />
                   </SelectTrigger>
                   <SelectContent>
@@ -690,15 +690,15 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               )}
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                ביטול
-              </Button>
+            <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
               <Button 
                 onClick={handleBulkSubmit} 
                 disabled={isSubmitting || bulkVendors.length === 0}
               >
                 {isSubmitting ? 'שולח...' : `שלח ל-${bulkVendors.length} ספקים`}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                ביטול
               </Button>
             </DialogFooter>
           </TabsContent>
