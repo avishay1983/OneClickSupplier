@@ -10,8 +10,25 @@ const MODELS = {
   accurate: 'google/gemini-2.5-pro'
 };
 
+function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const prefix = {
+    info: '📋 [BANK-OCR-INFO]',
+    warn: '⚠️ [BANK-OCR-WARN]',
+    error: '❌ [BANK-OCR-ERROR]',
+    success: '✅ [BANK-OCR-SUCCESS]'
+  }[level];
+  
+  if (data) {
+    console.log(`${prefix} ${timestamp} - ${message}`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`${prefix} ${timestamp} - ${message}`);
+  }
+}
+
 async function extractWithModel(imageBase64: string, mimeType: string, model: string, apiKey: string) {
-  console.log(`Attempting bank OCR with model: ${model}`);
+  const startTime = Date.now();
+  logOCR('info', `Starting bank OCR extraction`, { model, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
   
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
@@ -111,8 +128,12 @@ serve(async (req) => {
 
   try {
     const { imageBase64, mimeType } = await req.json();
+    const requestId = crypto.randomUUID().slice(0, 8);
+    
+    logOCR('info', `[${requestId}] New bank OCR request received`, { mimeType, hasImage: !!imageBase64 });
     
     if (!imageBase64) {
+      logOCR('error', `[${requestId}] Missing image data`);
       return new Response(
         JSON.stringify({ error: 'Missing image data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -121,21 +142,23 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Processing OCR request for bank document...');
+    logOCR('info', `[${requestId}] Starting first attempt with fast model`);
+    const firstAttemptStart = Date.now();
 
     // First attempt with fast model
     let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, LOVABLE_API_KEY);
+    const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText, duration: `${firstAttemptDuration}ms` });
       
       if (response.status === 429) {
         return new Response(
@@ -160,20 +183,20 @@ serve(async (req) => {
     let content = data.choices?.[0]?.message?.content;
     
     if (!content) {
-      console.error('No content in AI response');
+      logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
       return new Response(
         JSON.stringify({ error: 'no_response', message: 'לא התקבלה תשובה מהמערכת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('First attempt AI response:', content);
+    logOCR('info', `[${requestId}] First attempt completed`, { duration: `${firstAttemptDuration}ms`, responseLength: content.length });
 
     let extracted;
     try {
       extracted = parseResponse(content);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      logOCR('error', `[${requestId}] Failed to parse AI response`, { error: parseError instanceof Error ? parseError.message : 'Unknown', rawContent: content.slice(0, 200) });
       return new Response(
         JSON.stringify({ error: 'parse_error', message: 'לא ניתן לעבד את התשובה', raw: content }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -181,46 +204,86 @@ serve(async (req) => {
     }
 
     const foundBankDetails = hasBankDetails(extracted);
-    console.log(`First attempt - found bank details: ${foundBankDetails}, confidence: ${extracted.confidence}`);
+    const detailsFound = {
+      bank_number: extracted.bank_number || null,
+      branch_number: extracted.branch_number || null,
+      account_number: extracted.account_number || null
+    };
+    
+    logOCR('info', `[${requestId}] First attempt extraction results`, {
+      foundBankDetails,
+      details: detailsFound,
+      confidence: extracted.confidence,
+      documentType: extracted.document_type,
+      notes: extracted.notes
+    });
 
     // If low confidence or no bank details found, retry with more accurate model
     if (!foundBankDetails || extracted.confidence === 'low') {
-      console.log('No bank details or low confidence - retrying with accurate model...');
+      logOCR('warn', `[${requestId}] Low confidence or missing bank details - triggering retry`, { 
+        reason: !foundBankDetails ? 'no_bank_details' : 'low_confidence' 
+      });
       
       try {
+        const retryStart = Date.now();
         response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, LOVABLE_API_KEY);
+        const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
           const retryContent = data.choices?.[0]?.message?.content;
           
           if (retryContent) {
-            console.log('Retry AI response:', retryContent);
             const retryExtracted = parseResponse(retryContent);
             const retryFoundBankDetails = hasBankDetails(retryExtracted);
             
-            console.log(`Retry - found bank details: ${retryFoundBankDetails}, confidence: ${retryExtracted.confidence}`);
+            logOCR('info', `[${requestId}] Retry attempt completed`, {
+              duration: `${retryDuration}ms`,
+              foundBankDetails: retryFoundBankDetails,
+              details: {
+                bank_number: retryExtracted.bank_number || null,
+                branch_number: retryExtracted.branch_number || null,
+                account_number: retryExtracted.account_number || null
+              },
+              confidence: retryExtracted.confidence
+            });
             
             // Use retry result if it found bank details or has higher confidence
             if ((retryFoundBankDetails && !foundBankDetails) ||
                 (retryExtracted.confidence === 'high' && extracted.confidence !== 'high')) {
               extracted = retryExtracted;
               extracted.model_used = 'accurate';
-              console.log('Using retry result');
+              logOCR('success', `[${requestId}] Using retry result - improved extraction`);
             } else {
               extracted.model_used = 'fast';
+              logOCR('info', `[${requestId}] Keeping first attempt - retry did not improve`);
             }
           }
+        } else {
+          logOCR('warn', `[${requestId}] Retry attempt failed`, { status: response.status });
+          extracted.model_used = 'fast';
         }
       } catch (retryError) {
-        console.error('Retry failed:', retryError);
+        logOCR('error', `[${requestId}] Retry exception`, { error: retryError instanceof Error ? retryError.message : 'Unknown' });
         extracted.model_used = 'fast';
       }
     } else {
       extracted.model_used = 'fast';
     }
 
-    console.log('Final extracted bank details:', extracted);
+    const totalDuration = Date.now() - firstAttemptStart;
+    
+    logOCR('success', `[${requestId}] Bank OCR completed`, {
+      totalDuration: `${totalDuration}ms`,
+      modelUsed: extracted.model_used,
+      foundBankDetails: hasBankDetails(extracted),
+      confidence: extracted.confidence,
+      finalDetails: {
+        bank_number: extracted.bank_number || null,
+        branch_number: extracted.branch_number || null,
+        account_number: extracted.account_number || null
+      }
+    });
 
     return new Response(
       JSON.stringify({ success: true, extracted }),
@@ -228,7 +291,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in extract-bank-details:', error);
+    logOCR('error', 'Unexpected server error', { error: error instanceof Error ? error.message : 'Unknown' });
     return new Response(
       JSON.stringify({ error: 'server_error', message: error instanceof Error ? error.message : 'שגיאה בשרת' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

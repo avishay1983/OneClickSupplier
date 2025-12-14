@@ -10,8 +10,25 @@ const MODELS = {
   accurate: 'google/gemini-2.5-pro'
 };
 
+function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const prefix = {
+    info: '📋 [OCR-INFO]',
+    warn: '⚠️ [OCR-WARN]',
+    error: '❌ [OCR-ERROR]',
+    success: '✅ [OCR-SUCCESS]'
+  }[level];
+  
+  if (data) {
+    console.log(`${prefix} ${timestamp} - ${message}`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`${prefix} ${timestamp} - ${message}`);
+  }
+}
+
 async function extractWithModel(imageBase64: string, mimeType: string, documentType: string, model: string, apiKey: string) {
-  console.log(`Attempting OCR with model: ${model}`);
+  const startTime = Date.now();
+  logOCR('info', `Starting OCR extraction`, { model, documentType, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
   
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
@@ -109,6 +126,13 @@ function countExtractedFields(extracted: any): number {
   return fields.filter(f => extracted[f] && extracted[f] !== null && extracted[f] !== '').length;
 }
 
+function getExtractedFieldNames(extracted: any): string[] {
+  const fields = ['company_id', 'company_name', 'phone', 'mobile', 'fax', 'email', 
+                  'city', 'street', 'street_number', 'postal_code', 
+                  'bank_number', 'branch_number', 'account_number'];
+  return fields.filter(f => extracted[f] && extracted[f] !== null && extracted[f] !== '');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -116,8 +140,12 @@ serve(async (req) => {
 
   try {
     const { imageBase64, mimeType, documentType } = await req.json();
+    const requestId = crypto.randomUUID().slice(0, 8);
+    
+    logOCR('info', `[${requestId}] New OCR request received`, { documentType, mimeType, hasImage: !!imageBase64 });
     
     if (!imageBase64) {
+      logOCR('error', `[${requestId}] Missing image data`);
       return new Response(
         JSON.stringify({ error: 'Missing image data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,21 +154,23 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing OCR request for document type: ${documentType}...`);
+    logOCR('info', `[${requestId}] Starting first attempt with fast model`);
+    const firstAttemptStart = Date.now();
 
     // First attempt with fast model
     let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, LOVABLE_API_KEY);
+    const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText, duration: `${firstAttemptDuration}ms` });
       
       if (response.status === 429) {
         return new Response(
@@ -165,20 +195,20 @@ serve(async (req) => {
     let content = data.choices?.[0]?.message?.content;
     
     if (!content) {
-      console.error('No content in AI response');
+      logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
       return new Response(
         JSON.stringify({ error: 'no_response', message: 'לא התקבלה תשובה מהמערכת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('First attempt AI response:', content);
+    logOCR('info', `[${requestId}] First attempt completed`, { duration: `${firstAttemptDuration}ms`, responseLength: content.length });
 
     let extracted;
     try {
       extracted = parseResponse(content);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      logOCR('error', `[${requestId}] Failed to parse AI response`, { error: parseError instanceof Error ? parseError.message : 'Unknown', rawContent: content.slice(0, 200) });
       return new Response(
         JSON.stringify({ error: 'parse_error', message: 'לא ניתן לעבד את התשובה', raw: content }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -186,47 +216,73 @@ serve(async (req) => {
     }
 
     const fieldsFound = countExtractedFields(extracted);
-    console.log(`First attempt found ${fieldsFound} fields, confidence: ${extracted.confidence}`);
+    const extractedFieldsList = getExtractedFieldNames(extracted);
+    
+    logOCR('info', `[${requestId}] First attempt extraction results`, {
+      fieldsFound,
+      fields: extractedFieldsList,
+      confidence: extracted.confidence,
+      notes: extracted.notes
+    });
 
     // If low confidence or few fields found, retry with more accurate model
     if (extracted.confidence === 'low' || fieldsFound < 2) {
-      console.log('Low confidence or few fields - retrying with accurate model...');
+      logOCR('warn', `[${requestId}] Low confidence or few fields - triggering retry`, { reason: extracted.confidence === 'low' ? 'low_confidence' : 'few_fields' });
       
       try {
+        const retryStart = Date.now();
         response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, LOVABLE_API_KEY);
+        const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
           const retryContent = data.choices?.[0]?.message?.content;
           
           if (retryContent) {
-            console.log('Retry AI response:', retryContent);
             const retryExtracted = parseResponse(retryContent);
             const retryFieldsFound = countExtractedFields(retryExtracted);
+            const retryFieldsList = getExtractedFieldNames(retryExtracted);
             
-            console.log(`Retry found ${retryFieldsFound} fields, confidence: ${retryExtracted.confidence}`);
+            logOCR('info', `[${requestId}] Retry attempt completed`, {
+              duration: `${retryDuration}ms`,
+              fieldsFound: retryFieldsFound,
+              fields: retryFieldsList,
+              confidence: retryExtracted.confidence
+            });
             
             // Use retry result if it found more fields or has higher confidence
             if (retryFieldsFound > fieldsFound || 
                 (retryExtracted.confidence === 'high' && extracted.confidence !== 'high')) {
               extracted = retryExtracted;
               extracted.model_used = 'accurate';
-              console.log('Using retry result');
+              logOCR('success', `[${requestId}] Using retry result - improved extraction`, { improvedBy: retryFieldsFound - fieldsFound });
             } else {
               extracted.model_used = 'fast';
+              logOCR('info', `[${requestId}] Keeping first attempt - retry did not improve`);
             }
           }
+        } else {
+          logOCR('warn', `[${requestId}] Retry attempt failed`, { status: response.status });
+          extracted.model_used = 'fast';
         }
       } catch (retryError) {
-        console.error('Retry failed:', retryError);
-        // Continue with first result
+        logOCR('error', `[${requestId}] Retry exception`, { error: retryError instanceof Error ? retryError.message : 'Unknown' });
         extracted.model_used = 'fast';
       }
     } else {
       extracted.model_used = 'fast';
     }
 
-    console.log('Final extracted document data:', extracted);
+    const totalDuration = Date.now() - firstAttemptStart;
+    const finalFieldsFound = countExtractedFields(extracted);
+    
+    logOCR('success', `[${requestId}] OCR completed`, {
+      totalDuration: `${totalDuration}ms`,
+      modelUsed: extracted.model_used,
+      fieldsExtracted: finalFieldsFound,
+      confidence: extracted.confidence,
+      documentType
+    });
 
     return new Response(
       JSON.stringify({ success: true, extracted, documentType }),
@@ -234,7 +290,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in extract-document-data:', error);
+    logOCR('error', 'Unexpected server error', { error: error instanceof Error ? error.message : 'Unknown' });
     return new Response(
       JSON.stringify({ error: 'server_error', message: error instanceof Error ? error.message : 'שגיאה בשרת' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
