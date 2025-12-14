@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, XCircle, Loader2, Play, RotateCcw, FlaskConical, Workflow, Ban, KeyRound } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Play, RotateCcw, FlaskConical, Workflow, Ban, KeyRound, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -73,6 +73,20 @@ const authTests: TestResult[] = [
   { name: 'Auth: ניסיון התחברות עם סיסמה שגויה', status: 'pending' },
 ];
 
+const docsAndSignatureTests: TestResult[] = [
+  { name: 'מסמכים: יצירת בקשת ספק עם דרישת חוזה', status: 'pending' },
+  { name: 'מסמכים: העלאת אישור ניהול ספרים', status: 'pending' },
+  { name: 'מסמכים: העלאת אישור ניכוי מס', status: 'pending' },
+  { name: 'מסמכים: העלאת אישור בנק', status: 'pending' },
+  { name: 'מסמכים: העלאת צילום חשבונית', status: 'pending' },
+  { name: 'מסמכים: אימות 4 מסמכים הועלו', status: 'pending' },
+  { name: 'חתימות: העלאת חוזה חתום ע"י ספק', status: 'pending' },
+  { name: 'חתימות: חתימת סמנכ"ל על חוזה', status: 'pending' },
+  { name: 'חתימות: חתימת מנהל רכש על חוזה', status: 'pending' },
+  { name: 'חתימות: אימות כל החתימות הושלמו', status: 'pending' },
+  { name: 'ניקוי: מחיקת מסמכים ובקשת טסט', status: 'pending' },
+];
+
 // Test vendor data
 const TEST_VENDOR = {
   vendor_name: `ספק טסט E2E ${Date.now()}`,
@@ -84,11 +98,12 @@ const TEST_VENDOR = {
 };
 
 export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'e2e' | 'rejection' | 'auth'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'e2e' | 'rejection' | 'auth' | 'docs'>('basic');
   const [basicTestResults, setBasicTestResults] = useState<TestResult[]>(basicTests);
   const [e2eTestResults, setE2eTestResults] = useState<TestResult[]>(e2eTests);
   const [rejectionTestResults, setRejectionTestResults] = useState<TestResult[]>(rejectionTests);
   const [authTestResults, setAuthTestResults] = useState<TestResult[]>(authTests);
+  const [docsTestResults, setDocsTestResults] = useState<TestResult[]>(docsAndSignatureTests);
   const [isRunning, setIsRunning] = useState(false);
   const [testVendorId, setTestVendorId] = useState<string | null>(null);
 
@@ -106,6 +121,10 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
 
   const updateAuthTest = (index: number, updates: Partial<TestResult>) => {
     setAuthTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
+  };
+
+  const updateDocsTest = (index: number, updates: Partial<TestResult>) => {
+    setDocsTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
   };
 
   const runBasicTests = async () => {
@@ -807,6 +826,267 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
     setIsRunning(false);
   };
 
+  const runDocsTests = async () => {
+    setIsRunning(true);
+    setDocsTestResults(docsAndSignatureTests.map(t => ({ ...t, status: 'pending' })));
+    let vendorId: string | null = null;
+    const uploadedDocIds: string[] = [];
+
+    // Docs Test 1: Create vendor request with contract requirement
+    updateDocsTest(0, { status: 'running' });
+    const start0 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .insert({
+          vendor_name: `ספק טסט מסמכים ${Date.now()}`,
+          vendor_email: 'docs-test@example.com',
+          handler_name: 'מטפל טסט מסמכים',
+          handler_email: 'handler@example.com',
+          vendor_type: 'general',
+          requires_vp_approval: true,
+          requires_contract_signature: true,
+          status: 'pending',
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      vendorId = data.id;
+      setTestVendorId(vendorId);
+      updateDocsTest(0, { status: 'passed', message: `נוצר ספק עם דרישת חוזה: ${data.vendor_name.substring(0, 25)}...`, duration: Date.now() - start0 });
+    } catch (e: any) {
+      updateDocsTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
+      setIsRunning(false);
+      return;
+    }
+
+    // Docs Test 2: Upload bookkeeping certificate
+    updateDocsTest(1, { status: 'running' });
+    const start1 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .insert({
+          vendor_request_id: vendorId,
+          document_type: 'bookkeeping_cert',
+          file_name: 'test_bookkeeping_cert.pdf',
+          file_path: `test/${vendorId}/bookkeeping_cert.pdf`,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      uploadedDocIds.push(data.id);
+      updateDocsTest(1, { status: 'passed', message: 'אישור ניהול ספרים הועלה', duration: Date.now() - start1 });
+    } catch (e: any) {
+      updateDocsTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
+    }
+
+    // Docs Test 3: Upload tax certificate
+    updateDocsTest(2, { status: 'running' });
+    const start2 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .insert({
+          vendor_request_id: vendorId,
+          document_type: 'tax_cert',
+          file_name: 'test_tax_cert.pdf',
+          file_path: `test/${vendorId}/tax_cert.pdf`,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      uploadedDocIds.push(data.id);
+      updateDocsTest(2, { status: 'passed', message: 'אישור ניכוי מס הועלה', duration: Date.now() - start2 });
+    } catch (e: any) {
+      updateDocsTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
+    }
+
+    // Docs Test 4: Upload bank confirmation
+    updateDocsTest(3, { status: 'running' });
+    const start3 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .insert({
+          vendor_request_id: vendorId,
+          document_type: 'bank_confirmation',
+          file_name: 'test_bank_confirmation.png',
+          file_path: `test/${vendorId}/bank_confirmation.png`,
+          extracted_tags: { bank_number: '12', branch_number: '600', account_number: '123456' }
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      uploadedDocIds.push(data.id);
+      updateDocsTest(3, { status: 'passed', message: 'אישור בנק הועלה עם תגיות OCR', duration: Date.now() - start3 });
+    } catch (e: any) {
+      updateDocsTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
+    }
+
+    // Docs Test 5: Upload invoice screenshot
+    updateDocsTest(4, { status: 'running' });
+    const start4 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .insert({
+          vendor_request_id: vendorId,
+          document_type: 'invoice_screenshot',
+          file_name: 'test_invoice.jpg',
+          file_path: `test/${vendorId}/invoice.jpg`,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      uploadedDocIds.push(data.id);
+      updateDocsTest(4, { status: 'passed', message: 'צילום חשבונית הועלה', duration: Date.now() - start4 });
+    } catch (e: any) {
+      updateDocsTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
+    }
+
+    // Docs Test 6: Verify all 4 documents uploaded
+    updateDocsTest(5, { status: 'running' });
+    const start5 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_documents')
+        .select('document_type')
+        .eq('vendor_request_id', vendorId);
+      
+      if (error) throw error;
+      const docTypes = data?.map(d => d.document_type) || [];
+      const requiredTypes = ['bookkeeping_cert', 'tax_cert', 'bank_confirmation', 'invoice_screenshot'];
+      const allUploaded = requiredTypes.every(t => docTypes.includes(t));
+      
+      if (!allUploaded) throw new Error(`חסרים מסמכים: ${requiredTypes.filter(t => !docTypes.includes(t)).join(', ')}`);
+      updateDocsTest(5, { status: 'passed', message: `4/4 מסמכים הועלו בהצלחה`, duration: Date.now() - start5 });
+    } catch (e: any) {
+      updateDocsTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
+    }
+
+    // Docs Test 7: Upload signed contract by vendor
+    updateDocsTest(6, { status: 'running' });
+    const start6 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          status: 'submitted',
+          contract_file_path: `contracts/${vendorId}/signed_contract.pdf`,
+          contract_uploaded_at: new Date().toISOString(),
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateDocsTest(6, { status: 'passed', message: 'חוזה חתום הועלה ע"י ספק', duration: Date.now() - start6 });
+    } catch (e: any) {
+      updateDocsTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
+    }
+
+    // Docs Test 8: VP signs contract
+    updateDocsTest(7, { status: 'running' });
+    const start7 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          status: 'first_review',
+          first_review_approved: true,
+          first_review_approved_at: new Date().toISOString(),
+          first_review_approved_by: 'מטפל טסט',
+          ceo_signed: true,
+          ceo_signed_at: new Date().toISOString(),
+          ceo_signed_by: 'סמנכ"ל טסט',
+          vp_approved: true,
+          vp_approved_at: new Date().toISOString(),
+          vp_approved_by: 'סמנכ"ל טסט',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateDocsTest(7, { status: 'passed', message: 'סמנכ"ל חתם על החוזה', duration: Date.now() - start7 });
+    } catch (e: any) {
+      updateDocsTest(7, { status: 'failed', message: e.message, duration: Date.now() - start7 });
+    }
+
+    // Docs Test 9: Procurement manager signs contract
+    updateDocsTest(8, { status: 'running' });
+    const start8 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          procurement_manager_signed: true,
+          procurement_manager_signed_at: new Date().toISOString(),
+          procurement_manager_signed_by: 'מנהל רכש טסט',
+          procurement_manager_approved: true,
+          procurement_manager_approved_at: new Date().toISOString(),
+          procurement_manager_approved_by: 'מנהל רכש טסט',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateDocsTest(8, { status: 'passed', message: 'מנהל רכש חתם על החוזה', duration: Date.now() - start8 });
+    } catch (e: any) {
+      updateDocsTest(8, { status: 'failed', message: e.message, duration: Date.now() - start8 });
+    }
+
+    // Docs Test 10: Verify all signatures completed
+    updateDocsTest(9, { status: 'running' });
+    const start9 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .select('ceo_signed, ceo_signed_by, procurement_manager_signed, procurement_manager_signed_by, contract_file_path')
+        .eq('id', vendorId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (!data.ceo_signed) throw new Error('חתימת סמנכ"ל חסרה');
+      if (!data.procurement_manager_signed) throw new Error('חתימת מנהל רכש חסרה');
+      if (!data.contract_file_path) throw new Error('קובץ חוזה חסר');
+      
+      // Update to approved
+      await supabase
+        .from('vendor_requests')
+        .update({ status: 'approved', crm_status: 'active' })
+        .eq('id', vendorId);
+      
+      updateDocsTest(9, { status: 'passed', message: `חתימות: סמנכ"ל (${data.ceo_signed_by}) + מנהל רכש (${data.procurement_manager_signed_by})`, duration: Date.now() - start9 });
+    } catch (e: any) {
+      updateDocsTest(9, { status: 'failed', message: e.message, duration: Date.now() - start9 });
+    }
+
+    // Docs Test 11: Cleanup
+    updateDocsTest(10, { status: 'running' });
+    const start10 = Date.now();
+    try {
+      // Delete documents
+      for (const docId of uploadedDocIds) {
+        await supabase.from('vendor_documents').delete().eq('id', docId);
+      }
+      
+      // Delete status history
+      await supabase.from('vendor_status_history').delete().eq('vendor_request_id', vendorId);
+      
+      // Delete CRM history
+      await supabase.from('crm_history').delete().eq('vendor_request_id', vendorId);
+      
+      updateDocsTest(10, { status: 'passed', message: `נמחקו ${uploadedDocIds.length} מסמכים + היסטוריה`, duration: Date.now() - start10 });
+    } catch (e: any) {
+      updateDocsTest(10, { status: 'failed', message: e.message, duration: Date.now() - start10 });
+    }
+
+    setIsRunning(false);
+  };
+
   const runTests = () => {
     if (activeTab === 'basic') {
       runBasicTests();
@@ -814,8 +1094,10 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       runE2eTests();
     } else if (activeTab === 'rejection') {
       runRejectionTests();
-    } else {
+    } else if (activeTab === 'auth') {
       runAuthTests();
+    } else {
+      runDocsTests();
     }
   };
 
@@ -826,8 +1108,10 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       setE2eTestResults(e2eTests);
     } else if (activeTab === 'rejection') {
       setRejectionTestResults(rejectionTests);
-    } else {
+    } else if (activeTab === 'auth') {
       setAuthTestResults(authTests);
+    } else {
+      setDocsTestResults(docsAndSignatureTests);
     }
   };
 
@@ -837,7 +1121,9 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
       ? e2eTestResults 
       : activeTab === 'rejection'
         ? rejectionTestResults
-        : authTestResults;
+        : activeTab === 'auth'
+          ? authTestResults
+          : docsTestResults;
   const passedCount = currentTests.filter(t => t.status === 'passed').length;
   const failedCount = currentTests.filter(t => t.status === 'failed').length;
 
@@ -850,21 +1136,25 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'e2e' | 'rejection' | 'auth')}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic" className="gap-1 text-xs px-2">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'e2e' | 'rejection' | 'auth' | 'docs')}>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="basic" className="gap-1 text-xs px-1">
               <FlaskConical className="h-3 w-3" />
               בסיסי
             </TabsTrigger>
-            <TabsTrigger value="e2e" className="gap-1 text-xs px-2">
+            <TabsTrigger value="e2e" className="gap-1 text-xs px-1">
               <Workflow className="h-3 w-3" />
               הקמה
             </TabsTrigger>
-            <TabsTrigger value="rejection" className="gap-1 text-xs px-2">
+            <TabsTrigger value="docs" className="gap-1 text-xs px-1">
+              <FileText className="h-3 w-3" />
+              מסמכים
+            </TabsTrigger>
+            <TabsTrigger value="rejection" className="gap-1 text-xs px-1">
               <Ban className="h-3 w-3" />
               דחייה
             </TabsTrigger>
-            <TabsTrigger value="auth" className="gap-1 text-xs px-2">
+            <TabsTrigger value="auth" className="gap-1 text-xs px-1">
               <KeyRound className="h-3 w-3" />
               Auth
             </TabsTrigger>
@@ -879,6 +1169,12 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
           <TabsContent value="e2e" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
               יצירה → OTP → מילוי → אישור מטפל → מנהל רכש → סמנכ"ל
+            </p>
+          </TabsContent>
+
+          <TabsContent value="docs" className="mt-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              העלאת מסמכים → חוזה → חתימת סמנכ"ל → חתימת מנהל רכש
             </p>
           </TabsContent>
 
