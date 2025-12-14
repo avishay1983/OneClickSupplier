@@ -17,7 +17,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
-import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS, CLAIMS_SUB_CATEGORY_LABELS } from '@/types/vendor';
+import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { StatusHistoryDialog } from './StatusHistoryDialog';
@@ -418,11 +418,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     <Badge variant="outline">
                       {VENDOR_TYPE_LABELS[request.vendor_type as keyof typeof VENDOR_TYPE_LABELS] || 'כללי'}
                     </Badge>
-                    {request.claims_sub_category && (
-                      <span className="text-xs text-muted-foreground">
-                        {CLAIMS_SUB_CATEGORY_LABELS[request.claims_sub_category] || request.claims_sub_category}
-                      </span>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>
