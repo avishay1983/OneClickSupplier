@@ -569,8 +569,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
           </form>
         </TabsContent>
 
-          <TabsContent value="bulk" className="mt-4 space-y-4">
-            <div className="space-y-4">
+          <TabsContent value="bulk" className="mt-4 space-y-4" dir="rtl">
+            <div className="space-y-4 text-right">
               {/* File upload area */}
               <div 
                 className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
@@ -596,7 +596,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
               {/* Expiry selection */}
               <div className="space-y-2">
-                <Label>תוקף הקישורים</Label>
+                <Label className="block text-right">תוקף הקישורים</Label>
                 <Select
                   value={String(bulkExpiresInDays)}
                   onValueChange={(value) => setBulkExpiresInDays(Number(value))}
@@ -615,9 +615,12 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
               {/* Approval type selection */}
               <div className="space-y-3">
-                <Label>סוג אישור נדרש</Label>
+                <Label className="block text-right">סוג אישור נדרש</Label>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="bulk-procurement-only" className="font-normal cursor-pointer">
+                      אישור מנהל רכש בלבד
+                    </Label>
                     <Checkbox
                       id="bulk-procurement-only"
                       checked={!bulkRequiresVpApproval}
@@ -625,11 +628,11 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(false);
                       }}
                     />
-                    <Label htmlFor="bulk-procurement-only" className="font-normal cursor-pointer">
-                      אישור מנהל רכש בלבד
-                    </Label>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
+                    <Label htmlFor="bulk-requires-vp" className="font-normal cursor-pointer">
+                      אישור מנהל רכש + סמנכ"ל
+                    </Label>
                     <Checkbox
                       id="bulk-requires-vp"
                       checked={bulkRequiresVpApproval}
@@ -637,9 +640,6 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(true);
                       }}
                     />
-                    <Label htmlFor="bulk-requires-vp" className="font-normal cursor-pointer">
-                      אישור מנהל רכש + סמנכ"ל
-                    </Label>
                   </div>
                 </div>
               </div>
