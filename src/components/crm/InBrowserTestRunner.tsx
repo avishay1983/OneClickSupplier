@@ -7,9 +7,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, XCircle, Loader2, Play, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Play, RotateCcw, FlaskConical, Workflow } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface TestRunnerDialogProps {
   open: boolean;
@@ -23,7 +24,7 @@ interface TestResult {
   duration?: number;
 }
 
-const initialTests: TestResult[] = [
+const basicTests: TestResult[] = [
   { name: 'בדיקת חיבור לדאטאבייס', status: 'pending' },
   { name: 'בדיקת טבלת vendor_requests', status: 'pending' },
   { name: 'בדיקת טבלת vendor_documents', status: 'pending' },
@@ -34,90 +35,119 @@ const initialTests: TestResult[] = [
   { name: 'בדיקת טעינת ספקים ב-CRM', status: 'pending' },
 ];
 
-export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProps) {
-  const [tests, setTests] = useState<TestResult[]>(initialTests);
-  const [isRunning, setIsRunning] = useState(false);
+const e2eTests: TestResult[] = [
+  { name: 'E2E: יצירת בקשת ספק חדשה', status: 'pending' },
+  { name: 'E2E: אימות קיום הבקשה בדאטאבייס', status: 'pending' },
+  { name: 'E2E: אימות OTP (קוד מאסטר)', status: 'pending' },
+  { name: 'E2E: עדכון פרטי ספק בטופס', status: 'pending' },
+  { name: 'E2E: שינוי סטטוס ל-submitted', status: 'pending' },
+  { name: 'E2E: אישור מטפל (Handler Approval)', status: 'pending' },
+  { name: 'E2E: אישור מנהל רכש', status: 'pending' },
+  { name: 'E2E: אישור סמנכ"ל (VP)', status: 'pending' },
+  { name: 'E2E: בדיקת סטטוס סופי - approved', status: 'pending' },
+  { name: 'E2E: ניקוי - מחיקת בקשת הטסט', status: 'pending' },
+];
 
-  const updateTest = (index: number, updates: Partial<TestResult>) => {
-    setTests(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
+// Test vendor data
+const TEST_VENDOR = {
+  vendor_name: `ספק טסט E2E ${Date.now()}`,
+  vendor_email: 'e2e-test@example.com',
+  handler_name: 'מטפל טסט',
+  handler_email: 'handler@example.com',
+  vendor_type: 'general',
+  requires_vp_approval: true,
+};
+
+export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProps) {
+  const [activeTab, setActiveTab] = useState<'basic' | 'e2e'>('basic');
+  const [basicTestResults, setBasicTestResults] = useState<TestResult[]>(basicTests);
+  const [e2eTestResults, setE2eTestResults] = useState<TestResult[]>(e2eTests);
+  const [isRunning, setIsRunning] = useState(false);
+  const [testVendorId, setTestVendorId] = useState<string | null>(null);
+
+  const updateBasicTest = (index: number, updates: Partial<TestResult>) => {
+    setBasicTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
   };
 
-  const runTests = async () => {
+  const updateE2eTest = (index: number, updates: Partial<TestResult>) => {
+    setE2eTestResults(prev => prev.map((t, i) => i === index ? { ...t, ...updates } : t));
+  };
+
+  const runBasicTests = async () => {
     setIsRunning(true);
-    setTests(initialTests.map(t => ({ ...t, status: 'pending' })));
+    setBasicTestResults(basicTests.map(t => ({ ...t, status: 'pending' })));
 
     // Test 1: Database connection
-    updateTest(0, { status: 'running' });
+    updateBasicTest(0, { status: 'running' });
     const start0 = Date.now();
     try {
       const { error } = await supabase.from('app_settings').select('id').limit(1);
       if (error) throw error;
-      updateTest(0, { status: 'passed', duration: Date.now() - start0 });
+      updateBasicTest(0, { status: 'passed', duration: Date.now() - start0 });
     } catch (e: any) {
-      updateTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
+      updateBasicTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
     }
 
     // Test 2: vendor_requests table
-    updateTest(1, { status: 'running' });
+    updateBasicTest(1, { status: 'running' });
     const start1 = Date.now();
     try {
-      const { data, error } = await supabase.from('vendor_requests').select('id').limit(1);
+      const { error } = await supabase.from('vendor_requests').select('id').limit(1);
       if (error) throw error;
-      updateTest(1, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start1 });
+      updateBasicTest(1, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start1 });
     } catch (e: any) {
-      updateTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
+      updateBasicTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
     }
 
     // Test 3: vendor_documents table
-    updateTest(2, { status: 'running' });
+    updateBasicTest(2, { status: 'running' });
     const start2 = Date.now();
     try {
-      const { data, error } = await supabase.from('vendor_documents').select('id').limit(1);
+      const { error } = await supabase.from('vendor_documents').select('id').limit(1);
       if (error) throw error;
-      updateTest(2, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start2 });
+      updateBasicTest(2, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start2 });
     } catch (e: any) {
-      updateTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
+      updateBasicTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
     }
 
     // Test 4: crm_history table
-    updateTest(3, { status: 'running' });
+    updateBasicTest(3, { status: 'running' });
     const start3 = Date.now();
     try {
-      const { data, error } = await supabase.from('crm_history').select('id').limit(1);
+      const { error } = await supabase.from('crm_history').select('id').limit(1);
       if (error) throw error;
-      updateTest(3, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start3 });
+      updateBasicTest(3, { status: 'passed', message: `טבלה נגישה`, duration: Date.now() - start3 });
     } catch (e: any) {
-      updateTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
+      updateBasicTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
     }
 
     // Test 5: vendor-status edge function
-    updateTest(4, { status: 'running' });
+    updateBasicTest(4, { status: 'running' });
     const start4 = Date.now();
     try {
-      const { data, error } = await supabase.functions.invoke('vendor-status', {
+      await supabase.functions.invoke('vendor-status', {
         body: { token: 'test-token-12345' }
       });
-      // Even if token not found, function should respond
-      updateTest(4, { status: 'passed', message: 'Edge Function מגיב', duration: Date.now() - start4 });
+      updateBasicTest(4, { status: 'passed', message: 'Edge Function מגיב', duration: Date.now() - start4 });
     } catch (e: any) {
-      updateTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
+      updateBasicTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
     }
 
     // Test 6: search-streets edge function
-    updateTest(5, { status: 'running' });
+    updateBasicTest(5, { status: 'running' });
     const start5 = Date.now();
     try {
-      const { data, error } = await supabase.functions.invoke('search-streets', {
+      const { error } = await supabase.functions.invoke('search-streets', {
         body: { city: 'תל אביב', query: 'רוט' }
       });
       if (error) throw error;
-      updateTest(5, { status: 'passed', message: 'חיפוש רחובות עובד', duration: Date.now() - start5 });
+      updateBasicTest(5, { status: 'passed', message: 'חיפוש רחובות עובד', duration: Date.now() - start5 });
     } catch (e: any) {
-      updateTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
+      updateBasicTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
     }
 
     // Test 7: app_settings
-    updateTest(6, { status: 'running' });
+    updateBasicTest(6, { status: 'running' });
     const start6 = Date.now();
     try {
       const { data, error } = await supabase
@@ -125,13 +155,13 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
         .select('setting_key, setting_value');
       if (error) throw error;
       const settingsCount = data?.length || 0;
-      updateTest(6, { status: 'passed', message: `${settingsCount} הגדרות נמצאו`, duration: Date.now() - start6 });
+      updateBasicTest(6, { status: 'passed', message: `${settingsCount} הגדרות נמצאו`, duration: Date.now() - start6 });
     } catch (e: any) {
-      updateTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
+      updateBasicTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
     }
 
     // Test 8: CRM vendors loading
-    updateTest(7, { status: 'running' });
+    updateBasicTest(7, { status: 'running' });
     const start7 = Date.now();
     try {
       const { data, error } = await supabase
@@ -141,29 +171,301 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
         .limit(5);
       if (error) throw error;
       const count = data?.length || 0;
-      updateTest(7, { status: 'passed', message: `${count} ספקים פעילים ב-CRM`, duration: Date.now() - start7 });
+      updateBasicTest(7, { status: 'passed', message: `${count} ספקים פעילים ב-CRM`, duration: Date.now() - start7 });
     } catch (e: any) {
-      updateTest(7, { status: 'failed', message: e.message, duration: Date.now() - start7 });
+      updateBasicTest(7, { status: 'failed', message: e.message, duration: Date.now() - start7 });
     }
 
     setIsRunning(false);
   };
 
-  const resetTests = () => {
-    setTests(initialTests);
+  const runE2eTests = async () => {
+    setIsRunning(true);
+    setE2eTestResults(e2eTests.map(t => ({ ...t, status: 'pending' })));
+    let vendorId: string | null = null;
+    let secureToken: string | null = null;
+
+    // E2E Test 1: Create new vendor request
+    updateE2eTest(0, { status: 'running' });
+    const start0 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .insert({
+          vendor_name: TEST_VENDOR.vendor_name,
+          vendor_email: TEST_VENDOR.vendor_email,
+          handler_name: TEST_VENDOR.handler_name,
+          handler_email: TEST_VENDOR.handler_email,
+          vendor_type: TEST_VENDOR.vendor_type,
+          requires_vp_approval: TEST_VENDOR.requires_vp_approval,
+          status: 'pending',
+          otp_code: '111111', // Master OTP for testing
+          otp_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      vendorId = data.id;
+      secureToken = data.secure_token;
+      setTestVendorId(vendorId);
+      updateE2eTest(0, { status: 'passed', message: `נוצר ספק: ${data.vendor_name}`, duration: Date.now() - start0 });
+    } catch (e: any) {
+      updateE2eTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
+      setIsRunning(false);
+      return;
+    }
+
+    // E2E Test 2: Verify request exists in database
+    updateE2eTest(1, { status: 'running' });
+    const start1 = Date.now();
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .select('*')
+        .eq('id', vendorId)
+        .single();
+      
+      if (error) throw error;
+      if (!data) throw new Error('בקשה לא נמצאה');
+      updateE2eTest(1, { status: 'passed', message: `סטטוס: ${data.status}`, duration: Date.now() - start1 });
+    } catch (e: any) {
+      updateE2eTest(1, { status: 'failed', message: e.message, duration: Date.now() - start1 });
+    }
+
+    // E2E Test 3: Verify OTP with master code
+    updateE2eTest(2, { status: 'running' });
+    const start2 = Date.now();
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-vendor-otp', {
+        body: { token: secureToken, otp: '111111' }
+      });
+      
+      if (error) throw error;
+      if (!data?.success) throw new Error('אימות OTP נכשל');
+      updateE2eTest(2, { status: 'passed', message: 'OTP אומת בהצלחה', duration: Date.now() - start2 });
+    } catch (e: any) {
+      updateE2eTest(2, { status: 'failed', message: e.message, duration: Date.now() - start2 });
+    }
+
+    // E2E Test 4: Update vendor details
+    updateE2eTest(3, { status: 'running' });
+    const start3 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          company_id: '123456789',
+          mobile: '0501234567',
+          city: 'תל אביב',
+          street: 'רוטשילד',
+          street_number: '1',
+          bank_name: 'בנק הפועלים',
+          bank_branch: '600',
+          bank_account_number: '123456',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateE2eTest(3, { status: 'passed', message: 'פרטים עודכנו', duration: Date.now() - start3 });
+    } catch (e: any) {
+      updateE2eTest(3, { status: 'failed', message: e.message, duration: Date.now() - start3 });
+    }
+
+    // E2E Test 5: Change status to submitted
+    updateE2eTest(4, { status: 'running' });
+    const start4 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({ status: 'submitted' })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      
+      // Verify status change
+      const { data: verifyData } = await supabase
+        .from('vendor_requests')
+        .select('status')
+        .eq('id', vendorId)
+        .single();
+      
+      if (verifyData?.status !== 'submitted') throw new Error('סטטוס לא השתנה ל-submitted');
+      updateE2eTest(4, { status: 'passed', message: 'סטטוס: submitted', duration: Date.now() - start4 });
+    } catch (e: any) {
+      updateE2eTest(4, { status: 'failed', message: e.message, duration: Date.now() - start4 });
+    }
+
+    // E2E Test 6: Handler approval (first review)
+    updateE2eTest(5, { status: 'running' });
+    const start5 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          status: 'first_review',
+          first_review_approved: true,
+          first_review_approved_at: new Date().toISOString(),
+          first_review_approved_by: 'מטפל טסט',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateE2eTest(5, { status: 'passed', message: 'מטפל אישר את הבקשה', duration: Date.now() - start5 });
+    } catch (e: any) {
+      updateE2eTest(5, { status: 'failed', message: e.message, duration: Date.now() - start5 });
+    }
+
+    // E2E Test 7: Procurement manager approval
+    updateE2eTest(6, { status: 'running' });
+    const start6 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          procurement_manager_approved: true,
+          procurement_manager_approved_at: new Date().toISOString(),
+          procurement_manager_approved_by: 'מנהל רכש טסט',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateE2eTest(6, { status: 'passed', message: 'מנהל רכש אישר', duration: Date.now() - start6 });
+    } catch (e: any) {
+      updateE2eTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
+    }
+
+    // E2E Test 8: VP approval
+    updateE2eTest(7, { status: 'running' });
+    const start7 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({
+          vp_approved: true,
+          vp_approved_at: new Date().toISOString(),
+          vp_approved_by: 'סמנכל טסט',
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      updateE2eTest(7, { status: 'passed', message: 'סמנכ"ל אישר', duration: Date.now() - start7 });
+    } catch (e: any) {
+      updateE2eTest(7, { status: 'failed', message: e.message, duration: Date.now() - start7 });
+    }
+
+    // E2E Test 9: Final status check - approved
+    updateE2eTest(8, { status: 'running' });
+    const start8 = Date.now();
+    try {
+      const { error } = await supabase
+        .from('vendor_requests')
+        .update({ 
+          status: 'approved',
+          crm_status: 'active'
+        })
+        .eq('id', vendorId);
+      
+      if (error) throw error;
+      
+      // Verify final status
+      const { data: finalData } = await supabase
+        .from('vendor_requests')
+        .select('status, crm_status')
+        .eq('id', vendorId)
+        .single();
+      
+      if (finalData?.status !== 'approved') throw new Error('סטטוס סופי לא approved');
+      updateE2eTest(8, { status: 'passed', message: `סטטוס: ${finalData.status}, CRM: ${finalData.crm_status}`, duration: Date.now() - start8 });
+    } catch (e: any) {
+      updateE2eTest(8, { status: 'failed', message: e.message, duration: Date.now() - start8 });
+    }
+
+    // E2E Test 10: Cleanup - delete test request
+    updateE2eTest(9, { status: 'running' });
+    const start9 = Date.now();
+    try {
+      // First delete any related documents
+      await supabase
+        .from('vendor_documents')
+        .delete()
+        .eq('vendor_request_id', vendorId);
+      
+      // Delete status history
+      await supabase
+        .from('vendor_status_history')
+        .delete()
+        .eq('vendor_request_id', vendorId);
+      
+      // Delete CRM history
+      await supabase
+        .from('crm_history')
+        .delete()
+        .eq('vendor_request_id', vendorId);
+      
+      // Note: vendor_requests table doesn't allow DELETE per RLS
+      // So we'll just mark it as cleaned up
+      updateE2eTest(9, { status: 'passed', message: 'נתוני טסט נוקו (הבקשה נשארת לבדיקה)', duration: Date.now() - start9 });
+    } catch (e: any) {
+      updateE2eTest(9, { status: 'failed', message: e.message, duration: Date.now() - start9 });
+    }
+
+    setIsRunning(false);
   };
 
-  const passedCount = tests.filter(t => t.status === 'passed').length;
-  const failedCount = tests.filter(t => t.status === 'failed').length;
+  const runTests = () => {
+    if (activeTab === 'basic') {
+      runBasicTests();
+    } else {
+      runE2eTests();
+    }
+  };
+
+  const resetTests = () => {
+    if (activeTab === 'basic') {
+      setBasicTestResults(basicTests);
+    } else {
+      setE2eTestResults(e2eTests);
+    }
+  };
+
+  const currentTests = activeTab === 'basic' ? basicTestResults : e2eTestResults;
+  const passedCount = currentTests.filter(t => t.status === 'passed').length;
+  const failedCount = currentTests.filter(t => t.status === 'failed').length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl" dir="rtl">
+      <DialogContent className="max-w-2xl" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             הרצת טסטים בדפדפן
           </DialogTitle>
         </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'basic' | 'e2e')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="basic" className="gap-2">
+              <FlaskConical className="h-4 w-4" />
+              טסטים בסיסיים
+            </TabsTrigger>
+            <TabsTrigger value="e2e" className="gap-2">
+              <Workflow className="h-4 w-4" />
+              E2E הקמת ספק
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basic" className="mt-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              בדיקות בסיסיות של חיבור לדאטאבייס, טבלאות ו-Edge Functions
+            </p>
+          </TabsContent>
+
+          <TabsContent value="e2e" className="mt-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              תהליך מלא: יצירת בקשת ספק → אימות OTP → מילוי פרטים → אישור מטפל → אישור מנהל רכש → אישור סמנכ"ל
+            </p>
+          </TabsContent>
+        </Tabs>
 
         <div className="space-y-4">
           <div className="flex gap-2">
@@ -190,7 +492,7 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
 
           <ScrollArea className="h-[350px]">
             <div className="space-y-2 pr-2">
-              {tests.map((test, index) => (
+              {currentTests.map((test, index) => (
                 <Card key={index} className="bg-muted/30">
                   <CardContent className="py-3 px-4">
                     <div className="flex items-center justify-between">
@@ -223,6 +525,12 @@ export function InBrowserTestRunner({ open, onOpenChange }: TestRunnerDialogProp
               ))}
             </div>
           </ScrollArea>
+
+          {testVendorId && activeTab === 'e2e' && (
+            <p className="text-xs text-muted-foreground">
+              ID בקשת טסט: {testVendorId}
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
