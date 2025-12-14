@@ -29,6 +29,7 @@ interface SignatureStatus {
   procurementSignedAt: string | null;
   procurementSignedBy: string | null;
   contractFilePath: string | null;
+  requiresVpApproval: boolean;
 }
 
 export function ContractSigningDialog({
@@ -107,7 +108,7 @@ export function ContractSigningDialog({
         // Get contract status
         const { data, error } = await supabase
           .from('vendor_requests')
-          .select('ceo_signed, ceo_signed_at, ceo_signed_by, procurement_manager_signed, procurement_manager_signed_at, procurement_manager_signed_by, contract_file_path')
+          .select('ceo_signed, ceo_signed_at, ceo_signed_by, procurement_manager_signed, procurement_manager_signed_at, procurement_manager_signed_by, contract_file_path, requires_vp_approval')
           .eq('id', vendorRequestId)
           .single();
 
@@ -121,6 +122,7 @@ export function ContractSigningDialog({
           procurementSignedAt: data.procurement_manager_signed_at,
           procurementSignedBy: data.procurement_manager_signed_by,
           contractFilePath: data.contract_file_path,
+          requiresVpApproval: data.requires_vp_approval !== false,
         });
       } catch (error) {
         console.error('Error fetching contract status:', error);
@@ -506,11 +508,17 @@ export function ContractSigningDialog({
                   <div>
                     <h4 className="font-medium">חוזה {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתום' : 'מהספק'}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {signatureStatus.ceoSigned && signatureStatus.procurementSigned 
-                        ? 'כל החתימות הושלמו' 
-                        : signatureStatus.ceoSigned 
-                          ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
-                          : 'הורד את החוזה לצפייה'}
+                      {signatureStatus.requiresVpApproval ? (
+                        signatureStatus.ceoSigned && signatureStatus.procurementSigned 
+                          ? 'כל החתימות הושלמו' 
+                          : signatureStatus.ceoSigned 
+                            ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
+                            : 'הורד את החוזה לצפייה'
+                      ) : (
+                        signatureStatus.procurementSigned
+                          ? 'נחתם ע"י מנהל רכש'
+                          : 'הורד את החוזה לצפייה'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -521,8 +529,8 @@ export function ContractSigningDialog({
               </div>
             </div>
 
-            {/* VP Signature - show only to VP */}
-            {userRole === 'ceo' && (
+            {/* VP Signature - show only to VP AND only if VP approval is required */}
+            {signatureStatus.requiresVpApproval && userRole === 'ceo' && (
               <div className={`p-4 border rounded-lg ${signatureStatus.ceoSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -550,58 +558,76 @@ export function ContractSigningDialog({
               </div>
             )}
 
-            {/* Procurement Manager Signature - show only to Procurement Manager AND only after VP signed */}
-            {userRole === 'procurement' && signatureStatus.ceoSigned && (
-              <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {signatureStatus.procurementSigned ? (
-                      <CheckCircle className="h-6 w-6 text-success" />
-                    ) : (
-                      <Pen className="h-6 w-6 text-muted-foreground" />
-                    )}
-                    <div>
-                      <h4 className="font-medium">חתימת מנהל רכש</h4>
-                      {signatureStatus.procurementSigned ? (
-                        <p className="text-sm text-success">
-                          נחתם ע"י {signatureStatus.procurementSignedBy} ב-{formatDate(signatureStatus.procurementSignedAt)}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
+            {/* Procurement Manager Signature */}
+            {userRole === 'procurement' && (
+              <>
+                {/* If VP approval is required, show only after VP signed */}
+                {signatureStatus.requiresVpApproval && !signatureStatus.ceoSigned && (
+                  <div className="text-center p-4 bg-muted/50 rounded-lg border">
+                    <p className="text-muted-foreground">ממתין לחתימת הסמנכ"ל לפני שתוכל לחתום</p>
+                  </div>
+                )}
+                
+                {/* Show signature section if VP approval is not required OR VP has signed */}
+                {(!signatureStatus.requiresVpApproval || signatureStatus.ceoSigned) && (
+                  <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {signatureStatus.procurementSigned ? (
+                          <CheckCircle className="h-6 w-6 text-success" />
+                        ) : (
+                          <Pen className="h-6 w-6 text-muted-foreground" />
+                        )}
+                        <div>
+                          <h4 className="font-medium">חתימת מנהל רכש</h4>
+                          {signatureStatus.procurementSigned ? (
+                            <p className="text-sm text-success">
+                              נחתם ע"י {signatureStatus.procurementSignedBy} ב-{formatDate(signatureStatus.procurementSignedAt)}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
+                          )}
+                        </div>
+                      </div>
+                      {!signatureStatus.procurementSigned && (
+                        <Button onClick={() => setSignerRole('procurement')} className="gap-2">
+                          <Pen className="h-4 w-4" />
+                          חתום כמנהל רכש
+                        </Button>
                       )}
                     </div>
                   </div>
-                  {!signatureStatus.procurementSigned && (
-                    <Button onClick={() => setSignerRole('procurement')} className="gap-2">
-                      <Pen className="h-4 w-4" />
-                      חתום כמנהל רכש
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Show waiting message for Procurement Manager if VP hasn't signed yet */}
-            {userRole === 'procurement' && !signatureStatus.ceoSigned && (
-              <div className="text-center p-4 bg-muted/50 rounded-lg border">
-                <p className="text-muted-foreground">ממתין לחתימת הסמנכ"ל לפני שתוכל לחתום</p>
-              </div>
+                )}
+              </>
             )}
 
             {/* Show message if user is not authorized to sign */}
             {userRole === null && (
               <div className="text-center p-4 bg-warning/10 rounded-lg border border-warning/30">
                 <p className="text-warning-foreground">אינך מורשה לחתום על הסכם זה</p>
-                <p className="text-sm text-muted-foreground mt-1">רק מנהל רכש או סמנכ"ל יכולים לחתום</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {signatureStatus.requiresVpApproval 
+                    ? 'רק מנהל רכש או סמנכ"ל יכולים לחתום'
+                    : 'רק מנהל רכש יכול לחתום'}
+                </p>
               </div>
             )}
 
-            {/* Status summary */}
-            {signatureStatus.ceoSigned && signatureStatus.procurementSigned && (
-              <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
-                <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
-                <p className="font-medium text-success">ההסכם נחתם על ידי שני הצדדים</p>
-              </div>
+            {/* Status summary - check based on requires_vp_approval */}
+            {signatureStatus.requiresVpApproval ? (
+              signatureStatus.ceoSigned && signatureStatus.procurementSigned && (
+                <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
+                  <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
+                  <p className="font-medium text-success">ההסכם נחתם על ידי שני הצדדים</p>
+                </div>
+              )
+            ) : (
+              signatureStatus.procurementSigned && (
+                <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
+                  <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
+                  <p className="font-medium text-success">ההסכם נחתם על ידי מנהל הרכש</p>
+                </div>
+              )
             )}
           </div>
         )}
