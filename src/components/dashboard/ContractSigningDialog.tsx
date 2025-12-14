@@ -92,16 +92,27 @@ export function ContractSigningDialog({
           settingsMap[s.setting_key] = s.setting_value;
         });
 
-        const vpEmail = settingsMap.vp_email?.toLowerCase();
-        const procurementEmail = settingsMap.car_manager_email?.toLowerCase();
-        const userEmailLower = currentUserEmail.toLowerCase();
+        const vpEmail = settingsMap.vp_email?.toLowerCase().trim();
+        const procurementEmail = settingsMap.car_manager_email?.toLowerCase().trim();
+        const userEmailLower = currentUserEmail.toLowerCase().trim();
+
+        console.log('ContractSigningDialog - Email comparison:', {
+          userEmailLower,
+          vpEmail,
+          procurementEmail,
+          isVp: userEmailLower === vpEmail,
+          isProcurement: userEmailLower === procurementEmail
+        });
 
         // Determine user's role based on their email
         if (userEmailLower === vpEmail) {
+          console.log('Setting userRole to ceo');
           setUserRole('ceo');
         } else if (userEmailLower === procurementEmail) {
+          console.log('Setting userRole to procurement');
           setUserRole('procurement');
         } else {
+          console.log('No matching role found');
           setUserRole(null);
         }
 
