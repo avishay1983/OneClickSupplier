@@ -238,9 +238,11 @@ export function ContractSigningDialog({
       const pageWidth = lastPage.getWidth();
       
       // Position signature ABOVE the signature line (not covering the title text)
-      // The signature line with titles is at about 50-55% from bottom
-      // Place signature higher - above the line, not on it
-      const yPosition = pageHeight * 0.62; // Higher position - above the signature line
+      // Use fixed Y position from bottom for consistency across both signers
+      // The signature line is typically around 520-530 pixels from bottom of an A4 page
+      const yPosition = 520; // Fixed position - approximately 62% of A4 height (841.89)
+      
+      console.log('Page dimensions:', { pageWidth, pageHeight });
       
       let xPosition: number;
       if (signerRole === 'ceo') {
