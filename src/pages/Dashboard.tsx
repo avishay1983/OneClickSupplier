@@ -207,6 +207,8 @@ export default function Dashboard() {
             handler_name: vendor.handler_name || currentUserName,
             handler_email: user?.email || null,
             vendor_type: vendor.vendor_type || 'general',
+            requires_vp_approval: vendor.requires_vp_approval ?? true,
+            requires_contract_signature: true,
           });
 
         if (error) {
