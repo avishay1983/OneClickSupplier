@@ -1556,8 +1556,12 @@ export default function VendorForm() {
                     placeholder="הכנס מספר ח.פ או עוסק מורשה"
                     className={(hasFieldWarning('company_id') || errors.company_id) ? 'border-destructive' : ''}
                   />
-                  {hasFieldWarning('company_id') && <p className="text-sm text-destructive">{getFieldWarning('company_id')}</p>}
-                  {errors.company_id && <p className="text-sm text-destructive">{errors.company_id}</p>}
+                  {/* Show only one error message - prefer validation error over OCR warning */}
+                  {errors.company_id ? (
+                    <p className="text-sm text-destructive">{errors.company_id}</p>
+                  ) : hasFieldWarning('company_id') ? (
+                    <p className="text-sm text-destructive">{getFieldWarning('company_id')}</p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">טלפון</Label>
@@ -1581,8 +1585,12 @@ export default function VendorForm() {
                     placeholder="טלפון נייד"
                     className={`ltr text-right ${(hasFieldWarning('mobile') || errors.mobile) ? 'border-destructive' : ''}`}
                   />
-                  {hasFieldWarning('mobile') && <p className="text-sm text-destructive">{getFieldWarning('mobile')}</p>}
-                  {errors.mobile && <p className="text-sm text-destructive">{errors.mobile}</p>}
+                  {/* Show only one error message - prefer validation error over OCR warning */}
+                  {errors.mobile ? (
+                    <p className="text-sm text-destructive">{errors.mobile}</p>
+                  ) : hasFieldWarning('mobile') ? (
+                    <p className="text-sm text-destructive">{getFieldWarning('mobile')}</p>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
@@ -1605,12 +1613,21 @@ export default function VendorForm() {
                         onChange={(value) => {
                           setFormData({ ...formData, city: value });
                           clearFieldWarning('city');
+                          // Clear city error when user edits
+                          setErrors(prev => {
+                            const { city, ...rest } = prev;
+                            return rest;
+                          });
                         }}
                         placeholder="הקלד שם עיר"
                       />
                     </div>
-                    {hasFieldWarning('city') && <p className="text-sm text-destructive">{getFieldWarning('city')}</p>}
-                    {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
+                    {/* Show only one error message - prefer validation error over OCR warning */}
+                    {errors.city ? (
+                      <p className="text-sm text-destructive">{errors.city}</p>
+                    ) : hasFieldWarning('city') ? (
+                      <p className="text-sm text-destructive">{getFieldWarning('city')}</p>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street">
@@ -1623,13 +1640,22 @@ export default function VendorForm() {
                         onChange={(value) => {
                           setFormData({ ...formData, street: value });
                           clearFieldWarning('street');
+                          // Clear address error when user edits street
+                          setErrors(prev => {
+                            const { address, street, ...rest } = prev;
+                            return rest;
+                          });
                         }}
                         city={formData.city}
                         placeholder="שם הרחוב"
                       />
                     </div>
-                    {hasFieldWarning('street') && <p className="text-sm text-destructive">{getFieldWarning('street')}</p>}
-                    {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
+                    {/* Show only one error message */}
+                    {errors.address ? (
+                      <p className="text-sm text-destructive">{errors.address}</p>
+                    ) : hasFieldWarning('street') ? (
+                      <p className="text-sm text-destructive">{getFieldWarning('street')}</p>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street_number">מספר</Label>
@@ -1656,7 +1682,14 @@ export default function VendorForm() {
                     <Input
                       id="po_box"
                       value={formData.po_box}
-                      onChange={(e) => setFormData({ ...formData, po_box: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, po_box: e.target.value });
+                        // Clear address error when user edits po_box
+                        setErrors(prev => {
+                          const { address, ...rest } = prev;
+                          return rest;
+                        });
+                      }}
                       placeholder="תיבת דואר"
                       className={errors.address && !formData.street.trim() ? 'border-destructive' : ''}
                     />
@@ -1742,12 +1775,21 @@ export default function VendorForm() {
                       onChange={(value) => {
                         setFormData({ ...formData, bank_name: value, bank_branch: '', bank_account_number: '' });
                         clearFieldWarning('bank_name');
+                        // Clear all bank-related errors when bank name changes
+                        setErrors(prev => {
+                          const { bank_name, bank_branch, bank_account_number, ...rest } = prev;
+                          return rest;
+                        });
                       }}
                       placeholder="בחר בנק"
                     />
                   </div>
-                  {hasFieldWarning('bank_name') && <p className="text-sm text-destructive">{getFieldWarning('bank_name')}</p>}
-                  {errors.bank_name && <p className="text-sm text-destructive">{errors.bank_name}</p>}
+                  {/* Show only one error message - prefer validation error over OCR warning */}
+                  {errors.bank_name ? (
+                    <p className="text-sm text-destructive">{errors.bank_name}</p>
+                  ) : hasFieldWarning('bank_name') ? (
+                    <p className="text-sm text-destructive">{getFieldWarning('bank_name')}</p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bank_branch">סניף *</Label>
@@ -1758,16 +1800,17 @@ export default function VendorForm() {
                       onChange={(value) => {
                         setFormData({ ...formData, bank_branch: value });
                         clearFieldWarning('bank_branch');
+                        // Clear error first, then validate
+                        setErrors(prev => {
+                          const { bank_branch, ...rest } = prev;
+                          return rest;
+                        });
+                        // Validate only if needed
                         if (value && formData.bank_name) {
                           const branches = getBranchesByBank(formData.bank_name);
                           const branchExists = branches.some(b => b.code === value);
                           if (branches.length > 0 && !branchExists) {
                             setErrors(prev => ({ ...prev, bank_branch: `סניף ${value} לא נמצא ברשימת הסניפים` }));
-                          } else {
-                            setErrors(prev => {
-                              const { bank_branch, ...rest } = prev;
-                              return rest;
-                            });
                           }
                         }
                       }}
@@ -1780,8 +1823,12 @@ export default function VendorForm() {
                       {getBranchesByBank(formData.bank_name).length} סניפים זמינים עבור {formData.bank_name}
                     </p>
                   )}
-                  {hasFieldWarning('bank_branch') && <p className="text-sm text-destructive">{getFieldWarning('bank_branch')}</p>}
-                  {errors.bank_branch && <p className="text-sm text-destructive">{errors.bank_branch}</p>}
+                  {/* Show only one error message - prefer validation error over OCR warning */}
+                  {errors.bank_branch ? (
+                    <p className="text-sm text-destructive">{errors.bank_branch}</p>
+                  ) : hasFieldWarning('bank_branch') ? (
+                    <p className="text-sm text-destructive">{getFieldWarning('bank_branch')}</p>
+                  ) : null}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bank_account_number">מספר חשבון *</Label>
@@ -1792,15 +1839,16 @@ export default function VendorForm() {
                       const value = e.target.value.replace(/\D/g, '');
                       setFormData({ ...formData, bank_account_number: value });
                       clearFieldWarning('bank_account_number');
+                      // Clear any existing error immediately when user starts editing
+                      setErrors(prev => {
+                        const { bank_account_number, ...rest } = prev;
+                        return rest;
+                      });
+                      // Only validate if we have a value and bank name
                       if (value && formData.bank_name) {
                         const validation = validateBankAccount(value, formData.bank_name);
                         if (!validation.valid) {
                           setErrors(prev => ({ ...prev, bank_account_number: validation.message || '' }));
-                        } else {
-                          setErrors(prev => {
-                            const { bank_account_number, ...rest } = prev;
-                            return rest;
-                          });
                         }
                       }
                     }}
@@ -1813,8 +1861,12 @@ export default function VendorForm() {
                       {getBankByName(formData.bank_name)?.accountDigits} ספרות נדרשות עבור {formData.bank_name}
                     </p>
                   )}
-                  {hasFieldWarning('bank_account_number') && <p className="text-sm text-destructive">{getFieldWarning('bank_account_number')}</p>}
-                  {errors.bank_account_number && <p className="text-sm text-destructive">{errors.bank_account_number}</p>}
+                  {/* Show only one error message - prefer validation error over OCR warning */}
+                  {errors.bank_account_number ? (
+                    <p className="text-sm text-destructive">{errors.bank_account_number}</p>
+                  ) : hasFieldWarning('bank_account_number') ? (
+                    <p className="text-sm text-destructive">{getFieldWarning('bank_account_number')}</p>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
