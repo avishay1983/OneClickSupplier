@@ -201,6 +201,62 @@ export type Database = {
           },
         ]
       }
+      vendor_receipts: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          id: string
+          receipt_date: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          vendor_request_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          receipt_date: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          vendor_request_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          receipt_date?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          vendor_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_receipts_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_requests: {
         Row: {
           accounting_contact_name: string | null
@@ -254,6 +310,7 @@ export type Database = {
           procurement_manager_signed_at: string | null
           procurement_manager_signed_by: string | null
           quote_received: boolean | null
+          receipts_link_sent_at: string | null
           requires_contract_signature: boolean | null
           requires_vp_approval: boolean
           sales_contact_name: string | null
@@ -325,6 +382,7 @@ export type Database = {
           procurement_manager_signed_at?: string | null
           procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
+          receipts_link_sent_at?: string | null
           requires_contract_signature?: boolean | null
           requires_vp_approval?: boolean
           sales_contact_name?: string | null
@@ -396,6 +454,7 @@ export type Database = {
           procurement_manager_signed_at?: string | null
           procurement_manager_signed_by?: string | null
           quote_received?: boolean | null
+          receipts_link_sent_at?: string | null
           requires_contract_signature?: boolean | null
           requires_vp_approval?: boolean
           sales_contact_name?: string | null
