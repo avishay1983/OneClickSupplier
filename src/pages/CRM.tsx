@@ -771,6 +771,13 @@ export default function CRM() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label>תת קטגוריה</Label>
+                      <Input
+                        value={editForm.claims_sub_category || ''}
+                        onChange={(e) => setEditForm({ ...editForm, claims_sub_category: e.target.value })}
+                      />
+                    </div>
                   </>
                 )}
                 <div className="space-y-2">
