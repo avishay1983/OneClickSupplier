@@ -277,19 +277,13 @@ export function ContractSigningDialog({
       const modifiedPdfBlob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: 'application/pdf' });
       console.log('Blob size:', modifiedPdfBlob.size, 'bytes');
       
-      // Upload the signed PDF (overwrite) - use update method for existing files
+      // Upload the signed PDF (overwrite existing file directly)
       console.log('Uploading to path:', signatureStatus.contractFilePath);
-      
-      // First remove the old file, then upload new one
-      await supabase.storage
-        .from('vendor_documents')
-        .remove([signatureStatus.contractFilePath]);
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vendor_documents')
-        .upload(signatureStatus.contractFilePath, modifiedPdfBlob, {
+        .update(signatureStatus.contractFilePath, modifiedPdfBlob, {
           cacheControl: '0',
-          upsert: true,
         });
 
       console.log('Upload result:', uploadData, 'Error:', uploadError);
