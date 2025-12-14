@@ -616,15 +616,31 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               {/* Approval type selection */}
               <div className="space-y-3">
                 <Label>סוג אישור נדרש</Label>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="bulk-requires-vp-approval"
-                    checked={bulkRequiresVpApproval}
-                    onCheckedChange={(checked) => setBulkRequiresVpApproval(checked === true)}
-                  />
-                  <Label htmlFor="bulk-requires-vp-approval" className="font-normal cursor-pointer">
-                    נדרש אישור סמנכ"ל בנוסף למנהל רכש
-                  </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="bulk-procurement-only"
+                      checked={!bulkRequiresVpApproval}
+                      onCheckedChange={(checked) => {
+                        if (checked) setBulkRequiresVpApproval(false);
+                      }}
+                    />
+                    <Label htmlFor="bulk-procurement-only" className="font-normal cursor-pointer">
+                      אישור מנהל רכש בלבד
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="bulk-requires-vp"
+                      checked={bulkRequiresVpApproval}
+                      onCheckedChange={(checked) => {
+                        if (checked) setBulkRequiresVpApproval(true);
+                      }}
+                    />
+                    <Label htmlFor="bulk-requires-vp" className="font-normal cursor-pointer">
+                      אישור מנהל רכש + סמנכ"ל
+                    </Label>
+                  </div>
                 </div>
               </div>
 
