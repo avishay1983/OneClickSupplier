@@ -26,6 +26,93 @@ function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, d
   }
 }
 
+// Clean numeric values - keep only digits
+function cleanNumericValue(value: string | null | undefined): string | null {
+  if (!value || value === 'null' || value === '') return null;
+  const cleaned = value.toString().replace(/[^0-9]/g, '');
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+// Clean and validate bank details
+function cleanBankData(extracted: any): any {
+  const cleaned = { ...extracted };
+  
+  // Clean bank number (2 digits)
+  if (cleaned.bank_number) {
+    const bankNum = cleanNumericValue(cleaned.bank_number);
+    if (bankNum && bankNum.length <= 2) {
+      cleaned.bank_number = bankNum.padStart(2, '0');
+    } else {
+      cleaned.bank_number = null;
+    }
+  }
+  
+  // Clean branch number (3-4 digits)
+  if (cleaned.branch_number) {
+    const branchNum = cleanNumericValue(cleaned.branch_number);
+    if (branchNum && branchNum.length >= 3 && branchNum.length <= 4) {
+      cleaned.branch_number = branchNum;
+    } else {
+      cleaned.branch_number = null;
+    }
+  }
+  
+  // Clean account number (6-9 digits)
+  if (cleaned.account_number) {
+    const accountNum = cleanNumericValue(cleaned.account_number);
+    if (accountNum && accountNum.length >= 6 && accountNum.length <= 9) {
+      cleaned.account_number = accountNum;
+    } else {
+      cleaned.account_number = null;
+    }
+  }
+  
+  return cleaned;
+}
+
+const SYSTEM_PROMPT = `אתה מומחה OCR מקצועי לחילוץ פרטי בנק מתמונות של מסמכים בנקאיים ישראליים.
+בצע סריקה יסודית של כל התמונה.
+
+סוגי מסמכים נפוצים:
+1. המחאה (צ'ק) - המספרים בקו המקווקו התחתון בסדר: מספר המחאה, מספר סניף, מספר בנק, מספר חשבון
+2. אישור ניהול חשבון - מסמך רשמי מהבנק עם טבלה/שורות של פרטי החשבון
+3. דף חשבון בנק - פרטי החשבון בכותרת העמוד
+
+מיקומים לחיפוש:
+- בהמחאה: הקו המקווקו התחתון (MICR line) - קרא משמאל לימין
+- באישור בנק: חפש "מספר בנק", "מספר סניף", "מספר חשבון"
+- בראש מסמכים: לוגו בנק, שם סניף
+
+קודי בנקים בישראל:
+- 10 = בנק לאומי
+- 11 = בנק דיסקונט
+- 12 = בנק הפועלים
+- 13 = בנק אגוד
+- 14 = בנק אוצר החייל
+- 17 = בנק מרכנתיל דיסקונט
+- 20 = בנק מזרחי טפחות
+- 31 = בנק הבינלאומי
+- 46 = בנק מסד
+- 52 = בנק פועלי אגודת ישראל
+- 54 = בנק ירושלים
+
+חלץ:
+1. bank_number - מספר בנק (2 ספרות)
+2. branch_number - מספר סניף (3-4 ספרות)
+3. account_number - מספר חשבון (6-9 ספרות)
+
+החזר JSON בלבד:
+{
+  "bank_number": "XX או null",
+  "branch_number": "XXX או XXXX או null",
+  "account_number": "XXXXXX עד XXXXXXXXX או null",
+  "confidence": "high" | "medium" | "low",
+  "document_type": "check" | "bank_statement" | "account_confirmation" | "unknown",
+  "notes": "הערות"
+}
+
+אם התמונה מטושטשת, נסה לפענח. אם אין מסמך בנקאי, החזר error.`;
+
 async function extractWithModel(imageBase64: string, mimeType: string, model: string, apiKey: string) {
   const startTime = Date.now();
   logOCR('info', `Starting bank OCR extraction`, { model, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
@@ -41,55 +128,14 @@ async function extractWithModel(imageBase64: string, mimeType: string, model: st
       messages: [
         {
           role: 'system',
-          content: `אתה מומחה OCR לחילוץ פרטי בנק מתמונות של מסמכים בנקאיים ישראליים.
-
-סוגי מסמכים שאתה עשוי לקבל:
-1. צילום המחאה (צ'ק) - הנתונים מופיעים בקו המקווקו התחתון
-2. אישור ניהול חשבון - מסמך רשמי מהבנק עם פרטי החשבון
-3. דף חשבון בנק - כולל את פרטי החשבון בכותרת
-
-מיקומים אופייניים לנתונים:
-- בהמחאה: הקו המקווקו התחתון מכיל: מספר בנק (2 ספרות), מספר סניף (3-4 ספרות), מספר חשבון (6-9 ספרות)
-- באישור ניהול חשבון: טבלה או שורות עם "מספר בנק", "מספר סניף", "מספר חשבון"
-- הנתונים יכולים להופיע גם בראש המסמך או בחותמת
-
-קודי בנקים נפוצים בישראל:
-- 10 = בנק לאומי
-- 11 = בנק דיסקונט
-- 12 = בנק הפועלים
-- 13 = בנק אגוד
-- 14 = בנק אוצר החייל
-- 17 = בנק מרכנתיל דיסקונט
-- 20 = בנק מזרחי טפחות
-- 31 = בנק הבינלאומי
-- 46 = בנק מסד
-- 52 = בנק פועלי אגודת ישראל
-
-חלץ את הנתונים הבאים:
-1. bank_number - מספר בנק (2 ספרות)
-2. branch_number - מספר סניף (3-4 ספרות)
-3. account_number - מספר חשבון (6-9 ספרות)
-
-החזר תשובה בפורמט JSON בלבד:
-{
-  "bank_number": "XX",
-  "branch_number": "XXX או XXXX",
-  "account_number": "XXXXXX עד XXXXXXXXX",
-  "confidence": "high" | "medium" | "low",
-  "document_type": "check" | "bank_statement" | "account_confirmation" | "unknown",
-  "notes": "הערות על הזיהוי"
-}
-
-- אם לא ניתן לזהות שדה מסוים, החזר null עבורו
-- אם התמונה מטושטשת, נסה לפענח את המספרים לפי הקשר
-- אם התמונה לא מכילה מסמך בנקאי, החזר error`
+          content: SYSTEM_PROMPT
         },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'סרוק בקפידה את התמונה הבאה וחלץ את פרטי הבנק. בדוק את כל אזורי התמונה, במיוחד את הקו המקווקו התחתון אם זו המחאה.'
+              text: 'סרוק בקפידה את התמונה וחלץ את פרטי הבנק. בדוק את כל האזורים, במיוחד את הקו המקווקו התחתון אם זו המחאה, או טבלאות אם זה אישור בנק.'
             },
             {
               type: 'image_url',
@@ -119,6 +165,14 @@ function parseResponse(content: string) {
 
 function hasBankDetails(extracted: any): boolean {
   return !!(extracted.bank_number || extracted.branch_number || extracted.account_number);
+}
+
+function countBankFields(extracted: any): number {
+  let count = 0;
+  if (extracted.bank_number) count++;
+  if (extracted.branch_number) count++;
+  if (extracted.account_number) count++;
+  return count;
 }
 
 serve(async (req) => {
@@ -195,6 +249,7 @@ serve(async (req) => {
     let extracted;
     try {
       extracted = parseResponse(content);
+      extracted = cleanBankData(extracted);
     } catch (parseError) {
       logOCR('error', `[${requestId}] Failed to parse AI response`, { error: parseError instanceof Error ? parseError.message : 'Unknown', rawContent: content.slice(0, 200) });
       return new Response(
@@ -204,6 +259,7 @@ serve(async (req) => {
     }
 
     const foundBankDetails = hasBankDetails(extracted);
+    const bankFieldsCount = countBankFields(extracted);
     const detailsFound = {
       bank_number: extracted.bank_number || null,
       branch_number: extracted.branch_number || null,
@@ -212,16 +268,24 @@ serve(async (req) => {
     
     logOCR('info', `[${requestId}] First attempt extraction results`, {
       foundBankDetails,
+      bankFieldsCount,
       details: detailsFound,
       confidence: extracted.confidence,
       documentType: extracted.document_type,
       notes: extracted.notes
     });
 
-    // If low confidence or no bank details found, retry with more accurate model
-    if (!foundBankDetails || extracted.confidence === 'low') {
-      logOCR('warn', `[${requestId}] Low confidence or missing bank details - triggering retry`, { 
-        reason: !foundBankDetails ? 'no_bank_details' : 'low_confidence' 
+    // Determine if retry is needed
+    const needsRetry = 
+      !foundBankDetails || 
+      extracted.confidence === 'low' ||
+      (extracted.confidence === 'medium' && bankFieldsCount < 3);
+
+    if (needsRetry) {
+      logOCR('warn', `[${requestId}] Triggering retry`, { 
+        reason: !foundBankDetails ? 'no_bank_details' : 
+                extracted.confidence === 'low' ? 'low_confidence' : 
+                'medium_confidence_incomplete'
       });
       
       try {
@@ -234,12 +298,16 @@ serve(async (req) => {
           const retryContent = data.choices?.[0]?.message?.content;
           
           if (retryContent) {
-            const retryExtracted = parseResponse(retryContent);
+            let retryExtracted = parseResponse(retryContent);
+            retryExtracted = cleanBankData(retryExtracted);
+            
             const retryFoundBankDetails = hasBankDetails(retryExtracted);
+            const retryBankFieldsCount = countBankFields(retryExtracted);
             
             logOCR('info', `[${requestId}] Retry attempt completed`, {
               duration: `${retryDuration}ms`,
               foundBankDetails: retryFoundBankDetails,
+              bankFieldsCount: retryBankFieldsCount,
               details: {
                 bank_number: retryExtracted.bank_number || null,
                 branch_number: retryExtracted.branch_number || null,
@@ -248,12 +316,20 @@ serve(async (req) => {
               confidence: retryExtracted.confidence
             });
             
-            // Use retry result if it found bank details or has higher confidence
-            if ((retryFoundBankDetails && !foundBankDetails) ||
-                (retryExtracted.confidence === 'high' && extracted.confidence !== 'high')) {
+            // Use retry result if it found more bank details or has higher confidence
+            const shouldUseRetry = 
+              (retryFoundBankDetails && !foundBankDetails) ||
+              retryBankFieldsCount > bankFieldsCount ||
+              (retryExtracted.confidence === 'high' && extracted.confidence !== 'high') ||
+              (retryExtracted.confidence === 'medium' && extracted.confidence === 'low');
+            
+            if (shouldUseRetry) {
               extracted = retryExtracted;
               extracted.model_used = 'accurate';
-              logOCR('success', `[${requestId}] Using retry result - improved extraction`);
+              logOCR('success', `[${requestId}] Using retry result`, {
+                fieldsImprovement: retryBankFieldsCount - bankFieldsCount,
+                confidenceChange: `${extracted.confidence} -> ${retryExtracted.confidence}`
+              });
             } else {
               extracted.model_used = 'fast';
               logOCR('info', `[${requestId}] Keeping first attempt - retry did not improve`);
@@ -277,6 +353,7 @@ serve(async (req) => {
       totalDuration: `${totalDuration}ms`,
       modelUsed: extracted.model_used,
       foundBankDetails: hasBankDetails(extracted),
+      bankFieldsCount: countBankFields(extracted),
       confidence: extracted.confidence,
       finalDetails: {
         bank_number: extracted.bank_number || null,
