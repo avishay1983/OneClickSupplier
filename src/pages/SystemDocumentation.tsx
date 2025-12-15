@@ -398,12 +398,283 @@ Response: { success: boolean }
   };
 
   const downloadDocumentation = () => {
-    const doc = generateMarkdownDoc();
-    const blob = new Blob([doc], { type: 'text/markdown;charset=utf-8' });
+    const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<title>תיעוד טכני - ספק בקליק</title>
+<style>
+  body { font-family: Arial, sans-serif; direction: rtl; padding: 40px; line-height: 1.6; }
+  h1 { color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
+  h2 { color: #1e3a8a; margin-top: 30px; }
+  h3 { color: #1e40af; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ccc; padding: 10px; text-align: right; }
+  th { background-color: #f0f4ff; }
+  code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+  pre { background-color: #f3f4f6; padding: 15px; border-radius: 8px; overflow-x: auto; direction: ltr; text-align: left; }
+  .section { margin-bottom: 30px; }
+  .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .badge-ai { background: #f3e8ff; color: #7c3aed; }
+</style>
+</head>
+<body>
+
+<h1>תיעוד טכני מלא - מערכת "ספק בקליק"</h1>
+<p><strong>תאריך:</strong> ${new Date().toLocaleDateString('he-IL')}</p>
+
+<div class="section">
+<h2>1. סקירה כללית</h2>
+<p>מערכת "ספק בקליק" היא מערכת לניהול תהליך קליטת ספקים חדשים, הכוללת:</p>
+<ul>
+<li>ממשק פנימי לעובדים (Dashboard)</li>
+<li>טופס חיצוני לספקים</li>
+<li>תהליך אישורים רב-שלבי</li>
+<li>מערכת CRM לניהול ספקים מאושרים</li>
+<li>העלאת קבלות לספקים מאושרים</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>2. תשתית Backend - Supabase</h2>
+<h3>2.1 בסיס נתונים (PostgreSQL)</h3>
+<table>
+<tr><th>טבלה</th><th>תיאור</th><th>שדות עיקריים</th></tr>
+<tr><td>vendor_requests</td><td>בקשות ספקים</td><td>id, vendor_name, vendor_email, status, secure_token, handler_name, vendor_type</td></tr>
+<tr><td>vendor_documents</td><td>מסמכי ספקים</td><td>id, vendor_request_id, document_type, file_path, extracted_tags</td></tr>
+<tr><td>vendor_receipts</td><td>קבלות ספקים</td><td>id, vendor_request_id, amount, receipt_date, status, file_path</td></tr>
+<tr><td>vendor_status_history</td><td>היסטוריית סטטוסים</td><td>id, vendor_request_id, old_status, new_status, changed_at</td></tr>
+<tr><td>crm_history</td><td>היסטוריית CRM</td><td>id, vendor_request_id, action, field_name, old_value, new_value</td></tr>
+<tr><td>profiles</td><td>פרופילי משתמשים</td><td>id, full_name, is_approved, approved_by</td></tr>
+<tr><td>user_roles</td><td>תפקידי משתמשים</td><td>id, user_id, role (admin/user)</td></tr>
+<tr><td>pending_approvals</td><td>אישורים ממתינים</td><td>id, user_id, user_email, status, approval_token</td></tr>
+<tr><td>app_settings</td><td>הגדרות מערכת</td><td>id, setting_key, setting_value</td></tr>
+</table>
+
+<h3>2.2 Storage Buckets</h3>
+<table>
+<tr><th>Bucket</th><th>תיאור</th><th>גישה</th></tr>
+<tr><td>vendor_documents</td><td>אחסון מסמכי ספקים</td><td>Public</td></tr>
+</table>
+
+<h3>2.3 Database Functions</h3>
+<ul>
+<li><code>is_admin(user_id)</code> - בדיקת הרשאות אדמין</li>
+<li><code>has_role(user_id, role)</code> - בדיקת תפקיד</li>
+<li><code>handle_new_user()</code> - Trigger ליצירת פרופיל</li>
+<li><code>log_vendor_status_change()</code> - Trigger לתיעוד שינויי סטטוס</li>
+<li><code>update_updated_at_column()</code> - עדכון timestamp</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>3. Edge Functions - API Reference</h2>
+
+<h3>3.1 send-vendor-email - שליחת לינק טופס לספק</h3>
+<pre>Method: POST
+Auth: לא נדרש (verify_jwt = false)
+Body: { vendorName, vendorEmail, formLink, expiryDays }
+Response: { success: boolean }</pre>
+
+<h3>3.2 send-vendor-otp - שליחת קוד OTP</h3>
+<pre>Method: POST
+Auth: לא נדרש
+Body: { vendorEmail, vendorName, otpCode }
+Response: { success: boolean }</pre>
+
+<h3>3.3 verify-vendor-otp - אימות קוד OTP</h3>
+<pre>Method: POST
+Body: { token, otp }
+Response: { success: boolean, expired?: boolean }</pre>
+
+<h3>3.4 vendor-form-api - API טופס ספק</h3>
+<pre>Method: POST
+Body: { action: 'get'|'update'|'submit'|'delete-document', token, data? }
+Response: { success: boolean, data?: object }</pre>
+
+<h3>3.5 vendor-upload - העלאת מסמכים</h3>
+<pre>Method: POST
+Content-Type: multipart/form-data
+Body: FormData { token, documentType, file, extractedTags? }
+Response: { success: boolean, filePath?: string }</pre>
+
+<h3>3.6 extract-bank-details - חילוץ פרטי בנק <span class="badge badge-ai">AI</span></h3>
+<pre>Method: POST
+Body: { imageBase64, mimeType }
+Response: { bank_number?, branch_number?, account_number?, confidence? }
+AI Model: google/gemini-2.5-flash
+Cost: ~$0.001-0.005/request</pre>
+
+<h3>3.7 extract-document-data - חילוץ נתוני מסמך <span class="badge badge-ai">AI</span></h3>
+<pre>Method: POST
+Body: { imageBase64, mimeType, documentType }
+Response: { company_id?, company_name?, phone?, city?, ... }
+AI Model: google/gemini-2.5-flash
+Cost: ~$0.001-0.005/request</pre>
+
+<h3>3.8 extract-document-text - חילוץ טקסט ממסמך <span class="badge badge-ai">AI</span></h3>
+<pre>Method: POST
+Body: { textContent, documentType }
+AI Model: google/gemini-2.5-flash
+Cost: ~$0.001-0.005/request</pre>
+
+<h3>3.9 search-streets - חיפוש רחובות</h3>
+<pre>Method: POST
+Body: { city, query }
+Response: { streets: string[] }
+External API: OpenStreetMap Nominatim (חינם)</pre>
+
+<h3>3.10 send-approval-request - בקשת אישור משתמש</h3>
+<pre>Method: POST
+Body: { userEmail, userName, approvalToken }
+Response: { success: boolean }</pre>
+
+<h3>3.11 approve-user - אישור/דחיית משתמש</h3>
+<pre>Method: GET
+Query: ?token=xxx&action=approve|reject
+Response: Redirect to result page</pre>
+
+<h3>3.12 send-manager-approval - שליחת אישור מנהל</h3>
+<pre>Method: POST
+Body: { vendorRequestId, managerType, managerEmail, managerName, vendorName, contractPdfBase64? }
+Response: { success: boolean }</pre>
+
+<h3>3.13 handle-manager-approval - טיפול באישור מנהל</h3>
+<pre>Method: GET
+Query: ?id=xxx&action=approve|reject&manager=procurement|vp
+Response: Redirect to result page</pre>
+
+<h3>3.14 send-handler-notification - התראה למטפל</h3>
+<pre>Method: POST
+Body: { handlerEmail, handlerName, vendorName, vendorRequestId }
+Response: { success: boolean }</pre>
+
+<h3>3.15 send-vendor-rejection - דחיית ספק</h3>
+<pre>Method: POST
+Body: { vendorRequestId, reason }
+Response: { success: boolean }</pre>
+
+<h3>3.16 vendor-status - סטטוס ספק</h3>
+<pre>Method: POST
+Body: { token }
+Response: { vendor_name, status, created_at, updated_at }</pre>
+
+<h3>3.17 send-receipts-link - שליחת לינק קבלות</h3>
+<pre>Method: POST
+Body: { vendorRequestId, vendorEmail, vendorName }
+Response: { success: boolean }</pre>
+</div>
+
+<div class="section">
+<h2>4. שירותי AI</h2>
+<table>
+<tr><th>שירות</th><th>Gateway</th><th>מודל</th><th>שימוש</th></tr>
+<tr><td>OCR מסמכים</td><td>Lovable AI Gateway</td><td>google/gemini-2.5-flash</td><td>חילוץ נתונים מתמונות</td></tr>
+<tr><td>חילוץ טקסט</td><td>Lovable AI Gateway</td><td>google/gemini-2.5-flash</td><td>חילוץ מ-Word/PDF</td></tr>
+</table>
+<p><strong>Endpoint:</strong> https://ai.gateway.lovable.dev/v1/chat/completions</p>
+<p><strong>Token:</strong> LOVABLE_API_KEY (מוגדר אוטומטית)</p>
+<p><strong>עלות משוערת:</strong> $0.001-0.005 לבקשה</p>
+</div>
+
+<div class="section">
+<h2>5. שירותי Email</h2>
+<table>
+<tr><th>שירות</th><th>פרוטוקול</th><th>הגדרות</th></tr>
+<tr><td>Gmail SMTP</td><td>SMTP over TLS</td><td>smtp.gmail.com:465</td></tr>
+</table>
+<p><strong>Secrets נדרשים:</strong></p>
+<ul>
+<li>GMAIL_USER - כתובת Gmail</li>
+<li>GMAIL_APP_PASSWORD - App Password (לא סיסמה רגילה)</li>
+</ul>
+<p><strong>מגבלות:</strong> 500 הודעות ליום (חינם)</p>
+</div>
+
+<div class="section">
+<h2>6. שירותים חיצוניים</h2>
+<table>
+<tr><th>שירות</th><th>שימוש</th><th>עלות</th></tr>
+<tr><td>OpenStreetMap Nominatim</td><td>השלמת רחובות</td><td>חינם</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>7. ספריות Frontend</h2>
+<table>
+<tr><th>ספרייה</th><th>גרסה</th><th>שימוש</th></tr>
+<tr><td>React</td><td>^18.3.1</td><td>Framework</td></tr>
+<tr><td>Tailwind CSS</td><td>-</td><td>Styling</td></tr>
+<tr><td>shadcn/ui</td><td>-</td><td>UI Components</td></tr>
+<tr><td>pdf-lib</td><td>^1.17.1</td><td>הטמעת חתימות PDF</td></tr>
+<tr><td>signature_pad</td><td>^5.1.3</td><td>ציור חתימות</td></tr>
+<tr><td>mammoth</td><td>^1.11.0</td><td>קריאת Word</td></tr>
+<tr><td>xlsx</td><td>^0.18.5</td><td>קריאת Excel</td></tr>
+<tr><td>@supabase/supabase-js</td><td>^2.86.0</td><td>Supabase Client</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>8. סיכום Secrets</h2>
+<table>
+<tr><th>Secret</th><th>שימוש</th><th>חובה</th></tr>
+<tr><td>SUPABASE_URL</td><td>כתובת Supabase</td><td>כן</td></tr>
+<tr><td>SUPABASE_ANON_KEY</td><td>מפתח ציבורי</td><td>כן</td></tr>
+<tr><td>SUPABASE_SERVICE_ROLE_KEY</td><td>מפתח שרת</td><td>כן</td></tr>
+<tr><td>GMAIL_USER</td><td>כתובת Gmail</td><td>כן</td></tr>
+<tr><td>GMAIL_APP_PASSWORD</td><td>App Password</td><td>כן</td></tr>
+<tr><td>LOVABLE_API_KEY</td><td>מפתח AI</td><td>כן</td></tr>
+<tr><td>ADMIN_EMAIL</td><td>מיילים לאישור</td><td>כן</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>9. המלצות להטמעה ב-Java Microservices</h2>
+<h3>Backend Services</h3>
+<table>
+<tr><th>רכיב נוכחי</th><th>המרה מומלצת</th></tr>
+<tr><td>Edge Functions (Deno)</td><td>Spring Boot Microservices</td></tr>
+<tr><td>Supabase DB</td><td>PostgreSQL + JPA/Hibernate</td></tr>
+<tr><td>Lovable AI Gateway</td><td>Google Gemini API ישירות</td></tr>
+<tr><td>Gmail SMTP</td><td>Spring Mail / JavaMail</td></tr>
+<tr><td>Storage</td><td>MinIO / S3 / Azure Blob</td></tr>
+</table>
+<h3>Frontend</h3>
+<ul>
+<li>React קיים תואם ל-Microfrontend</li>
+<li>ניתן לארוז כ-Module Federation</li>
+<li>או Single-SPA integration</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>10. תהליך קליטת ספק</h2>
+<ol>
+<li>עובד יוצר בקשה חדשה</li>
+<li>לינק נשלח לספק במייל</li>
+<li>ספק מאמת OTP</li>
+<li>ספק מעלה מסמכים (OCR אוטומטי)</li>
+<li>ספק ממלא טופס ושולח</li>
+<li>מטפל מאשר/דוחה/מחזיר</li>
+<li>מנהל רכש מקבל מייל + חותם</li>
+<li>סמנכ"ל מקבל מייל + חותם (אם נדרש)</li>
+<li>ספק מועבר ל-CRM</li>
+</ol>
+</div>
+
+<hr>
+<p><em>נוצר אוטומטית על ידי מערכת "ספק בקליק"</em></p>
+
+</body>
+</html>
+`;
+    
+    const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'vendor-system-documentation.md';
+    a.download = 'vendor-system-documentation.doc';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
