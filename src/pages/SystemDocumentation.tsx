@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, FileText, Database, Server, Mail, Brain, Code, Eye } from "lucide-react";
+import { Download, FileText, Database, Server, Mail, Brain, Code, Eye, List } from "lucide-react";
 
 const SystemDocumentation = () => {
   const [activeTab, setActiveTab] = useState("architecture");
@@ -698,6 +698,7 @@ Response: { success: boolean }</pre>
             <TabsTrigger value="architecture">ארכיטקטורה</TabsTrigger>
             <TabsTrigger value="api">Edge Functions API</TabsTrigger>
             <TabsTrigger value="database">בסיס נתונים</TabsTrigger>
+            <TabsTrigger value="lookups">Lookups</TabsTrigger>
             <TabsTrigger value="services">שירותים</TabsTrigger>
           </TabsList>
 
@@ -1344,6 +1345,391 @@ GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="lookups">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <List className="h-5 w-5" />
+                    רשימות Metadata במערכת
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Status Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded text-xs">Enum</span>
+                      סטטוסי בקשת ספק (vendor_status)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                            <th className="text-right p-3 font-medium">תיאור</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'pending', label: 'ממתין לספק', desc: 'נוצרה בקשה, לינק נשלח' },
+                            { key: 'with_vendor', label: 'ממתין לספק', desc: 'הספק בתהליך מילוי הטופס' },
+                            { key: 'submitted', label: 'ממתין לאישור מנהלים', desc: 'הספק שלח את הטופס' },
+                            { key: 'first_review', label: 'בקרה ראשונה', desc: 'ממתין לאישור מטפל' },
+                            { key: 'approved', label: 'אושר', desc: 'הספק אושר לחלוטין' },
+                            { key: 'resent', label: 'נשלח מחדש', desc: 'הטופס נשלח מחדש לספק' },
+                            { key: 'rejected', label: 'נדחה', desc: 'הבקשה נדחתה' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                              <td className="p-3 text-muted-foreground">{item.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → STATUS_LABELS
+                    </p>
+                  </div>
+
+                  {/* CRM Status Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded text-xs">Enum</span>
+                      סטטוסי CRM (crm_vendor_status)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'active', label: 'פעיל' },
+                            { key: 'suspended', label: 'מושהה' },
+                            { key: 'closed', label: 'סגור' },
+                            { key: 'vip', label: 'VIP' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → CRM_STATUS_LABELS
+                    </p>
+                  </div>
+
+                  {/* Vendor Type Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded text-xs">Enum</span>
+                      סוגי ספקים (vendor_type)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'general', label: 'ספק כללי' },
+                            { key: 'claims', label: 'ספק תביעות' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → VENDOR_TYPE_LABELS
+                    </p>
+                  </div>
+
+                  {/* Claims Area Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-orange-100 dark:bg-orange-900 px-2 py-1 rounded text-xs">Enum</span>
+                      אזורי תביעות (claims_area)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'home', label: 'דירה' },
+                            { key: 'car', label: 'רכב' },
+                            { key: 'life', label: 'חיים' },
+                            { key: 'health', label: 'בריאות' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → CLAIMS_AREA_LABELS
+                    </p>
+                  </div>
+
+                  {/* Claims Sub-Category Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-red-100 dark:bg-red-900 px-2 py-1 rounded text-xs">Enum</span>
+                      תתי-קטגוריות תביעות (claims_sub_category)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                            <th className="text-right p-3 font-medium">אזור תביעות</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'garage', label: 'מוסך', area: 'רכב' },
+                            { key: 'appraiser', label: 'שמאי', area: 'רכב' },
+                            { key: 'doctor', label: 'רופא', area: 'חיים / בריאות' },
+                            { key: 'lawyer', label: 'עורך דין', area: 'חיים / בריאות' },
+                            { key: 'plumber', label: 'שרברב', area: 'דירה' },
+                            { key: 'management', label: 'חברת ניהול', area: 'דירה' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                              <td className="p-3 text-muted-foreground">{item.area}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → CLAIMS_SUB_CATEGORY_LABELS
+                    </p>
+                  </div>
+
+                  {/* Payment Method Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded text-xs">Enum</span>
+                      אמצעי תשלום (payment_method)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'check', label: 'המחאה' },
+                            { key: 'invoice', label: 'מס"ב' },
+                            { key: 'transfer', label: 'העברה בנקאית' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → PAYMENT_METHOD_LABELS
+                    </p>
+                  </div>
+
+                  {/* Document Type Labels */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Enum</span>
+                      סוגי מסמכים (document_type)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">מזהה</th>
+                            <th className="text-right p-3 font-medium">תווית עברית</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'bookkeeping_cert', label: 'אישור ניהול ספרים' },
+                            { key: 'tax_cert', label: 'אישור ניכוי מס במקור' },
+                            { key: 'bank_confirmation', label: 'צילום המחאה / אישור בנק' },
+                            { key: 'invoice_screenshot', label: 'צילום חשבונית' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3">{item.label}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/types/vendor.ts → DOCUMENT_TYPE_LABELS
+                    </p>
+                  </div>
+
+                  {/* Israel Banks */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs">Static Data</span>
+                      רשימת בנקים ישראליים (ISRAEL_BANKS)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">קוד בנק</th>
+                            <th className="text-right p-3 font-medium">שם הבנק</th>
+                            <th className="text-right p-3 font-medium">ספרות בחשבון</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { code: '10', name: 'בנק לאומי לישראל', digits: 8 },
+                            { code: '11', name: 'בנק דיסקונט לישראל', digits: 9 },
+                            { code: '12', name: 'בנק הפועלים', digits: 9 },
+                            { code: '13', name: 'בנק אגוד לישראל', digits: 6 },
+                            { code: '14', name: 'בנק אוצר החייל', digits: 7 },
+                            { code: '17', name: 'בנק מרכנתיל דיסקונט', digits: 9 },
+                            { code: '20', name: 'בנק מזרחי טפחות', digits: 6 },
+                            { code: '31', name: 'הבנק הבינלאומי הראשון', digits: 9 },
+                            { code: '34', name: 'בנק ערבי ישראלי', digits: 9 },
+                            { code: '46', name: 'בנק מסד', digits: 9 },
+                            { code: '52', name: 'בנק פועלי אגודת ישראל', digits: 9 },
+                            { code: '54', name: 'בנק ירושלים', digits: 9 },
+                            { code: '99', name: 'בנק ישראל', digits: 9 },
+                          ].map((item) => (
+                            <tr key={item.code} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.code}</td>
+                              <td className="p-3">{item.name}</td>
+                              <td className="p-3 text-muted-foreground">{item.digits}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/data/israelBanks.ts → ISRAEL_BANKS
+                    </p>
+                  </div>
+
+                  {/* Bank Branches Summary */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs">Static Data</span>
+                      סניפי בנקים (BANK_BRANCHES)
+                    </h3>
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm mb-2">רשימה מקיפה של סניפי בנקים בישראל, מאורגנת לפי שם הבנק.</p>
+                      <p className="text-sm text-muted-foreground">כל סניף כולל: קוד סניף (3-4 ספרות), שם הסניף, ועיר.</p>
+                      <div className="mt-3 text-xs bg-background p-3 rounded">
+                        <strong>מבנה:</strong>
+                        <pre className="mt-1" dir="ltr">{`{
+  "בנק לאומי לישראל": [
+    { code: "800", name: "סניף ראשי תל אביב", city: "תל אביב" },
+    ...
+  ],
+  ...
+}`}</pre>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/data/bankBranches.ts → BANK_BRANCHES (658 שורות)
+                    </p>
+                  </div>
+
+                  {/* Israel Cities */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-teal-100 dark:bg-teal-900 px-2 py-1 rounded text-xs">Static Data</span>
+                      רשימת ערים וישובים בישראל (ISRAEL_CITIES)
+                    </h3>
+                    <div className="bg-muted p-4 rounded-lg">
+                      <p className="text-sm mb-2">רשימה מקיפה של כ-900+ ערים וישובים בישראל.</p>
+                      <p className="text-sm text-muted-foreground">משמש ב-autocomplete של שדה העיר בטופס הספק.</p>
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'אשדוד', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'חולון', 'רמת גן'].map((city) => (
+                          <span key={city} className="bg-background px-2 py-1 rounded text-xs">{city}</span>
+                        ))}
+                        <span className="text-muted-foreground text-xs px-2 py-1">+890 נוספים...</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>קובץ:</strong> src/data/israelCities.ts → ISRAEL_CITIES (1155 שורות)
+                    </p>
+                  </div>
+
+                  {/* App Settings Keys */}
+                  <div>
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">DB Settings</span>
+                      מפתחות הגדרות מערכת (app_settings)
+                    </h3>
+                    <div className="bg-muted rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-right p-3 font-medium">setting_key</th>
+                            <th className="text-right p-3 font-medium">תיאור</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { key: 'master_otp', desc: 'קוד OTP מאסטר לגישה לטופס (ברירת מחדל: 111111)' },
+                            { key: 'procurement_manager_email', desc: 'כתובת מייל מנהל רכש' },
+                            { key: 'procurement_manager_name', desc: 'שם מנהל רכש' },
+                            { key: 'vp_email', desc: 'כתובת מייל סמנכ"ל' },
+                            { key: 'vp_name', desc: 'שם סמנכ"ל' },
+                          ].map((item) => (
+                            <tr key={item.key} className="border-b border-border/50 last:border-0">
+                              <td className="p-3 font-mono text-xs bg-background/50">{item.key}</td>
+                              <td className="p-3 text-muted-foreground">{item.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      <strong>טבלה:</strong> app_settings (ניתן לעריכה דרך Settings Dialog)
+                    </p>
+                  </div>
+
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
