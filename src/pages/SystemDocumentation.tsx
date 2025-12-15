@@ -797,27 +797,345 @@ Response: { success: boolean }</pre>
           <TabsContent value="api">
             <div className="space-y-4">
               {[
-                { name: 'send-vendor-email', desc: 'שליחת לינק טופס לספק', method: 'POST', ai: false },
-                { name: 'send-vendor-otp', desc: 'שליחת קוד OTP', method: 'POST', ai: false },
-                { name: 'verify-vendor-otp', desc: 'אימות קוד OTP', method: 'POST', ai: false },
-                { name: 'vendor-form-api', desc: 'API לטופס ספק', method: 'POST', ai: false },
-                { name: 'vendor-upload', desc: 'העלאת מסמכים', method: 'POST', ai: false },
-                { name: 'extract-bank-details', desc: 'חילוץ פרטי בנק', method: 'POST', ai: true },
-                { name: 'extract-document-data', desc: 'חילוץ נתוני מסמך', method: 'POST', ai: true },
-                { name: 'extract-document-text', desc: 'חילוץ טקסט', method: 'POST', ai: true },
-                { name: 'search-streets', desc: 'חיפוש רחובות', method: 'POST', ai: false },
-                { name: 'send-approval-request', desc: 'בקשת אישור משתמש', method: 'POST', ai: false },
-                { name: 'approve-user', desc: 'אישור/דחיית משתמש', method: 'GET', ai: false },
-                { name: 'send-manager-approval', desc: 'שליחת אישור מנהל', method: 'POST', ai: false },
-                { name: 'handle-manager-approval', desc: 'טיפול באישור', method: 'GET', ai: false },
-                { name: 'send-handler-notification', desc: 'התראה למטפל', method: 'POST', ai: false },
-                { name: 'send-vendor-rejection', desc: 'דחיית ספק', method: 'POST', ai: false },
-                { name: 'vendor-status', desc: 'סטטוס ספק', method: 'POST', ai: false },
-                { name: 'send-receipts-link', desc: 'לינק קבלות', method: 'POST', ai: false },
+                { 
+                  name: 'send-vendor-email', 
+                  desc: 'שליחת לינק טופס לספק', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
+                    { name: 'vendorEmail', type: 'string', required: true, desc: 'אימייל הספק' },
+                    { name: 'formLink', type: 'string', required: true, desc: 'לינק לטופס' },
+                    { name: 'expiryDays', type: 'number', required: true, desc: 'ימי תוקף הלינק' },
+                    { name: 'includeReason', type: 'boolean', required: false, desc: 'האם לכלול סיבה' },
+                    { name: 'reason', type: 'string', required: false, desc: 'סיבת שליחה מחדש' },
+                  ],
+                  example: `await supabase.functions.invoke('send-vendor-email', {
+  body: {
+    vendorName: "חברה לדוגמה בע״מ",
+    vendorEmail: "vendor@example.com",
+    formLink: "https://app.com/vendor/abc-123",
+    expiryDays: 7
+  }
+})`
+                },
+                { 
+                  name: 'send-vendor-otp', 
+                  desc: 'שליחת קוד OTP', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'vendorEmail', type: 'string', required: true, desc: 'אימייל הספק' },
+                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
+                    { name: 'otpCode', type: 'string', required: true, desc: 'קוד OTP (6 ספרות)' },
+                  ],
+                  example: `await supabase.functions.invoke('send-vendor-otp', {
+  body: {
+    vendorEmail: "vendor@example.com",
+    vendorName: "חברה לדוגמה בע״מ",
+    otpCode: "123456"
+  }
+})`
+                },
+                { 
+                  name: 'verify-vendor-otp', 
+                  desc: 'אימות קוד OTP', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'token', type: 'string', required: true, desc: 'טוקן הבקשה (secure_token)' },
+                    { name: 'otp', type: 'string', required: true, desc: 'קוד OTP שהוזן' },
+                  ],
+                  example: `await supabase.functions.invoke('verify-vendor-otp', {
+  body: {
+    token: "abc-123-def-456",
+    otp: "123456"
+  }
+})
+// Response: { success: true } או { success: false, expired: true }`
+                },
+                { 
+                  name: 'vendor-form-api', 
+                  desc: 'API לטופס ספק', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'action', type: 'string', required: true, desc: "פעולה: 'get' | 'get-documents' | 'update' | 'submit' | 'delete-document'" },
+                    { name: 'token', type: 'string', required: true, desc: 'טוקן הבקשה' },
+                    { name: 'data', type: 'object', required: false, desc: 'נתונים לעדכון (לפי הפעולה)' },
+                  ],
+                  example: `// קבלת נתוני ספק
+await supabase.functions.invoke('vendor-form-api', {
+  body: { action: 'get', token: "abc-123" }
+})
+
+// שליחת טופס
+await supabase.functions.invoke('vendor-form-api', {
+  body: {
+    action: 'submit',
+    token: "abc-123",
+    data: {
+      company_id: "123456789",
+      phone: "03-1234567",
+      city: "תל אביב",
+      bank_name: "לאומי",
+      bank_branch: "800",
+      bank_account_number: "123456"
+    }
+  }
+})`
+                },
+                { 
+                  name: 'vendor-upload', 
+                  desc: 'העלאת מסמכים', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'token', type: 'string', required: true, desc: 'טוקן הבקשה' },
+                    { name: 'documentType', type: 'string', required: true, desc: "סוג מסמך: 'bookkeeping_cert' | 'tax_cert' | 'bank_confirmation' | 'invoice_screenshot'" },
+                    { name: 'file', type: 'File', required: true, desc: 'קובץ להעלאה' },
+                    { name: 'extractedTags', type: 'string', required: false, desc: 'JSON של נתונים שחולצו מהמסמך' },
+                  ],
+                  example: `const formData = new FormData();
+formData.append('token', 'abc-123');
+formData.append('documentType', 'bank_confirmation');
+formData.append('file', fileObject);
+formData.append('extractedTags', JSON.stringify({
+  bank_number: "10",
+  branch_number: "800",
+  account_number: "123456"
+}));
+
+await fetch(SUPABASE_URL + '/functions/v1/vendor-upload', {
+  method: 'POST',
+  body: formData
+})`
+                },
+                { 
+                  name: 'extract-bank-details', 
+                  desc: 'חילוץ פרטי בנק', 
+                  method: 'POST', 
+                  ai: true,
+                  params: [
+                    { name: 'imageBase64', type: 'string', required: true, desc: 'תמונה בפורמט Base64' },
+                    { name: 'mimeType', type: 'string', required: true, desc: "סוג קובץ: 'image/jpeg' | 'image/png' | 'application/pdf'" },
+                  ],
+                  example: `await supabase.functions.invoke('extract-bank-details', {
+  body: {
+    imageBase64: "/9j/4AAQSkZJRg...", // Base64 של התמונה
+    mimeType: "image/jpeg"
+  }
+})
+// Response: {
+//   bank_number: "10",
+//   branch_number: "800", 
+//   account_number: "123456",
+//   confidence: 0.95
+// }`
+                },
+                { 
+                  name: 'extract-document-data', 
+                  desc: 'חילוץ נתוני מסמך', 
+                  method: 'POST', 
+                  ai: true,
+                  params: [
+                    { name: 'imageBase64', type: 'string', required: true, desc: 'תמונה בפורמט Base64' },
+                    { name: 'mimeType', type: 'string', required: true, desc: 'סוג קובץ' },
+                    { name: 'documentType', type: 'string', required: true, desc: 'סוג המסמך' },
+                  ],
+                  example: `await supabase.functions.invoke('extract-document-data', {
+  body: {
+    imageBase64: "/9j/4AAQSkZJRg...",
+    mimeType: "image/jpeg",
+    documentType: "bookkeeping_cert"
+  }
+})
+// Response: {
+//   company_id: "123456789",
+//   company_name: "חברה לדוגמה בע״מ",
+//   phone: "03-1234567",
+//   city: "תל אביב"
+// }`
+                },
+                { 
+                  name: 'extract-document-text', 
+                  desc: 'חילוץ טקסט', 
+                  method: 'POST', 
+                  ai: true,
+                  params: [
+                    { name: 'textContent', type: 'string', required: true, desc: 'טקסט שחולץ מהמסמך' },
+                    { name: 'documentType', type: 'string', required: true, desc: 'סוג המסמך' },
+                  ],
+                  example: `await supabase.functions.invoke('extract-document-text', {
+  body: {
+    textContent: "חברה לדוגמה בע״מ ח.פ. 123456789...",
+    documentType: "bookkeeping_cert"
+  }
+})`
+                },
+                { 
+                  name: 'search-streets', 
+                  desc: 'חיפוש רחובות', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'city', type: 'string', required: true, desc: 'שם העיר בעברית' },
+                    { name: 'query', type: 'string', required: true, desc: 'חיפוש רחוב' },
+                  ],
+                  example: `await supabase.functions.invoke('search-streets', {
+  body: {
+    city: "תל אביב",
+    query: "דיזנגוף"
+  }
+})
+// Response: { streets: ["דיזנגוף", "דיזנגוף סנטר"] }`
+                },
+                { 
+                  name: 'send-approval-request', 
+                  desc: 'בקשת אישור משתמש', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'userEmail', type: 'string', required: true, desc: 'אימייל המשתמש' },
+                    { name: 'userName', type: 'string', required: true, desc: 'שם המשתמש' },
+                    { name: 'approvalToken', type: 'string', required: true, desc: 'טוקן אישור' },
+                  ],
+                  example: `await supabase.functions.invoke('send-approval-request', {
+  body: {
+    userEmail: "user@company.com",
+    userName: "ישראל ישראלי",
+    approvalToken: "uuid-token"
+  }
+})`
+                },
+                { 
+                  name: 'approve-user', 
+                  desc: 'אישור/דחיית משתמש', 
+                  method: 'GET', 
+                  ai: false,
+                  params: [
+                    { name: 'token', type: 'string', required: true, desc: 'טוקן האישור (Query param)' },
+                    { name: 'action', type: 'string', required: true, desc: "'approve' | 'reject' (Query param)" },
+                  ],
+                  example: `// נקרא ישירות מלינק באימייל
+GET /functions/v1/approve-user?token=abc-123&action=approve
+
+// מפנה לדף תוצאה: /manager-approval-result?status=approved`
+                },
+                { 
+                  name: 'send-manager-approval', 
+                  desc: 'שליחת אישור מנהל', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'vendorRequestId', type: 'string', required: true, desc: 'מזהה בקשת הספק' },
+                    { name: 'managerType', type: 'string', required: true, desc: "'procurement' | 'vp'" },
+                    { name: 'managerEmail', type: 'string', required: true, desc: 'אימייל המנהל' },
+                    { name: 'managerName', type: 'string', required: true, desc: 'שם המנהל' },
+                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
+                    { name: 'contractPdfBase64', type: 'string', required: false, desc: 'חוזה מצורף ב-Base64' },
+                  ],
+                  example: `await supabase.functions.invoke('send-manager-approval', {
+  body: {
+    vendorRequestId: "uuid",
+    managerType: "procurement",
+    managerEmail: "manager@company.com",
+    managerName: "מנהל רכש",
+    vendorName: "חברה לדוגמה בע״מ",
+    contractPdfBase64: "JVBERi0xLjQK..." // אופציונלי
+  }
+})`
+                },
+                { 
+                  name: 'handle-manager-approval', 
+                  desc: 'טיפול באישור', 
+                  method: 'GET', 
+                  ai: false,
+                  params: [
+                    { name: 'id', type: 'string', required: true, desc: 'מזהה הבקשה (Query param)' },
+                    { name: 'action', type: 'string', required: true, desc: "'approve' | 'reject' (Query param)" },
+                    { name: 'manager', type: 'string', required: true, desc: "'procurement' | 'vp' (Query param)" },
+                  ],
+                  example: `// נקרא ישירות מלינק באימייל
+GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
+                },
+                { 
+                  name: 'send-handler-notification', 
+                  desc: 'התראה למטפל', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'handlerEmail', type: 'string', required: true, desc: 'אימייל המטפל' },
+                    { name: 'handlerName', type: 'string', required: true, desc: 'שם המטפל' },
+                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
+                    { name: 'vendorRequestId', type: 'string', required: true, desc: 'מזהה הבקשה' },
+                  ],
+                  example: `await supabase.functions.invoke('send-handler-notification', {
+  body: {
+    handlerEmail: "handler@company.com",
+    handlerName: "מטפל בתהליך",
+    vendorName: "חברה לדוגמה בע״מ",
+    vendorRequestId: "uuid"
+  }
+})`
+                },
+                { 
+                  name: 'send-vendor-rejection', 
+                  desc: 'דחיית ספק', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'vendorRequestId', type: 'string', required: true, desc: 'מזהה בקשת הספק' },
+                    { name: 'reason', type: 'string', required: true, desc: 'סיבת הדחייה (לשימוש פנימי)' },
+                  ],
+                  example: `await supabase.functions.invoke('send-vendor-rejection', {
+  body: {
+    vendorRequestId: "uuid",
+    reason: "מסמכים חסרים"
+  }
+})
+// הערה: סיבת הדחייה לא נשלחת לספק באימייל`
+                },
+                { 
+                  name: 'vendor-status', 
+                  desc: 'סטטוס ספק', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'token', type: 'string', required: true, desc: 'טוקן הבקשה' },
+                  ],
+                  example: `await supabase.functions.invoke('vendor-status', {
+  body: { token: "abc-123" }
+})
+// Response: {
+//   vendor_name: "חברה לדוגמה בע״מ",
+//   status: "first_review",
+//   created_at: "2024-01-15T10:00:00Z",
+//   updated_at: "2024-01-16T14:30:00Z"
+// }`
+                },
+                { 
+                  name: 'send-receipts-link', 
+                  desc: 'לינק קבלות', 
+                  method: 'POST', 
+                  ai: false,
+                  params: [
+                    { name: 'vendorRequestId', type: 'string', required: true, desc: 'מזהה בקשת הספק' },
+                    { name: 'vendorEmail', type: 'string', required: true, desc: 'אימייל הספק' },
+                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
+                  ],
+                  example: `await supabase.functions.invoke('send-receipts-link', {
+  body: {
+    vendorRequestId: "uuid",
+    vendorEmail: "vendor@example.com",
+    vendorName: "חברה לדוגמה בע״מ"
+  }
+})`
+                },
               ].map((fn) => (
                 <Card key={fn.name}>
                   <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <code className="bg-primary/10 px-2 py-1 rounded text-sm">{fn.method}</code>
                         <span className="font-mono text-sm">/functions/v1/{fn.name}</span>
@@ -828,6 +1146,41 @@ Response: { success: boolean }</pre>
                         )}
                       </div>
                       <span className="text-muted-foreground text-sm">{fn.desc}</span>
+                    </div>
+                    
+                    {/* Parameters Table */}
+                    <div className="mt-3 mb-3">
+                      <h4 className="text-sm font-semibold mb-2">פרמטרים:</h4>
+                      <div className="bg-muted rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border">
+                              <th className="text-right p-2 font-medium">שם</th>
+                              <th className="text-right p-2 font-medium">סוג</th>
+                              <th className="text-right p-2 font-medium">חובה</th>
+                              <th className="text-right p-2 font-medium">תיאור</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fn.params.map((param) => (
+                              <tr key={param.name} className="border-b border-border/50 last:border-0">
+                                <td className="p-2 font-mono text-xs">{param.name}</td>
+                                <td className="p-2 text-muted-foreground">{param.type}</td>
+                                <td className="p-2">{param.required ? '✓' : '-'}</td>
+                                <td className="p-2 text-muted-foreground">{param.desc}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    
+                    {/* Code Example */}
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2">דוגמת קריאה:</h4>
+                      <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto" dir="ltr">
+                        <code>{fn.example}</code>
+                      </pre>
                     </div>
                   </CardContent>
                 </Card>
