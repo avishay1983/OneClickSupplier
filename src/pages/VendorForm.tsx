@@ -351,15 +351,17 @@ export default function VendorForm() {
       }
     }
     
-    // Validate company ID (9 digits)
+    // Validate company ID (9 digits) - only if value looks like it should be a company ID
     if (data.company_id) {
       const companyIdClean = data.company_id.replace(/\D/g, '');
-      if (companyIdClean.length !== 9) {
+      // Only show warning if the cleaned value has digits but not exactly 9
+      // If it has 9 digits after cleaning, it's valid
+      if (companyIdClean.length > 0 && companyIdClean.length !== 9) {
         warnings.push({
           field: 'company_id',
           fieldLabel: 'ח.פ / עוסק מורשה',
           extractedValue: data.company_id,
-          message: `מספר ח.פ/עוסק מורשה "${data.company_id}" אינו תקין. חייב להכיל 9 ספרות.`
+          message: `מספר ח.פ/עוסק מורשה "${data.company_id}" אינו תקין. חייב להכיל 9 ספרות (נמצאו ${companyIdClean.length} ספרות).`
         });
       }
     }
