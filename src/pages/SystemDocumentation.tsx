@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, FileText, Database, Server, Mail, Brain } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Download, FileText, Database, Server, Mail, Brain, Code, Eye } from "lucide-react";
 
 const SystemDocumentation = () => {
   const [activeTab, setActiveTab] = useState("architecture");
@@ -1135,7 +1136,7 @@ GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
               ].map((fn) => (
                 <Card key={fn.name}>
                   <CardContent className="pt-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <code className="bg-primary/10 px-2 py-1 rounded text-sm">{fn.method}</code>
                         <span className="font-mono text-sm">/functions/v1/{fn.name}</span>
@@ -1145,42 +1146,73 @@ GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
                           </span>
                         )}
                       </div>
-                      <span className="text-muted-foreground text-sm">{fn.desc}</span>
-                    </div>
-                    
-                    {/* Parameters Table */}
-                    <div className="mt-3 mb-3">
-                      <h4 className="text-sm font-semibold mb-2">פרמטרים:</h4>
-                      <div className="bg-muted rounded-lg overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-border">
-                              <th className="text-right p-2 font-medium">שם</th>
-                              <th className="text-right p-2 font-medium">סוג</th>
-                              <th className="text-right p-2 font-medium">חובה</th>
-                              <th className="text-right p-2 font-medium">תיאור</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {fn.params.map((param) => (
-                              <tr key={param.name} className="border-b border-border/50 last:border-0">
-                                <td className="p-2 font-mono text-xs">{param.name}</td>
-                                <td className="p-2 text-muted-foreground">{param.type}</td>
-                                <td className="p-2">{param.required ? '✓' : '-'}</td>
-                                <td className="p-2 text-muted-foreground">{param.desc}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">{fn.desc}</span>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-1">
+                              <Eye className="h-3 w-3" />
+                              פרטים
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto" dir="rtl">
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center gap-3">
+                                <code className="bg-primary/10 px-2 py-1 rounded text-sm">{fn.method}</code>
+                                <span className="font-mono">/functions/v1/{fn.name}</span>
+                                {fn.ai && (
+                                  <span className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded text-xs flex items-center gap-1">
+                                    <Brain className="h-3 w-3" /> AI
+                                  </span>
+                                )}
+                              </DialogTitle>
+                            </DialogHeader>
+                            
+                            <div className="space-y-6 mt-4">
+                              {/* Parameters Table */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                  <Code className="h-4 w-4" />
+                                  פרמטרים
+                                </h4>
+                                <div className="bg-muted rounded-lg overflow-hidden">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border">
+                                        <th className="text-right p-3 font-medium">שם</th>
+                                        <th className="text-right p-3 font-medium">סוג</th>
+                                        <th className="text-right p-3 font-medium">חובה</th>
+                                        <th className="text-right p-3 font-medium">תיאור</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {fn.params.map((param) => (
+                                        <tr key={param.name} className="border-b border-border/50 last:border-0">
+                                          <td className="p-3 font-mono text-xs bg-background/50">{param.name}</td>
+                                          <td className="p-3 text-muted-foreground">{param.type}</td>
+                                          <td className="p-3">{param.required ? <span className="text-green-600">✓</span> : <span className="text-muted-foreground">-</span>}</td>
+                                          <td className="p-3 text-muted-foreground">{param.desc}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                              
+                              {/* Code Example */}
+                              <div>
+                                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                  <FileText className="h-4 w-4" />
+                                  דוגמת קריאה
+                                </h4>
+                                <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg text-xs overflow-x-auto" dir="ltr">
+                                  <code>{fn.example}</code>
+                                </pre>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
-                    </div>
-                    
-                    {/* Code Example */}
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2">דוגמת קריאה:</h4>
-                      <pre className="bg-slate-900 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto" dir="ltr">
-                        <code>{fn.example}</code>
-                      </pre>
                     </div>
                   </CardContent>
                 </Card>
