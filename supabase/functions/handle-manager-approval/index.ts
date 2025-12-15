@@ -1,6 +1,162 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+// Helper function to encode Hebrew text for email subject
+function encodeSubject(text: string): string {
+  const base64 = btoa(unescape(encodeURIComponent(text)));
+  return `=?UTF-8?B?${base64}?=`;
+}
+
+// Helper function to encode content for email body
+function encodeBody(text: string): string {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(text);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+// Send email via raw SMTP with proper UTF-8 encoding
+async function sendEmailViaSMTP(
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const gmailUser = Deno.env.get("GMAIL_USER");
+  const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+  if (!gmailUser || !gmailPassword) {
+    throw new Error("Gmail credentials not configured");
+  }
+
+  const encodedSubject = encodeSubject(subject);
+  const encodedBody = encodeBody(htmlContent);
+
+  const conn = await Deno.connectTls({
+    hostname: "smtp.gmail.com",
+    port: 465,
+  });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(cmd: string): Promise<string> {
+    await conn.write(encoder.encode(cmd + "\r\n"));
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  async function readResponse(): Promise<string> {
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  try {
+    await readResponse();
+    await sendCommand(`EHLO smtp.gmail.com`);
+    await sendCommand("AUTH LOGIN");
+    await sendCommand(btoa(gmailUser));
+    await sendCommand(btoa(gmailPassword));
+    await sendCommand(`MAIL FROM:<${gmailUser}>`);
+    await sendCommand(`RCPT TO:<${to}>`);
+    await sendCommand("DATA");
+
+    const emailContent = [
+      `From: "ספק בקליק - ביטוח ישיר" <${gmailUser}>`,
+      `To: ${to}`,
+      `Subject: ${encodedSubject}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,
+      encodedBody,
+      `.`,
+    ].join("\r\n");
+
+    await conn.write(encoder.encode(emailContent + "\r\n"));
+    await readResponse();
+    await sendCommand("QUIT");
+  } finally {
+    conn.close();
+  }
+}
+
+// Send approval notification email to vendor with receipts link
+async function sendVendorApprovalEmail(vendor: any): Promise<void> {
+  const baseUrl = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+  const receiptsLink = `${baseUrl}/vendor-receipts/${vendor.secure_token}`;
+  const statusLink = `${baseUrl}/vendor-status/${vendor.secure_token}`;
+
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="he">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.8; direction: rtl; text-align: right; background-color: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: #1a2b5f; color: white; padding: 20px; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; }
+        .content { padding: 30px; }
+        .success-icon { text-align: center; font-size: 48px; margin-bottom: 16px; }
+        .button { display: inline-block; background: #1a2b5f; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px 5px; }
+        .button-secondary { background: #2563eb; }
+        .footer { text-align: center; margin-top: 20px; padding: 20px; color: #666; font-size: 12px; border-top: 1px solid #eee; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">ספק בקליק - ביטוח ישיר</div>
+          <h1 style="margin: 10px 0 0 0; font-size: 20px;">בקשתך אושרה!</h1>
+        </div>
+        <div class="content">
+          <div class="success-icon">✅</div>
+          <p style="text-align: right; margin: 12px 0;">שלום ${vendor.vendor_name},</p>
+          <p style="text-align: right; margin: 12px 0;">
+            שמחים לבשר לך שבקשתך להצטרף כספק של ביטוח ישיר <strong>אושרה בהצלחה!</strong>
+          </p>
+          <p style="text-align: right; margin: 12px 0;">
+            מעתה תוכל להעלות קבלות להתחשבנות דרך הקישור הבא:
+          </p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${receiptsLink}" class="button">העלאת קבלות</a>
+            <a href="${statusLink}" class="button button-secondary">מעקב סטטוס</a>
+          </div>
+          <p style="text-align: right; margin: 12px 0;">
+            שמור על קישור זה - תוכל להשתמש בו בכל פעם שתרצה להעלות קבלות חדשות.
+          </p>
+        </div>
+        <div class="footer">
+          <p>© ביטוח ישיר - כל הזכויות שמורות</p>
+          <p>הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await sendEmailViaSMTP(
+    vendor.vendor_email,
+    "בקשתך אושרה - ברוכים הבאים לביטוח ישיר!",
+    htmlBody
+  );
+
+  // Update receipts_link_sent_at
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  await supabase
+    .from("vendor_requests")
+    .update({ receipts_link_sent_at: new Date().toISOString() })
+    .eq("id", vendor.id);
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("handle-manager-approval function called");
 
@@ -84,6 +240,15 @@ const handler = async (req: Request): Promise<Response> => {
           console.error("Error updating status to approved:", statusError);
         } else {
           console.log(`Vendor ${vendorId} status updated to approved (all required approvals complete)`);
+          
+          // Send approval notification email to vendor with receipts link
+          try {
+            await sendVendorApprovalEmail(vendorRequest);
+            console.log(`Approval email with receipts link sent to vendor ${vendorRequest.vendor_email}`);
+          } catch (emailError) {
+            console.error("Error sending approval email to vendor:", emailError);
+            // Don't fail the approval if email fails
+          }
         }
       }
 
