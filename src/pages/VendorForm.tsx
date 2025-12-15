@@ -1003,6 +1003,40 @@ export default function VendorForm() {
     fetchRequest();
   }, [token]);
 
+  // Scroll to the first field with an error
+  const scrollToFirstError = (errors: Record<string, string>) => {
+    const errorFields = Object.keys(errors);
+    if (errorFields.length === 0) return;
+
+    // Map error keys to actual input IDs/names
+    const fieldIdMap: Record<string, string> = {
+      company_id: 'company_id',
+      mobile: 'mobile',
+      address: 'street', // scroll to street for address errors
+      city: 'city',
+      bank_name: 'bank_name',
+      bank_branch: 'bank_branch',
+      bank_account_number: 'bank_account_number',
+      payment_method: 'payment_method',
+    };
+
+    for (const errorKey of errorFields) {
+      const fieldId = fieldIdMap[errorKey] || errorKey;
+      const element = document.getElementById(fieldId) || 
+                     document.querySelector(`[name="${fieldId}"]`) ||
+                     document.querySelector(`[data-field="${errorKey}"]`);
+      
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Focus the element if it's an input
+        if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+          setTimeout(() => element.focus(), 500);
+        }
+        break;
+      }
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -1065,6 +1099,12 @@ export default function VendorForm() {
     }
 
     setErrors(newErrors);
+    
+    // Scroll to first error if validation fails
+    if (Object.keys(newErrors).length > 0) {
+      setTimeout(() => scrollToFirstError(newErrors), 100);
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
@@ -1899,7 +1939,7 @@ export default function VendorForm() {
                       });
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="payment_method" data-field="payment_method">
                       <SelectValue placeholder="בחר שיטת תשלום" />
                     </SelectTrigger>
                     <SelectContent>
