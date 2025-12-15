@@ -7,7 +7,7 @@ export interface IsraelBank {
 export const ISRAEL_BANKS: IsraelBank[] = [
   { code: "10", name: "בנק לאומי לישראל", accountDigits: 8 },
   { code: "11", name: "בנק דיסקונט לישראל", accountDigits: 9 },
-  { code: "12", name: "בנק הפועלים", accountDigits: 9 },
+  { code: "12", name: "בנק הפועלים", accountDigits: 7 },
   { code: "13", name: "בנק אגוד לישראל", accountDigits: 6 },
   { code: "14", name: "בנק אוצר החייל", accountDigits: 7 },
   { code: "17", name: "בנק מרכנתיל דיסקונט", accountDigits: 9 },
