@@ -804,21 +804,119 @@ Response: { success: boolean }</pre>
                   method: 'POST', 
                   ai: false,
                   params: [
-                    { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
-                    { name: 'vendorEmail', type: 'string', required: true, desc: 'אימייל הספק' },
-                    { name: 'formLink', type: 'string', required: true, desc: 'לינק לטופס' },
-                    { name: 'expiryDays', type: 'number', required: true, desc: 'ימי תוקף הלינק' },
-                    { name: 'includeReason', type: 'boolean', required: false, desc: 'האם לכלול סיבה' },
-                    { name: 'reason', type: 'string', required: false, desc: 'סיבת שליחה מחדש' },
+                    { name: 'vendorName', type: 'string', required: false, desc: 'שם הספק (או vendorRequestId)' },
+                    { name: 'vendorEmail', type: 'string', required: false, desc: 'אימייל הספק (או vendorRequestId)' },
+                    { name: 'secureLink', type: 'string', required: false, desc: 'לינק מאובטח לטופס (או vendorRequestId)' },
+                    { name: 'vendorRequestId', type: 'string', required: false, desc: 'מזהה בקשת ספק - אם קיים, ימשוך את שאר הנתונים אוטומטית' },
+                    { name: 'includeReason', type: 'boolean', required: false, desc: 'האם לכלול הערה מהמטפל (לשליחה חוזרת)' },
+                    { name: 'reason', type: 'string', required: false, desc: 'הערה/סיבת שליחה מחדש' },
                   ],
-                  example: `await supabase.functions.invoke('send-vendor-email', {
+                  example: `// מקרה 1: ספק כללי - שליחה ראשונה
+await supabase.functions.invoke('send-vendor-email', {
   body: {
     vendorName: "חברה לדוגמה בע״מ",
     vendorEmail: "vendor@example.com",
-    formLink: "https://app.com/vendor/abc-123",
-    expiryDays: 7
+    secureLink: "https://app.com/vendor/abc-123"
   }
-})`
+})
+
+// מקרה 2: שימוש ב-vendorRequestId (ימשוך נתונים מה-DB)
+await supabase.functions.invoke('send-vendor-email', {
+  body: {
+    vendorRequestId: "uuid-of-vendor-request"
+  }
+})
+
+// מקרה 3: שליחה חוזרת עם הערה מהמטפל
+await supabase.functions.invoke('send-vendor-email', {
+  body: {
+    vendorRequestId: "uuid",
+    includeReason: true,
+    reason: "יש להעלות מחדש אישור ניהול ספרים תקף"
+  }
+})
+
+// הערה: סוג ספק (כללי/תביעות) ואזור תביעות נשמרים
+// בטבלת vendor_requests בעת יצירת הבקשה:
+// vendor_type: 'general' | 'claims'
+// claims_area: 'car' | 'life' | 'health' | 'home' (רק אם claims)
+// claims_sub_category: 'מוסך' | 'שמאי' | 'רופא' | 'עורך דין' וכו'`
+                },
+                { 
+                  name: 'create-vendor-request',
+                  desc: 'יצירת בקשת ספק חדשה (דרך Dashboard)',
+                  method: 'INSERT',
+                  ai: false,
+                  params: [
+                    { name: 'vendor_name', type: 'string', required: true, desc: 'שם הספק' },
+                    { name: 'vendor_email', type: 'string', required: true, desc: 'אימייל הספק' },
+                    { name: 'handler_name', type: 'string', required: false, desc: 'שם המטפל בתהליך' },
+                    { name: 'handler_email', type: 'string', required: false, desc: 'אימייל המטפל' },
+                    { name: 'vendor_type', type: 'string', required: true, desc: "'general' (ספק כללי) | 'claims' (ספק תביעות)" },
+                    { name: 'claims_area', type: 'string', required: false, desc: "אזור תביעות: 'car' | 'life' | 'health' | 'home' (רק אם vendor_type='claims')" },
+                    { name: 'claims_sub_category', type: 'string', required: false, desc: "תת-קטגוריה: רכב='מוסך'/'שמאי', חיים/בריאות='רופא'/'עורך דין', בית='שרברב'/'חברת ניהול'" },
+                    { name: 'requires_vp_approval', type: 'boolean', required: true, desc: 'האם נדרש אישור סמנכ"ל בנוסף למנהל רכש' },
+                    { name: 'expires_at', type: 'timestamp', required: false, desc: 'תאריך תפוגת הלינק (ברירת מחדל: 7 ימים)' },
+                  ],
+                  example: `// יצירת ספק כללי
+const { data, error } = await supabase
+  .from('vendor_requests')
+  .insert({
+    vendor_name: "חברה לדוגמה בע״מ",
+    vendor_email: "vendor@example.com",
+    handler_name: "ישראל ישראלי",
+    handler_email: "handler@company.com",
+    vendor_type: "general",
+    requires_vp_approval: false,
+    status: "pending"
+  })
+  .select()
+  .single();
+
+// יצירת ספק תביעות - רכב (מוסך)
+const { data, error } = await supabase
+  .from('vendor_requests')
+  .insert({
+    vendor_name: "מוסך לדוגמה",
+    vendor_email: "garage@example.com",
+    vendor_type: "claims",
+    claims_area: "car",
+    claims_sub_category: "מוסך",
+    requires_vp_approval: true,
+    status: "pending"
+  })
+  .select()
+  .single();
+
+// יצירת ספק תביעות - בריאות (רופא)
+const { data, error } = await supabase
+  .from('vendor_requests')
+  .insert({
+    vendor_name: "ד״ר ישראל",
+    vendor_email: "doctor@example.com",
+    vendor_type: "claims",
+    claims_area: "health",
+    claims_sub_category: "רופא",
+    requires_vp_approval: true,
+    status: "pending"
+  })
+  .select()
+  .single();
+
+// יצירת ספק תביעות - בית (שרברב)
+const { data, error } = await supabase
+  .from('vendor_requests')
+  .insert({
+    vendor_name: "שירותי אינסטלציה בע״מ",
+    vendor_email: "plumber@example.com",
+    vendor_type: "claims",
+    claims_area: "home",
+    claims_sub_category: "שרברב",
+    requires_vp_approval: false,
+    status: "pending"
+  })
+  .select()
+  .single();`
                 },
                 { 
                   name: 'send-vendor-otp', 
