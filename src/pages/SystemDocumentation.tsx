@@ -694,7 +694,7 @@ Response: { success: boolean }</pre>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="architecture">ארכיטקטורה</TabsTrigger>
             <TabsTrigger value="api">Edge Functions API</TabsTrigger>
             <TabsTrigger value="database">בסיס נתונים</TabsTrigger>
