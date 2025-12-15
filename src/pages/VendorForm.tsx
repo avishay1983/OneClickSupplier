@@ -1608,6 +1608,11 @@ export default function VendorForm() {
                     onChange={(e) => {
                       setFormData({ ...formData, company_id: e.target.value });
                       clearFieldWarning('company_id');
+                      // Clear company_id error when user edits
+                      setErrors(prev => {
+                        const { company_id, ...rest } = prev;
+                        return rest;
+                      });
                     }}
                     placeholder="הכנס מספר ח.פ או עוסק מורשה"
                     className={(hasFieldWarning('company_id') || errors.company_id) ? 'border-destructive' : ''}
