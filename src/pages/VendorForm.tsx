@@ -778,12 +778,6 @@ export default function VendorForm() {
         setErrors(prev => ({ ...prev, ...newErrors }));
         
         console.log('OCR validation warnings:', warnings);
-        // Show warnings in toast
-        toast({
-          title: 'שים לב - נתונים לא תקינים',
-          description: `נמצאו ${warnings.length} בעיות בנתונים שחולצו. יש לתקן לפני השליחה.`,
-          variant: 'destructive',
-        });
       }
       
       const appliedFieldsCount = Object.keys(finalUpdates).length;
@@ -795,11 +789,27 @@ export default function VendorForm() {
           return newData;
         });
         
+        // Show appropriate toast based on validation results
         if (warnings.length === 0) {
           toast({
             title: 'נתונים זוהו והוזנו',
             description: `${appliedFieldsCount} שדות מולאו אוטומטית מהמסמכים שהועלו`,
           });
+        } else {
+          // Some fields were extracted but have validation issues
+          const validFieldsCount = appliedFieldsCount - warnings.length;
+          if (validFieldsCount > 0) {
+            toast({
+              title: 'נתונים זוהו והוזנו',
+              description: `${validFieldsCount} שדות מולאו אוטומטית. ${warnings.length} שדות דורשים תיקון.`,
+            });
+          } else {
+            toast({
+              title: 'שים לב',
+              description: `${warnings.length} שדות שחולצו דורשים תיקון`,
+              variant: 'destructive',
+            });
+          }
         }
       } else if (extractedFieldsCount > 0) {
         toast({
