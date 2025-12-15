@@ -5,6 +5,92 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const prefix = {
+    info: '📋 [TEXT-OCR-INFO]',
+    warn: '⚠️ [TEXT-OCR-WARN]',
+    error: '❌ [TEXT-OCR-ERROR]',
+    success: '✅ [TEXT-OCR-SUCCESS]'
+  }[level];
+  
+  if (data) {
+    console.log(`${prefix} ${timestamp} - ${message}`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`${prefix} ${timestamp} - ${message}`);
+  }
+}
+
+// Clean numeric values
+function cleanNumericValue(value: string | null | undefined): string | null {
+  if (!value || value === 'null' || value === '') return null;
+  const cleaned = value.toString().replace(/[^0-9]/g, '');
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+// Clean phone number
+function cleanPhoneNumber(value: string | null | undefined): string | null {
+  if (!value || value === 'null' || value === '') return null;
+  let cleaned = value.toString().replace(/[^0-9]/g, '');
+  if (cleaned.length === 9 && !cleaned.startsWith('0')) {
+    cleaned = '0' + cleaned;
+  }
+  return cleaned.length >= 9 && cleaned.length <= 10 ? cleaned : null;
+}
+
+// Clean extracted data
+function cleanExtractedData(extracted: any): any {
+  const cleaned = { ...extracted };
+  
+  // Company ID
+  if (cleaned.company_id) {
+    const id = cleanNumericValue(cleaned.company_id);
+    cleaned.company_id = id && id.length >= 8 && id.length <= 9 ? id.padStart(9, '0') : null;
+  }
+  
+  // Phone numbers
+  cleaned.phone = cleanPhoneNumber(cleaned.phone);
+  cleaned.mobile = cleanPhoneNumber(cleaned.mobile);
+  if (cleaned.mobile && !cleaned.mobile.startsWith('05')) {
+    if (cleaned.mobile.startsWith('0') && !cleaned.mobile.startsWith('05')) {
+      if (!cleaned.phone) {
+        cleaned.phone = cleaned.mobile;
+        cleaned.mobile = null;
+      }
+    }
+  }
+  cleaned.fax = cleanPhoneNumber(cleaned.fax);
+  
+  // Email validation
+  if (cleaned.email && !cleaned.email.includes('@')) {
+    cleaned.email = null;
+  }
+  
+  // Postal code
+  if (cleaned.postal_code) {
+    const postal = cleanNumericValue(cleaned.postal_code);
+    cleaned.postal_code = postal && postal.length === 7 ? postal : null;
+  }
+  
+  // Bank details
+  if (cleaned.bank_number) {
+    const bankNum = cleanNumericValue(cleaned.bank_number);
+    cleaned.bank_number = bankNum && bankNum.length <= 2 ? bankNum.padStart(2, '0') : null;
+  }
+  
+  if (cleaned.branch_number) {
+    const branchNum = cleanNumericValue(cleaned.branch_number);
+    cleaned.branch_number = branchNum && branchNum.length >= 3 && branchNum.length <= 4 ? branchNum : null;
+  }
+  
+  if (cleaned.account_number) {
+    const accountNum = cleanNumericValue(cleaned.account_number);
+    cleaned.account_number = accountNum && accountNum.length >= 6 && accountNum.length <= 9 ? accountNum : null;
+  }
+  
+  return cleaned;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -12,6 +98,9 @@ serve(async (req) => {
 
   try {
     const { textContent, documentType } = await req.json();
+    const requestId = crypto.randomUUID().slice(0, 8);
+    
+    logOCR('info', `[${requestId}] New text extraction request`, { documentType, textLength: textContent?.length });
     
     if (!textContent) {
       return new Response(
@@ -22,15 +111,14 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing text extraction request for document type: ${documentType}...`);
-    console.log('Text content length:', textContent.length);
+    logOCR('info', `[${requestId}] Processing text extraction...`);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -48,32 +136,32 @@ serve(async (req) => {
 
 1. company_id - ח.פ / עוסק מורשה (9 ספרות)
 2. company_name - שם החברה / העסק
-3. phone - מספר טלפון (קווי)
-4. mobile - מספר טלפון נייד (מתחיל ב-05)
+3. phone - מספר טלפון קווי (מתחיל ב-0, לא ב-05)
+4. mobile - מספר טלפון נייד (מתחיל ב-05, 10 ספרות)
 5. fax - מספר פקס
 6. email - כתובת אימייל
 7. city - עיר
 8. street - שם רחוב
 9. street_number - מספר בית/בניין
-10. postal_code - מיקוד
-11. bank_number - מספר בנק (2 ספרות). השתמש בטבלת המיפוי הבאה:
-    - בנק לאומי / לאומי = 10
-    - בנק דיסקונט / דיסקונט = 11
-    - בנק הפועלים / פועלים / הפועלים = 12
-    - בנק אגוד = 13
-    - בנק אוצר החייל = 14
-    - בנק מרכנתיל = 17
-    - בנק מזרחי טפחות / מזרחי / טפחות = 20
-    - בנק הבינלאומי / הבינלאומי = 31
-    - בנק מסד = 46
-    - בנק פועלי אגודת ישראל = 52
-    - בנק ירושלים = 54
+10. postal_code - מיקוד (7 ספרות)
+11. bank_number - מספר בנק (2 ספרות):
+    - לאומי = 10
+    - דיסקונט = 11
+    - פועלים / הפועלים = 12
+    - אגוד = 13
+    - אוצר החייל = 14
+    - מרכנתיל = 17
+    - מזרחי טפחות / מזרחי / טפחות = 20
+    - הבינלאומי / בינלאומי = 31
+    - מסד = 46
+    - פועלי אגודת ישראל = 52
+    - ירושלים = 54
 12. branch_number - מספר סניף (3-4 ספרות)
 13. account_number - מספר חשבון בנק (6-9 ספרות)
 
-חשוב מאוד: אם אתה רואה שם בנק בטקסט, תמיד המר אותו למספר הבנק המתאים לפי הטבלה למעלה!
+חשוב: אם אתה רואה שם בנק בטקסט, המר אותו למספר הבנק המתאים!
 
-החזר את התשובה בפורמט JSON בלבד, ללא טקסט נוסף:
+החזר JSON בלבד:
 {
   "company_id": "value או null",
   "company_name": "value או null",
@@ -90,10 +178,7 @@ serve(async (req) => {
   "account_number": "value או null",
   "confidence": "high" | "medium" | "low",
   "notes": "הערות אם יש"
-}
-
-- אם לא ניתן לזהות שדה מסוים, החזר null עבורו.
-- שים לב לפורמטים ישראליים: ח.פ בדרך כלל 9 ספרות, נייד מתחיל ב-05, טלפון קווי בדרך כלל מתחיל ב-0.`
+}`
           },
           {
             role: 'user',
@@ -105,7 +190,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
+      logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -130,35 +215,40 @@ serve(async (req) => {
     const content = data.choices?.[0]?.message?.content;
     
     if (!content) {
-      console.error('No content in AI response');
+      logOCR('error', `[${requestId}] No content in AI response`);
       return new Response(
         JSON.stringify({ error: 'no_response', message: 'לא התקבלה תשובה מהמערכת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('AI response:', content);
+    logOCR('info', `[${requestId}] AI response received`, { contentLength: content.length });
 
-    // Parse JSON from the response (handle markdown code blocks if present)
+    // Parse JSON from the response
     let extracted;
     try {
       let jsonStr = content;
-      // Remove markdown code blocks if present
       if (jsonStr.includes('```json')) {
         jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       } else if (jsonStr.includes('```')) {
         jsonStr = jsonStr.replace(/```\n?/g, '');
       }
       extracted = JSON.parse(jsonStr.trim());
+      
+      // Clean the extracted data
+      extracted = cleanExtractedData(extracted);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      logOCR('error', `[${requestId}] Failed to parse AI response`, { error: parseError });
       return new Response(
         JSON.stringify({ error: 'parse_error', message: 'לא ניתן לעבד את התשובה', raw: content }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Extracted document data:', extracted);
+    logOCR('success', `[${requestId}] Text extraction completed`, { 
+      confidence: extracted.confidence,
+      documentType 
+    });
 
     return new Response(
       JSON.stringify({ success: true, extracted, documentType }),
@@ -166,7 +256,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in extract-document-text:', error);
+    logOCR('error', 'Unexpected server error', { error: error instanceof Error ? error.message : 'Unknown' });
     return new Response(
       JSON.stringify({ error: 'server_error', message: error instanceof Error ? error.message : 'שגיאה בשרת' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
