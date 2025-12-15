@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import VendorForm from "./pages/VendorForm";
 import VendorStatus from "./pages/VendorStatus";
 import VendorReceipts from "./pages/VendorReceipts";
+import SystemDocumentation from "./pages/SystemDocumentation";
 import Auth from "./pages/Auth";
 import ManagerApprovalResult from "./pages/ManagerApprovalResult";
 import CRM from "./pages/CRM";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/vendor/:token" element={<VendorForm />} />
             <Route path="/vendor-status/:token" element={<VendorStatus />} />
             <Route path="/vendor-receipts/:token" element={<VendorReceipts />} />
+            <Route path="/documentation" element={<SystemDocumentation />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
