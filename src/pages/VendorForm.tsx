@@ -13,6 +13,7 @@ import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 import { BankMismatchDialog, getBankNameFromCode } from '@/components/vendor/BankMismatchDialog';
+import { DocumentMismatchDialog } from '@/components/vendor/DocumentMismatchDialog';
 import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, ArrowLeft, ArrowRight, Sparkles, Heart } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -111,6 +112,17 @@ export default function VendorForm() {
   const [isExtractingOcr, setIsExtractingOcr] = useState(false);
   const [pendingBankFile, setPendingBankFile] = useState<File | null>(null);
   const [ocrValidationWarnings, setOcrValidationWarnings] = useState<OcrValidationWarning[]>([]);
+
+  // Document classification states
+  const [showDocMismatchDialog, setShowDocMismatchDialog] = useState(false);
+  const [docMismatchInfo, setDocMismatchInfo] = useState<{
+    expectedType: DocumentType;
+    expectedTypeHebrew: string;
+    detectedTypeHebrew: string;
+    reason: string;
+    pendingFile: File;
+  } | null>(null);
+  const [isClassifyingDocument, setIsClassifyingDocument] = useState<DocumentType | null>(null);
 
   const [formData, setFormData] = useState({
     company_id: '',
@@ -224,6 +236,83 @@ export default function VendorForm() {
       return null;
     }
   };
+
+  // Classify document type using AI
+  const classifyDocument = useCallback(async (file: File, expectedType: DocumentType): Promise<{ isMatch: boolean; detectedTypeHebrew: string; reason: string } | null> => {
+    try {
+      let base64Data: string;
+      
+      // Convert file to base64
+      if (isPdfFile(file)) {
+        const pdfResult = await pdfToImage(file);
+        if (!pdfResult) return null;
+        base64Data = `data:${pdfResult.mimeType};base64,${pdfResult.base64}`;
+      } else if (isWordFile(file)) {
+        // Skip classification for Word files
+        return null;
+      } else {
+        // Regular image file
+        const reader = new FileReader();
+        base64Data = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const { data, error } = await supabase.functions.invoke('classify-document', {
+        body: { imageBase64: base64Data, expectedType },
+      });
+
+      if (error) {
+        console.error('Classification error:', error);
+        return null;
+      }
+
+      if (data?.skip_validation || data?.error) {
+        return null;
+      }
+
+      return {
+        isMatch: data.is_match,
+        detectedTypeHebrew: data.detected_type_hebrew || data.detected_type,
+        reason: data.reason || '',
+      };
+    } catch (err) {
+      console.error('Document classification error:', err);
+      return null;
+    }
+  }, []);
+
+  // Handle file selection with classification
+  const handleFileSelectWithClassification = useCallback(async (docType: DocumentType, file: File) => {
+    setIsClassifyingDocument(docType);
+    
+    try {
+      const result = await classifyDocument(file, docType);
+      
+      if (result && !result.isMatch) {
+        // Show mismatch dialog
+        setDocMismatchInfo({
+          expectedType: docType,
+          expectedTypeHebrew: DOCUMENT_TYPE_LABELS[docType],
+          detectedTypeHebrew: result.detectedTypeHebrew,
+          reason: result.reason,
+          pendingFile: file,
+        });
+        setShowDocMismatchDialog(true);
+      } else {
+        // No mismatch or classification skipped - set file directly
+        setFiles(prev => ({ ...prev, [docType]: file }));
+      }
+    } catch (error) {
+      console.error('Error during classification:', error);
+      // On error, just set the file
+      setFiles(prev => ({ ...prev, [docType]: file }));
+    } finally {
+      setIsClassifyingDocument(null);
+    }
+  }, [classifyDocument]);
 
   // Extract document data from text content
   const extractDocumentDataFromText = useCallback(async (textContent: string, documentType: string): Promise<ExtractedDocumentData | null> => {
@@ -1554,12 +1643,20 @@ export default function VendorForm() {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
                   {(Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[]).map((docType) => (
-                    <div key={docType}>
+                    <div key={docType} className="relative">
+                      {isClassifyingDocument === docType && (
+                        <div className="absolute inset-0 bg-background/80 z-10 flex items-center justify-center rounded-lg">
+                          <div className="flex items-center gap-2 text-primary">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">מאמת מסמך...</span>
+                          </div>
+                        </div>
+                      )}
                       <FileUploadZone
                         label={DOCUMENT_TYPE_LABELS[docType]}
                         documentType={docType}
                         selectedFile={files[docType]}
-                        onFileSelect={(file) => setFiles({ ...files, [docType]: file })}
+                        onFileSelect={(file) => handleFileSelectWithClassification(docType, file)}
                         onRemove={() => setFiles({ ...files, [docType]: null })}
                         existingDocument={existingDocuments[docType]}
                       />
@@ -2088,6 +2185,26 @@ export default function VendorForm() {
           onCorrect={handleCorrectData}
           onContinue={handleContinueWithMismatch}
           onAutoFill={handleAutoFillFromDocument}
+        />
+
+        {/* Document Type Mismatch Dialog */}
+        <DocumentMismatchDialog
+          open={showDocMismatchDialog}
+          onOpenChange={setShowDocMismatchDialog}
+          expectedType={docMismatchInfo?.expectedTypeHebrew || ''}
+          detectedType={docMismatchInfo?.detectedTypeHebrew || ''}
+          reason={docMismatchInfo?.reason}
+          onConfirm={() => {
+            if (docMismatchInfo) {
+              setFiles(prev => ({ ...prev, [docMismatchInfo.expectedType]: docMismatchInfo.pendingFile }));
+            }
+            setShowDocMismatchDialog(false);
+            setDocMismatchInfo(null);
+          }}
+          onCancel={() => {
+            setShowDocMismatchDialog(false);
+            setDocMismatchInfo(null);
+          }}
         />
       </main>
     </div>
