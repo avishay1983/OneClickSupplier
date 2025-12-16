@@ -24,13 +24,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
   const [formData, setFormData] = useState({
     vendor_name: '',
     vendor_email: '',
-    expected_spending: null as number | null,
-    quote_received: false,
-    contract_signed: false,
-    legal_approved: false,
-    approver_name: '',
-    is_consultant: false,
-    is_sensitive: false,
     vendor_type: 'general' as 'general' | 'claims',
     claims_area: null as string | null,
     claims_sub_category: null as string | null,
@@ -57,13 +50,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
       setFormData({
         vendor_name: request.vendor_name || '',
         vendor_email: request.vendor_email || '',
-        expected_spending: request.expected_spending || null,
-        quote_received: request.quote_received || false,
-        contract_signed: request.contract_signed || false,
-        legal_approved: request.legal_approved || false,
-        approver_name: request.approver_name || '',
-        is_consultant: request.is_consultant || false,
-        is_sensitive: request.is_sensitive || false,
         vendor_type: (request.vendor_type as 'general' | 'claims') || 'general',
         claims_area: request.claims_area || null,
         claims_sub_category: request.claims_sub_category || null,
@@ -190,13 +176,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
         .update({
           vendor_name: formData.vendor_name,
           vendor_email: formData.vendor_email,
-          expected_spending: formData.expected_spending,
-          quote_received: formData.quote_received,
-          contract_signed: formData.contract_signed,
-          legal_approved: formData.legal_approved,
-          approver_name: formData.approver_name,
-          is_consultant: formData.is_consultant,
-          is_sensitive: formData.is_sensitive,
           vendor_type: formData.vendor_type,
           claims_area: formData.claims_area,
           claims_sub_category: formData.claims_sub_category,
@@ -280,32 +259,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
               {errors.vendor_email && (
                 <p className="text-sm text-destructive text-right">{errors.vendor_email}</p>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit_expected_spending" className="block text-right">סכום הוצאה צפויה (₪)</Label>
-              <Input
-                id="edit_expected_spending"
-                type="number"
-                className="text-right"
-                value={formData.expected_spending || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  expected_spending: e.target.value ? Number(e.target.value) : null 
-                })}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit_approver_name" className="block text-right">שם המאשר</Label>
-              <Input
-                id="edit_approver_name"
-                className="text-right"
-                value={formData.approver_name}
-                onChange={(e) => setFormData({ ...formData, approver_name: e.target.value })}
-                placeholder="הכנס שם מאשר"
-              />
             </div>
 
             <div className="space-y-2">
@@ -407,63 +360,6 @@ export function EditRequestDialog({ open, onOpenChange, request, onSuccess, curr
                 </Select>
               </div>
             )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit_quote_received" className="cursor-pointer">קיימת הצעת מחיר</Label>
-                <Checkbox
-                  id="edit_quote_received"
-                  checked={formData.quote_received}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, quote_received: checked as boolean })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit_contract_signed" className="cursor-pointer">קיים הסכם</Label>
-                <Checkbox
-                  id="edit_contract_signed"
-                  checked={formData.contract_signed}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, contract_signed: checked as boolean })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit_legal_approved" className="cursor-pointer">אישור משפטית</Label>
-                <Checkbox
-                  id="edit_legal_approved"
-                  checked={formData.legal_approved}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, legal_approved: checked as boolean })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit_is_consultant" className="cursor-pointer">יועץ</Label>
-                <Checkbox
-                  id="edit_is_consultant"
-                  checked={formData.is_consultant}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_consultant: checked as boolean })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit_is_sensitive" className="cursor-pointer">ספק רגיש</Label>
-                <Checkbox
-                  id="edit_is_sensitive"
-                  checked={formData.is_sensitive}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, is_sensitive: checked as boolean })
-                  }
-                />
-              </div>
-            </div>
           </div>
 
           {/* Approval Workflow Section - For submitted and approved status */}
