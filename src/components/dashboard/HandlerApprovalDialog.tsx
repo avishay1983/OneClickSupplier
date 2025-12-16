@@ -9,12 +9,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText, AlertCircle, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface HandlerApprovalDialogProps {
   open: boolean;
@@ -41,11 +42,9 @@ export function HandlerApprovalDialog({
   onActionComplete,
 }: HandlerApprovalDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [action, setAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
+  const [selectedAction, setSelectedAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
   const [resendReason, setResendReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  const [showRejectReason, setShowRejectReason] = useState(false);
-  const [showResendReason, setShowResendReason] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [vendorRequestData, setVendorRequestData] = useState<VendorRequestData | null>(null);
@@ -77,8 +76,7 @@ export function HandlerApprovalDialog({
     };
     fetchVendorRequest();
     // Reset states when dialog opens
-    setShowRejectReason(false);
-    setShowResendReason(false);
+    setSelectedAction(null);
     setRejectReason('');
     setResendReason('');
   }, [vendorRequestId, open]);
@@ -92,7 +90,6 @@ export function HandlerApprovalDialog({
     if (!vendorRequestId || !canApprove) return;
     
     setIsLoading(true);
-    setAction('approve');
     try {
       // Update handler approval and change status to submitted
       const { error: updateError } = await supabase
@@ -131,7 +128,6 @@ export function HandlerApprovalDialog({
       });
     } finally {
       setIsLoading(false);
-      setAction(null);
     }
   };
 
@@ -147,7 +143,6 @@ export function HandlerApprovalDialog({
     }
     
     setIsLoading(true);
-    setAction('reject');
     try {
       // Update status to rejected and save reason
       const { error: updateError } = await supabase
@@ -173,7 +168,6 @@ export function HandlerApprovalDialog({
 
       if (emailError) {
         console.error('Error sending rejection email:', emailError);
-        // Don't fail the whole operation if email fails
       }
 
       toast({
@@ -193,7 +187,6 @@ export function HandlerApprovalDialog({
       });
     } finally {
       setIsLoading(false);
-      setAction(null);
     }
   };
 
@@ -209,7 +202,6 @@ export function HandlerApprovalDialog({
     }
     
     setIsLoading(true);
-    setAction('resend');
     try {
       // Calculate original expiry duration and apply it again
       let expiresAt: string;
@@ -217,7 +209,6 @@ export function HandlerApprovalDialog({
         const originalDuration = new Date(vendorRequestData.expires_at).getTime() - new Date(vendorRequestData.created_at).getTime();
         expiresAt = new Date(Date.now() + originalDuration).toISOString();
       } else {
-        // Default to 7 days if no original data
         expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       }
       
@@ -227,7 +218,7 @@ export function HandlerApprovalDialog({
           status: 'resent',
           handler_rejection_reason: resendReason,
           expires_at: expiresAt,
-          otp_verified: false, // Reset OTP verification for resend
+          otp_verified: false,
         })
         .eq('id', vendorRequestId);
 
@@ -261,13 +252,38 @@ export function HandlerApprovalDialog({
       });
     } finally {
       setIsLoading(false);
-      setAction(null);
     }
+  };
+
+  const handleExecuteAction = () => {
+    if (selectedAction === 'approve') handleApprove();
+    else if (selectedAction === 'reject') handleReject();
+    else if (selectedAction === 'resend') handleResend();
+  };
+
+  const getActionButtonText = () => {
+    if (isLoading) {
+      if (selectedAction === 'approve') return 'מאשר...';
+      if (selectedAction === 'reject') return 'דוחה...';
+      if (selectedAction === 'resend') return 'שולח...';
+    }
+    if (selectedAction === 'approve') return 'אשר את הבקשה';
+    if (selectedAction === 'reject') return 'דחה את הבקשה';
+    if (selectedAction === 'resend') return 'שלח מחדש לספק';
+    return 'בחר פעולה';
+  };
+
+  const canExecute = () => {
+    if (!selectedAction) return false;
+    if (selectedAction === 'approve') return canApprove;
+    if (selectedAction === 'reject') return rejectReason.trim().length > 0;
+    if (selectedAction === 'resend') return resendReason.trim().length > 0;
+    return false;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+      <DialogContent className="sm:max-w-[550px]" dir="rtl">
         <DialogHeader>
           <DialogTitle>בקרה ראשונה - {vendorName}</DialogTitle>
           <DialogDescription>
@@ -275,28 +291,19 @@ export function HandlerApprovalDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* View Documents Button - First */}
-          <div className="p-4 border rounded-lg bg-primary/10 border-primary/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-primary" />
-                <div>
-                  <h4 className="font-medium">צפה במסמכים ובפרטים</h4>
-                  <p className="text-sm text-muted-foreground">
-                    צפה במסמכים ובפרטים שהספק עדכן
-                  </p>
-                </div>
-              </div>
-              <Button 
-                onClick={() => setShowDocuments(true)}
-                variant="outline"
-              >
-                <FileText className="h-4 w-4 ml-2" />
-                צפה
-              </Button>
+        <div className="space-y-4 py-4">
+          {/* View Documents Button */}
+          <Button 
+            onClick={() => setShowDocuments(true)}
+            variant="outline"
+            className="w-full justify-start gap-3 h-auto py-3"
+          >
+            <FileText className="h-5 w-5 text-primary" />
+            <div className="text-right">
+              <div className="font-medium">צפה במסמכים ובפרטים</div>
+              <div className="text-sm text-muted-foreground">צפה במסמכים ובפרטים שהספק עדכן</div>
             </div>
-          </div>
+          </Button>
 
           {/* Contract Required Warning */}
           {requiresContract && !contractUploaded && (
@@ -308,173 +315,145 @@ export function HandlerApprovalDialog({
             </Alert>
           )}
 
-          {/* Approve Button */}
-          <div className={`p-4 border rounded-lg ${canApprove ? 'bg-success/10 border-success/20' : 'bg-muted/50 border-muted'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className={`h-6 w-6 ${canApprove ? 'text-success' : 'text-muted-foreground'}`} />
-                <div>
-                  <h4 className="font-medium">אשר ושלח למנהלים</h4>
-                  <p className="text-sm text-muted-foreground">
+          {/* Action Cards */}
+          <div className="space-y-3">
+            {/* Approve Card */}
+            <div
+              onClick={() => canApprove && setSelectedAction('approve')}
+              className={cn(
+                "p-4 rounded-xl border-2 transition-all",
+                canApprove ? "cursor-pointer" : "cursor-not-allowed opacity-50",
+                selectedAction === 'approve'
+                  ? "border-green-500 bg-green-50 dark:bg-green-950"
+                  : canApprove 
+                    ? "border-border hover:border-green-300 hover:bg-green-50/50 dark:hover:bg-green-950/50"
+                    : "border-muted bg-muted/30"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "p-2 rounded-full",
+                  selectedAction === 'approve' ? "bg-green-200 dark:bg-green-800" : "bg-green-100 dark:bg-green-900"
+                )}>
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg">אשר את הבקשה</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
                     {requiresContract 
                       ? 'הצעת המחיר תישלח למנהל רכש ולסמנכ"ל לחתימה דיגיטלית'
                       : 'הבקשה תועבר לאישור מנהל רכש וסמנכ"ל'}
                   </p>
                 </div>
-              </div>
-              <Button 
-                onClick={handleApprove}
-                disabled={isLoading || !canApprove}
-                className="bg-success hover:bg-success/90"
-              >
-                {action === 'approve' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    מאשר...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-4 w-4 ml-2" />
-                    אשר
-                  </>
+                {selectedAction === 'approve' && (
+                  <Check className="h-5 w-5 text-green-600" />
                 )}
-              </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Reject Section */}
-          <div className="p-4 border rounded-lg bg-destructive/10 border-destructive/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <XCircle className="h-6 w-6 text-destructive" />
-                <div>
-                  <h4 className="font-medium">דחה בקשה</h4>
-                  <p className="text-sm text-muted-foreground">
-                    הבקשה תידחה והספק יקבל הודעה במייל
+            {/* Reject Card */}
+            <div
+              onClick={() => setSelectedAction('reject')}
+              className={cn(
+                "p-4 rounded-xl border-2 cursor-pointer transition-all",
+                selectedAction === 'reject'
+                  ? "border-red-500 bg-red-50 dark:bg-red-950"
+                  : "border-border hover:border-red-300 hover:bg-red-50/50 dark:hover:bg-red-950/50"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "p-2 rounded-full",
+                  selectedAction === 'reject' ? "bg-red-200 dark:bg-red-800" : "bg-red-100 dark:bg-red-900"
+                )}>
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg">דחה את הבקשה</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    הספק יקבל מייל עם הודעה ליצור קשר עם המטפל
                   </p>
                 </div>
+                {selectedAction === 'reject' && (
+                  <Check className="h-5 w-5 text-red-600" />
+                )}
               </div>
-              {!showRejectReason && (
-                <Button 
-                  onClick={() => setShowRejectReason(true)}
-                  variant="destructive"
-                >
-                  <XCircle className="h-4 w-4 ml-2" />
-                  דחה בקשה
-                </Button>
-              )}
-            </div>
-            {showRejectReason && (
-              <div className="space-y-3 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rejectReason">סיבת הדחייה *</Label>
+              
+              {/* Reject Reason - Only shown when selected */}
+              {selectedAction === 'reject' && (
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="rejectReason">סיבת הדחייה (לשימוש פנימי) *</Label>
                   <Textarea
                     id="rejectReason"
-                    placeholder="הסבר לספק למה הבקשה נדחתה..."
+                    placeholder="הזן את סיבת הדחייה..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    rows={3}
+                    rows={2}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleReject}
-                    disabled={isLoading || !rejectReason.trim()}
-                    variant="destructive"
-                    className="flex-1"
-                  >
-                    {action === 'reject' ? (
-                      <>
-                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                        דוחה...
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-4 w-4 ml-2" />
-                        אשר דחייה
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setShowRejectReason(false);
-                      setRejectReason('');
-                    }}
-                    variant="outline"
-                  >
-                    ביטול
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Resend to Vendor */}
-          <div className="p-4 border rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <RotateCcw className="h-6 w-6 text-muted-foreground" />
-                <div>
-                  <h4 className="font-medium">שלח מחדש לספק</h4>
-                  <p className="text-sm text-muted-foreground">
-                    הספק יקבל מייל עם הסבר ויוכל לתקן את הטופס
-                  </p>
-                </div>
-              </div>
-              {!showResendReason && (
-                <Button 
-                  onClick={() => setShowResendReason(true)}
-                  variant="outline"
-                >
-                  <RotateCcw className="h-4 w-4 ml-2" />
-                  שלח מחדש
-                </Button>
               )}
             </div>
-            {showResendReason && (
-              <div className="space-y-3 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="resendReason">סיבה לשליחה מחדש *</Label>
+
+            {/* Resend Card */}
+            <div
+              onClick={() => setSelectedAction('resend')}
+              className={cn(
+                "p-4 rounded-xl border-2 cursor-pointer transition-all",
+                selectedAction === 'resend'
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-950"
+                  : "border-border hover:border-orange-300 hover:bg-orange-50/50 dark:hover:bg-orange-950/50"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "p-2 rounded-full",
+                  selectedAction === 'resend' ? "bg-orange-200 dark:bg-orange-800" : "bg-orange-100 dark:bg-orange-900"
+                )}>
+                  <RotateCcw className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg">שלח מחדש לספק</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    הספק יקבל מייל חדש עם אפשרות לערוך ולשלוח שוב
+                  </p>
+                </div>
+                {selectedAction === 'resend' && (
+                  <Check className="h-5 w-5 text-orange-600" />
+                )}
+              </div>
+              
+              {/* Resend Reason - Only shown when selected */}
+              {selectedAction === 'resend' && (
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="resendReason">הסבר לספק *</Label>
                   <Textarea
                     id="resendReason"
-                    placeholder="הסבר לספק למה הוא צריך לתקן את הטופס..."
+                    placeholder="הזן הסבר מה הספק צריך לתקן..."
                     value={resendReason}
                     onChange={(e) => setResendReason(e.target.value)}
-                    rows={3}
+                    rows={2}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleResend}
-                    disabled={isLoading || !resendReason.trim()}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {action === 'resend' ? (
-                      <>
-                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                        שולח...
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="h-4 w-4 ml-2" />
-                        אשר שליחה
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setShowResendReason(false);
-                      setResendReason('');
-                    }}
-                    variant="outline"
-                  >
-                    ביטול
-                  </Button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+
+          {/* Single Action Button */}
+          <Button 
+            onClick={handleExecuteAction}
+            disabled={!canExecute() || isLoading}
+            className={cn(
+              "w-full h-12 text-base",
+              selectedAction === 'approve' && "bg-green-600 hover:bg-green-700",
+              selectedAction === 'reject' && "bg-red-600 hover:bg-red-700",
+              selectedAction === 'resend' && "bg-orange-600 hover:bg-orange-700"
+            )}
+          >
+            {isLoading && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+            {getActionButtonText()}
+          </Button>
         </div>
       </DialogContent>
 
