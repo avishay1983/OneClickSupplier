@@ -1606,7 +1606,7 @@ export default function VendorForm() {
       </div>
 
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border-b animate-fade-in">
+      <div className="border-b animate-fade-in">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
             <div className="animate-bounce-gentle">
