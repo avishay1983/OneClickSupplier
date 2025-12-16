@@ -45,6 +45,7 @@ export function HandlerApprovalDialog({
   const [resendReason, setResendReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectReason, setShowRejectReason] = useState(false);
+  const [showResendReason, setShowResendReason] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [vendorRequestData, setVendorRequestData] = useState<VendorRequestData | null>(null);
@@ -77,7 +78,9 @@ export function HandlerApprovalDialog({
     fetchVendorRequest();
     // Reset states when dialog opens
     setShowRejectReason(false);
+    setShowResendReason(false);
     setRejectReason('');
+    setResendReason('');
   }, [vendorRequestId, open]);
 
   // Check if approval is blocked due to missing contract
@@ -408,45 +411,69 @@ export function HandlerApprovalDialog({
 
           {/* Resend to Vendor */}
           <div className="p-4 border rounded-lg bg-muted/50">
-            <div className="flex items-center gap-3 mb-4">
-              <RotateCcw className="h-6 w-6 text-muted-foreground" />
-              <div>
-                <h4 className="font-medium">שלח מחדש לספק</h4>
-                <p className="text-sm text-muted-foreground">
-                  הספק יקבל מייל עם הסבר ויוכל לתקן את הטופס
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RotateCcw className="h-6 w-6 text-muted-foreground" />
+                <div>
+                  <h4 className="font-medium">שלח מחדש לספק</h4>
+                  <p className="text-sm text-muted-foreground">
+                    הספק יקבל מייל עם הסבר ויוכל לתקן את הטופס
+                  </p>
+                </div>
               </div>
+              {!showResendReason && (
+                <Button 
+                  onClick={() => setShowResendReason(true)}
+                  variant="outline"
+                >
+                  <RotateCcw className="h-4 w-4 ml-2" />
+                  שלח מחדש
+                </Button>
+              )}
             </div>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="resendReason">סיבה לשליחה מחדש *</Label>
-                <Textarea
-                  id="resendReason"
-                  placeholder="הסבר לספק למה הוא צריך לתקן את הטופס..."
-                  value={resendReason}
-                  onChange={(e) => setResendReason(e.target.value)}
-                  rows={3}
-                />
+            {showResendReason && (
+              <div className="space-y-3 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="resendReason">סיבה לשליחה מחדש *</Label>
+                  <Textarea
+                    id="resendReason"
+                    placeholder="הסבר לספק למה הוא צריך לתקן את הטופס..."
+                    value={resendReason}
+                    onChange={(e) => setResendReason(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleResend}
+                    disabled={isLoading || !resendReason.trim()}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {action === 'resend' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        שולח...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-4 w-4 ml-2" />
+                        אשר שליחה
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowResendReason(false);
+                      setResendReason('');
+                    }}
+                    variant="outline"
+                  >
+                    ביטול
+                  </Button>
+                </div>
               </div>
-              <Button 
-                onClick={handleResend}
-                disabled={isLoading || !resendReason.trim()}
-                variant="outline"
-                className="w-full"
-              >
-                {action === 'resend' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    שולח...
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw className="h-4 w-4 ml-2" />
-                    שלח מחדש לספק
-                  </>
-                )}
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       </DialogContent>
