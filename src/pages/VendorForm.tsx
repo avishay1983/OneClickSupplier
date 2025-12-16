@@ -1609,8 +1609,8 @@ export default function VendorForm() {
       <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border-b animate-fade-in">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full animate-bounce-gentle">
-              <Sparkles className="h-8 w-8 text-primary" />
+            <div className="animate-bounce-gentle">
+              <img src="/images/bituach-yashir-logo.png" alt="ביטוח ישיר" className="h-12 w-auto" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-primary flex items-center gap-2">
