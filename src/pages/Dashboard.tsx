@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen, Eye, UserCircle } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen, Eye, UserCircle, LayoutGrid } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { PendingApprovalsDialog } from '@/components/dashboard/PendingApprovalsDialog';
+import { ManagerSignaturesView } from '@/components/dashboard/ManagerSignaturesView';
 import { VendorRequest } from '@/types/vendor';
 import { ContractSigningDialog } from '@/components/dashboard/ContractSigningDialog';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [selectedContractRequest, setSelectedContractRequest] = useState<VendorRequest | null>(null);
   const [showAllRequests, setShowAllRequests] = useState(false); // For admin toggle
+  const [viewMode, setViewMode] = useState<'manager' | 'regular'>('manager'); // Manager view toggle
 
   // Check if user is approved and get user name
   useEffect(() => {
@@ -422,6 +424,9 @@ export default function Dashboard() {
     );
   }
 
+  // Determine if we should show manager view
+  const showManagerView = userManagerRole && viewMode === 'manager';
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -443,6 +448,36 @@ export default function Dashboard() {
               <span className="text-white/70 text-sm hidden sm:inline">
                 {user.email}
               </span>
+              
+              {/* Manager View Toggle */}
+              {userManagerRole && (
+                <ToggleGroup
+                  type="single"
+                  size="sm"
+                  variant="outline"
+                  value={viewMode}
+                  onValueChange={(value) => {
+                    if (value) setViewMode(value as 'manager' | 'regular');
+                  }}
+                  className="bg-white/10 rounded-lg p-0.5"
+                >
+                  <ToggleGroupItem 
+                    value="manager" 
+                    className="gap-1.5 text-white data-[state=on]:bg-white data-[state=on]:text-[#1a2b5f] hover:bg-white/20 text-xs px-2"
+                  >
+                    <FileSignature className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">חתימות</span>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="regular" 
+                    className="gap-1.5 text-white data-[state=on]:bg-white data-[state=on]:text-[#1a2b5f] hover:bg-white/20 text-xs px-2"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">נציג</span>
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+
               <Button
                 variant="ghost"
                 onClick={() => navigate('/crm')}
@@ -496,103 +531,83 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Pending Signatures Banner for VP/Procurement Manager */}
-        {userManagerRole && pendingSignatures.length > 0 && (
-          <div className="mb-6 p-6 bg-primary/10 border-2 border-primary rounded-xl animate-pulse">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary rounded-full">
-                  <FileSignature className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-primary">
-                    {pendingSignatures.length === 1 
-                      ? 'יש הצעת מחיר אחת ממתינה לחתימתך!'
-                      : `יש ${pendingSignatures.length} הצעות מחיר ממתינות לחתימתך!`
-                    }
-                  </h3>
-                  <p className="text-muted-foreground">
-                    לחץ על הכפתור כדי לחתום על הצעת המחיר{pendingSignatures.length > 1 ? '' : ''}
-                  </p>
+        {/* Manager Signatures View */}
+        {showManagerView ? (
+          <ManagerSignaturesView
+            role={userManagerRole}
+            pendingSignatures={pendingSignatures}
+            onRefresh={fetchRequests}
+          />
+        ) : (
+          <>
+            {/* Pending Signatures Banner for VP/Procurement Manager (when in regular view) */}
+            {userManagerRole && pendingSignatures.length > 0 && (
+              <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <FileSignature className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium">
+                      {pendingSignatures.length === 1 
+                        ? 'יש חוזה אחד ממתין לחתימתך'
+                        : `יש ${pendingSignatures.length} חוזים ממתינים לחתימתך`
+                      }
+                    </span>
+                  </div>
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setViewMode('manager')}
+                  >
+                    <Eye className="h-4 w-4" />
+                    עבור לתצוגת חתימות
+                  </Button>
                 </div>
               </div>
-              <Button 
-                size="lg"
-                className="gap-3 text-lg px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-shadow"
-                onClick={() => {
-                  setSelectedContractRequest(pendingSignatures[0]);
-                  setContractDialogOpen(true);
-                }}
-              >
-                <Pen className="h-6 w-6" />
-                חתום עכשיו
-              </Button>
+            )}
+            
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
+                <p className="text-muted-foreground">
+                  {isAdmin && showAllRequests 
+                    ? 'צפה בכל הבקשות במערכת' 
+                    : 'צפה ונהל את הבקשות שלך'}
+                </p>
+              </div>
+              <div className="flex items-center gap-4 flex-wrap justify-end">
+                {isAdmin && (
+                  <ToggleGroup
+                    type="single"
+                    size="sm"
+                    variant="outline"
+                    value={showAllRequests ? 'all' : 'mine'}
+                    onValueChange={(value) => {
+                      if (!value) return;
+                      setShowAllRequests(value === 'all');
+                    }}
+                    className="flex-row-reverse bg-muted/50 rounded-lg p-1"
+                  >
+                    <ToggleGroupItem value="mine" className="gap-2 whitespace-nowrap">
+                      <UserCircle className="h-4 w-4" />
+                      הבקשות שלי
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="all" className="gap-2 whitespace-nowrap">
+                      <Eye className="h-4 w-4" />
+                      כל הבקשות
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                )}
+                <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
+                  <Plus className="h-4 w-4" />
+                  בקשה חדשה
+                </Button>
+              </div>
             </div>
-            {pendingSignatures.length > 1 && (
-              <div className="mt-4 pt-4 border-t border-primary/20">
-                <p className="text-sm text-muted-foreground mb-2">חוזים ממתינים:</p>
-                <div className="flex flex-wrap gap-2">
-                  {pendingSignatures.map((req, idx) => (
-                    <Button
-                      key={req.id}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() => {
-                        setSelectedContractRequest(req);
-                        setContractDialogOpen(true);
-                      }}
-                    >
-                      <FileSignature className="h-4 w-4" />
-                      {req.vendor_name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
-            <p className="text-muted-foreground">
-              {isAdmin && showAllRequests 
-                ? 'צפה בכל הבקשות במערכת' 
-                : 'צפה ונהל את הבקשות שלך'}
-            </p>
-          </div>
-          <div className="flex items-center gap-4 flex-wrap justify-end">
-            {isAdmin && (
-              <ToggleGroup
-                type="single"
-                size="sm"
-                variant="outline"
-                value={showAllRequests ? 'all' : 'mine'}
-                onValueChange={(value) => {
-                  if (!value) return;
-                  setShowAllRequests(value === 'all');
-                }}
-                className="flex-row-reverse bg-muted/50 rounded-lg p-1"
-              >
-                <ToggleGroupItem value="mine" className="gap-2 whitespace-nowrap">
-                  <UserCircle className="h-4 w-4" />
-                  הבקשות שלי
-                </ToggleGroupItem>
-                <ToggleGroupItem value="all" className="gap-2 whitespace-nowrap">
-                  <Eye className="h-4 w-4" />
-                  כל הבקשות
-                </ToggleGroupItem>
-              </ToggleGroup>
-            )}
-            <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
-              <Plus className="h-4 w-4" />
-              בקשה חדשה
-            </Button>
-          </div>
-        </div>
 
-        <VendorRequestsTable requests={filteredRequests} isLoading={isLoading} currentUserName={currentUserName} />
+            <VendorRequestsTable requests={filteredRequests} isLoading={isLoading} currentUserName={currentUserName} />
+          </>
+        )}
       </main>
 
       <NewRequestDialog
