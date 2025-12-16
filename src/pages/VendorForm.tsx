@@ -1610,7 +1610,7 @@ export default function VendorForm() {
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
             <div className="animate-bounce-gentle">
-              <img src="/images/bituach-yashir-logo.png" alt="ביטוח ישיר" className="h-12 w-auto" />
+              <img src="/images/bituach-yashir-logo-dark.png" alt="ביטוח ישיר" className="h-12 w-auto" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-primary flex items-center gap-2">
