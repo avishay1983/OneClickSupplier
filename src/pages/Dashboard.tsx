@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen, Eye, UserCircle } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
 import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
@@ -13,6 +13,8 @@ import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
@@ -30,6 +32,7 @@ export default function Dashboard() {
   const [pendingSignatures, setPendingSignatures] = useState<VendorRequest[]>([]);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [selectedContractRequest, setSelectedContractRequest] = useState<VendorRequest | null>(null);
+  const [showAllRequests, setShowAllRequests] = useState(false); // For admin toggle
 
   // Check if user is approved and get user name
   useEffect(() => {
@@ -159,6 +162,17 @@ export default function Dashboard() {
       fetchRequests();
     }
   }, [user, isApproved]);
+
+  // Filter requests based on user role and toggle
+  const filteredRequests = requests.filter(request => {
+    // If admin and showing all requests, return all
+    if (isAdmin && showAllRequests) {
+      return true;
+    }
+    // Otherwise show only requests where user is the handler
+    return request.handler_email === user?.email || 
+           request.handler_name === currentUserName;
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -529,18 +543,41 @@ export default function Dashboard() {
           </div>
         )}
         
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
-            <p className="text-muted-foreground">צפה ונהל בקשות הקמת ספקים</p>
+            <p className="text-muted-foreground">
+              {isAdmin && showAllRequests 
+                ? 'צפה בכל הבקשות במערכת' 
+                : 'צפה ונהל את הבקשות שלך'}
+            </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
-            <Plus className="h-4 w-4" />
-            בקשה חדשה
-          </Button>
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
+                <UserCircle className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="show-all" className="text-sm cursor-pointer">הבקשות שלי</Label>
+                <Switch
+                  id="show-all"
+                  checked={showAllRequests}
+                  onCheckedChange={setShowAllRequests}
+                />
+                <Label htmlFor="show-all" className="text-sm cursor-pointer">
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    כל הבקשות
+                  </span>
+                </Label>
+              </div>
+            )}
+            <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
+              <Plus className="h-4 w-4" />
+              בקשה חדשה
+            </Button>
+          </div>
         </div>
 
-        <VendorRequestsTable requests={requests} isLoading={isLoading} currentUserName={currentUserName} />
+        <VendorRequestsTable requests={filteredRequests} isLoading={isLoading} currentUserName={currentUserName} />
       </main>
 
       <NewRequestDialog

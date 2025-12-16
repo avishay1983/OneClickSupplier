@@ -24,6 +24,7 @@ export interface VendorRequest {
   claims_area: 'home' | 'car' | 'life' | 'health' | null;
   claims_sub_category: string | null;
   handler_name: string | null;
+  handler_email: string | null;
   handler_rejection_reason: string | null;
   
   // Contract signature fields
