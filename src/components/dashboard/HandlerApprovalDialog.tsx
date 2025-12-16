@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +28,8 @@ interface HandlerApprovalDialogProps {
 interface VendorRequestData {
   requires_contract_signature: boolean | null;
   contract_file_path: string | null;
+  expires_at: string | null;
+  created_at: string;
 }
 
 export function HandlerApprovalDialog({
@@ -43,7 +44,7 @@ export function HandlerApprovalDialog({
   const [action, setAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
   const [resendReason, setResendReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  const [resendExpiryDays, setResendExpiryDays] = useState<number>(7);
+  const [showRejectReason, setShowRejectReason] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [vendorRequestData, setVendorRequestData] = useState<VendorRequestData | null>(null);
@@ -62,18 +63,21 @@ export function HandlerApprovalDialog({
     fetchUserName();
   }, [user]);
 
-  // Fetch vendor request data to check contract status
+  // Fetch vendor request data to check contract status and original expiry
   useEffect(() => {
     const fetchVendorRequest = async () => {
       if (!vendorRequestId || !open) return;
       const { data } = await supabase
         .from('vendor_requests')
-        .select('requires_contract_signature, contract_file_path')
+        .select('requires_contract_signature, contract_file_path, expires_at, created_at')
         .eq('id', vendorRequestId)
         .single();
       if (data) setVendorRequestData(data);
     };
     fetchVendorRequest();
+    // Reset states when dialog opens
+    setShowRejectReason(false);
+    setRejectReason('');
   }, [vendorRequestId, open]);
 
   // Check if approval is blocked due to missing contract
@@ -204,14 +208,22 @@ export function HandlerApprovalDialog({
     setIsLoading(true);
     setAction('resend');
     try {
-      // Update status to resent and save reason with selected expiry
-      const expiresInMs = resendExpiryDays * 24 * 60 * 60 * 1000;
+      // Calculate original expiry duration and apply it again
+      let expiresAt: string;
+      if (vendorRequestData?.expires_at && vendorRequestData?.created_at) {
+        const originalDuration = new Date(vendorRequestData.expires_at).getTime() - new Date(vendorRequestData.created_at).getTime();
+        expiresAt = new Date(Date.now() + originalDuration).toISOString();
+      } else {
+        // Default to 7 days if no original data
+        expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      }
+      
       const { error: updateError } = await supabase
         .from('vendor_requests')
         .update({
           status: 'resent',
           handler_rejection_reason: resendReason,
-          expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+          expires_at: expiresAt,
           otp_verified: false, // Reset OTP verification for resend
         })
         .eq('id', vendorRequestId);
@@ -237,7 +249,6 @@ export function HandlerApprovalDialog({
       onOpenChange(false);
       onActionComplete();
       setResendReason('');
-      setResendExpiryDays(7);
     } catch (error: any) {
       console.error('Error resending to vendor:', error);
       toast({
@@ -330,45 +341,69 @@ export function HandlerApprovalDialog({
 
           {/* Reject Section */}
           <div className="p-4 border rounded-lg bg-destructive/10 border-destructive/20">
-            <div className="flex items-center gap-3 mb-4">
-              <XCircle className="h-6 w-6 text-destructive" />
-              <div>
-                <h4 className="font-medium">דחה בקשה</h4>
-                <p className="text-sm text-muted-foreground">
-                  הבקשה תידחה והספק יקבל הודעה במייל
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <XCircle className="h-6 w-6 text-destructive" />
+                <div>
+                  <h4 className="font-medium">דחה בקשה</h4>
+                  <p className="text-sm text-muted-foreground">
+                    הבקשה תידחה והספק יקבל הודעה במייל
+                  </p>
+                </div>
               </div>
+              {!showRejectReason && (
+                <Button 
+                  onClick={() => setShowRejectReason(true)}
+                  variant="destructive"
+                >
+                  <XCircle className="h-4 w-4 ml-2" />
+                  דחה בקשה
+                </Button>
+              )}
             </div>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="rejectReason">סיבת הדחייה *</Label>
-                <Textarea
-                  id="rejectReason"
-                  placeholder="הסבר לספק למה הבקשה נדחתה..."
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  rows={3}
-                />
+            {showRejectReason && (
+              <div className="space-y-3 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rejectReason">סיבת הדחייה *</Label>
+                  <Textarea
+                    id="rejectReason"
+                    placeholder="הסבר לספק למה הבקשה נדחתה..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleReject}
+                    disabled={isLoading || !rejectReason.trim()}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    {action === 'reject' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        דוחה...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 ml-2" />
+                        אשר דחייה
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowRejectReason(false);
+                      setRejectReason('');
+                    }}
+                    variant="outline"
+                  >
+                    ביטול
+                  </Button>
+                </div>
               </div>
-              <Button 
-                onClick={handleReject}
-                disabled={isLoading || !rejectReason.trim()}
-                variant="destructive"
-                className="w-full"
-              >
-                {action === 'reject' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    דוחה...
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="h-4 w-4 ml-2" />
-                    דחה בקשה
-                  </>
-                )}
-              </Button>
-            </div>
+            )}
           </div>
 
           {/* Resend to Vendor */}
@@ -383,24 +418,6 @@ export function HandlerApprovalDialog({
               </div>
             </div>
             <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="resendExpiry">תוקף הקישור החדש</Label>
-                <Select
-                  value={String(resendExpiryDays)}
-                  onValueChange={(value) => setResendExpiryDays(Number(value))}
-                >
-                  <SelectTrigger className="flex-row-reverse">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0.007">10 דקות</SelectItem>
-                    <SelectItem value="3">3 ימים</SelectItem>
-                    <SelectItem value="7">7 ימים</SelectItem>
-                    <SelectItem value="14">14 ימים</SelectItem>
-                    <SelectItem value="30">30 ימים</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="resendReason">סיבה לשליחה מחדש *</Label>
                 <Textarea
