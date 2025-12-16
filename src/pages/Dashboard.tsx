@@ -13,8 +13,7 @@ import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
@@ -552,23 +551,28 @@ export default function Dashboard() {
                 : 'צפה ונהל את הבקשות שלך'}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-end">
             {isAdmin && (
-              <div className="flex items-center gap-3 bg-muted/50 rounded-lg px-4 py-2 flex-row-reverse">
-                <div className="flex items-center gap-1.5">
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="show-all" className="text-sm cursor-pointer whitespace-nowrap">כל הבקשות</Label>
-                </div>
-                <Switch
-                  id="show-all"
-                  checked={showAllRequests}
-                  onCheckedChange={setShowAllRequests}
-                />
-                <div className="flex items-center gap-1.5">
-                  <UserCircle className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="show-all" className="text-sm cursor-pointer whitespace-nowrap">הבקשות שלי</Label>
-                </div>
-              </div>
+              <ToggleGroup
+                type="single"
+                size="sm"
+                variant="outline"
+                value={showAllRequests ? 'all' : 'mine'}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setShowAllRequests(value === 'all');
+                }}
+                className="flex-row-reverse bg-muted/50 rounded-lg p-1"
+              >
+                <ToggleGroupItem value="mine" className="gap-2 whitespace-nowrap">
+                  <UserCircle className="h-4 w-4" />
+                  הבקשות שלי
+                </ToggleGroupItem>
+                <ToggleGroupItem value="all" className="gap-2 whitespace-nowrap">
+                  <Eye className="h-4 w-4" />
+                  כל הבקשות
+                </ToggleGroupItem>
+              </ToggleGroup>
             )}
             <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
               <Plus className="h-4 w-4" />
