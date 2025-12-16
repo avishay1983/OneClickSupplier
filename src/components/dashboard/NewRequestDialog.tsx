@@ -183,7 +183,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       // Try to find columns (support Hebrew and English)
       const nameHeaders = ['שם ספק', 'שם הספק', 'vendor_name', 'name', 'שם'];
       const emailHeaders = ['אימייל', 'מייל', 'vendor_email', 'email', 'דוא"ל'];
-      const handlerHeaders = ['מטפל בתיק', 'מטפל', 'handler_name', 'handler'];
+      const handlerHeaders = ['מזמין הספק', 'מזמין', 'מטפל בתיק', 'מטפל', 'handler_name', 'handler'];
       const typeHeaders = ['סוג ספק', 'סוג', 'vendor_type', 'type'];
 
       let nameColIndex = -1;
@@ -337,8 +337,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
   const downloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([
-      ['שם ספק', 'אימייל', 'מטפל בתיק', 'סוג ספק'],
-      ['ספק לדוגמא', 'example@vendor.com', 'ישראל ישראלי', 'כללי'],
+      ['שם ספק', 'אימייל', 'מזמין הספק', 'סוג ספק'],
+      ['ספק לדוגמא', 'example@vendor.com', 'ישראל ישראלי', 'משרד'],
       ['ספק תביעות לדוגמא', 'claims@vendor.com', 'יוסי כהן', 'תביעות'],
     ]);
     const wb = XLSX.utils.book_new();
@@ -366,13 +366,13 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
             <form onSubmit={handleSubmit} className="space-y-4 text-right">
               <div className="flex flex-col gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="handler_name" className="block text-right">מטפל בתהליך</Label>
+                  <Label htmlFor="handler_name" className="block text-right">מזמין הספק</Label>
                   <Input
                     id="handler_name"
                     className="text-right"
                     value={formData.handler_name}
                     onChange={(e) => setFormData({ ...formData, handler_name: e.target.value })}
-                    placeholder="הכנס שם מטפל"
+                    placeholder="הכנס שם מזמין"
                   />
                 </div>
 
@@ -393,7 +393,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       <SelectValue placeholder="בחר סוג ספק" className="text-right" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">ספק כללי</SelectItem>
+                      <SelectItem value="general">ספק משרד</SelectItem>
                       <SelectItem value="claims">ספק תביעות</SelectItem>
                     </SelectContent>
                   </Select>
