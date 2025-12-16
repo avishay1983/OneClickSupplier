@@ -12,6 +12,7 @@ import SystemDocumentation from "./pages/SystemDocumentation";
 import Auth from "./pages/Auth";
 import ManagerApprovalResult from "./pages/ManagerApprovalResult";
 import CRM from "./pages/CRM";
+import ActionButtonsDemo from "./pages/ActionButtonsDemo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/vendor-receipts/:token" element={<VendorReceipts />} />
             <Route path="/documentation" element={<SystemDocumentation />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
+            <Route path="/demo-buttons" element={<ActionButtonsDemo />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
