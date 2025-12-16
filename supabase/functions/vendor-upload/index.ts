@@ -150,11 +150,6 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ success: true, filePath }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
-
-    return new Response(
-      JSON.stringify({ success: true, filePath }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
   } catch (error: any) {
     console.error("Error in vendor-upload:", error);
     return new Response(
