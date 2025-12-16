@@ -2080,10 +2080,11 @@ export default function VendorForm() {
               </CardContent>
             </Card>
 
-            {/* Documents Summary */}
+            {/* Documents Summary with Replace Option */}
             <Card>
               <CardHeader>
                 <CardTitle>מסמכים שהועלו</CardTitle>
+                <p className="text-sm text-muted-foreground">לחץ על מסמך להחלפה</p>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2 md:grid-cols-2">
@@ -2091,50 +2092,89 @@ export default function VendorForm() {
                     const file = files[docType];
                     const existingDoc = existingDocuments[docType];
                     const hasDoc = file || existingDoc;
+                    const inputId = `replace-${docType}-bottom`;
                     return (
-                      <div key={docType} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                        {hasDoc ? (
+                      <div key={docType} className="relative group">
+                        <label 
+                          htmlFor={inputId}
+                          className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                            hasDoc 
+                              ? 'bg-success/10 hover:bg-success/20 border border-success/20' 
+                              : 'bg-muted/50 hover:bg-muted'
+                          }`}
+                        >
+                          {hasDoc ? (
+                            <CheckCircle className="h-4 w-4 text-success" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                          )}
+                          <span className="text-sm">{DOCUMENT_TYPE_LABELS[docType]}</span>
+                          {hasDoc && (
+                            <span className="text-xs text-muted-foreground mr-auto truncate max-w-[100px]">
+                              {file?.name || existingDoc?.file_name}
+                            </span>
+                          )}
+                          <Upload className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </label>
+                        <input
+                          type="file"
+                          id={inputId}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const newFile = e.target.files?.[0];
+                            if (newFile) {
+                              handleFileSelectWithClassification(docType as DocumentType, newFile);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                  {/* Price Quote - same styling as other documents */}
+                  {request?.requires_contract_signature && (
+                    <div className="relative group">
+                      <label 
+                        htmlFor="replace-contract-bottom"
+                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                          (contractFile || request?.contract_file_path)
+                            ? 'bg-success/10 hover:bg-success/20 border border-success/20' 
+                            : 'bg-muted/50 hover:bg-muted'
+                        }`}
+                      >
+                        {(contractFile || request?.contract_file_path) ? (
                           <CheckCircle className="h-4 w-4 text-success" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-destructive" />
                         )}
-                        <span className="text-sm">{DOCUMENT_TYPE_LABELS[docType]}</span>
-                        {hasDoc && (
-                          <span className="text-xs text-muted-foreground mr-auto">
-                            {file?.name || existingDoc?.file_name}
+                        <span className="text-sm">הצעת מחיר</span>
+                        {(contractFile || request?.contract_file_path) && (
+                          <span className="text-xs text-muted-foreground mr-auto truncate max-w-[100px]">
+                            {contractFile?.name || 'קובץ קיים'}
                           </span>
                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Option to replace bank document in step 2 */}
-                <div className="mt-4 pt-4 border-t">
-                  <div className="space-y-2">
-                    <Label className="text-sm">החלפת אישור בנק (אופציונלי)</Label>
-                    <div className="relative">
-                      <FileUploadZone
-                        label="אישור בנק / צ'ק"
-                        documentType="bank_confirmation"
-                        selectedFile={files.bank_confirmation}
-                        onFileSelect={handleBankFileSelect}
-                        onRemove={() => {
-                          setFiles({ ...files, bank_confirmation: null });
-                          setExtractedBankData(null);
+                        <Upload className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </label>
+                      <input
+                        type="file"
+                        id="replace-contract-bottom"
+                        accept=".pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const newFile = e.target.files?.[0];
+                          if (newFile) {
+                            setContractFile(newFile);
+                            toast({
+                              title: 'הצעת מחיר הוחלפה',
+                              description: newFile.name,
+                            });
+                          }
+                          e.target.value = '';
                         }}
-                        existingDocument={existingDocuments.bank_confirmation}
                       />
-                      {isExtractingOcr && (
-                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                          <div className="flex items-center gap-2 text-primary">
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                            <span className="text-sm">מחלץ נתוני בנק...</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
