@@ -104,7 +104,6 @@ export default function VendorForm() {
 
   // Contract file state
   const [contractFile, setContractFile] = useState<File | null>(null);
-  const [isUploadingContract, setIsUploadingContract] = useState(false);
 
   // OCR states
   const [extractedBankData, setExtractedBankData] = useState<ExtractedBankData | null>(null);
@@ -1246,6 +1245,26 @@ export default function VendorForm() {
         }
       }
 
+      // Upload contract file if exists and required
+      if (contractFile && request?.requires_contract_signature) {
+        const contractFormData = new FormData();
+        contractFormData.append('token', token);
+        contractFormData.append('documentType', 'contract');
+        contractFormData.append('file', contractFile);
+        
+        const contractResponse = await fetch(
+          `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
+          {
+            method: 'POST',
+            body: contractFormData,
+          }
+        );
+        
+        if (!contractResponse.ok) {
+          console.error('Upload error for contract');
+        }
+      }
+
       // Submit the form using vendor-form-api edge function
       const { data: response, error } = await supabase.functions.invoke('vendor-form-api', {
         body: { 
@@ -1291,11 +1310,13 @@ export default function VendorForm() {
       setIsSubmitting(false);
     }
   };
-
-  // Count uploaded documents
-  const uploadedDocsCount = Object.entries(files).filter(([_, file]) => file !== null).length +
+  // Count uploaded documents - include contract if required
+  const requiresContract = request?.requires_contract_signature || false;
+  const baseDocsCount = Object.entries(files).filter(([_, file]) => file !== null).length +
     Object.entries(existingDocuments).filter(([key, doc]) => doc !== null && !files[key as DocumentType]).length;
-  const totalDocs = 4;
+  const contractUploaded = contractFile !== null || (request?.contract_file_path ? true : false);
+  const uploadedDocsCount = baseDocsCount + (requiresContract && contractUploaded ? 1 : 0);
+  const totalDocs = requiresContract ? 5 : 4;
 
   if (isLoading) {
     return (
@@ -1321,57 +1342,9 @@ export default function VendorForm() {
     );
   }
 
-  // Contract upload handler - uses Edge Function for unauthenticated vendor access
-  const handleContractUpload = async () => {
-    if (!contractFile || !token || !request) return;
-    
-    setIsUploadingContract(true);
-    try {
-      const formData = new FormData();
-      formData.append('token', token);
-      formData.append('documentType', 'contract');
-      formData.append('file', contractFile);
-
-      const response = await fetch(
-        `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
-      }
-      
-      // The Edge Function already updates contract_file_path
-      
-      toast({
-        title: 'החוזה הועלה בהצלחה',
-        description: 'החוזה נשמר במערכת וממתין לחתימות',
-      });
-      
-      setContractFile(null);
-      // Reload to show updated state
-      window.location.reload();
-    } catch (error) {
-      console.error('Contract upload error:', error);
-      toast({
-        title: 'שגיאה בהעלאת החוזה',
-        description: 'אנא נסה שוב',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUploadingContract(false);
-    }
-  };
 
   if (submitted) {
     const statusLink = `/vendor-status/${token}`;
-    const needsContractUpload = request?.requires_contract_signature && !request?.contract_file_path;
-    const contractUploaded = request?.requires_contract_signature && request?.contract_file_path;
     
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -1383,69 +1356,23 @@ export default function VendorForm() {
               תודה על מילוי הטופס. הפרטים שלך נקלטו במערכת ויטופלו בהקדם.
             </p>
             
-            {needsContractUpload && (
-              <div className="mt-6 p-4 bg-warning/10 border border-warning/30 rounded-lg text-right">
-                <h3 className="font-medium mb-2 flex items-center gap-2 justify-end">
-                  <Upload className="h-4 w-4" />
-                  נדרשת העלאת חוזה חתום
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  יש להעלות את ההסכם החתום מצדך. לאחר ההעלאה, מנכ"ל ומנהל הרכש יחתמו על המסמך.
-                </p>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setContractFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="contract-upload"
-                />
-                {contractFile ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="text-sm truncate">{contractFile.name}</span>
-                      <Button variant="ghost" size="sm" onClick={() => setContractFile(null)}>
-                        ✕
-                      </Button>
-                    </div>
-                    <Button onClick={handleContractUpload} disabled={isUploadingContract} className="w-full">
-                      {isUploadingContract ? (
-                        <><Loader2 className="h-4 w-4 ml-2 animate-spin" />מעלה...</>
-                      ) : (
-                        'העלה חוזה'
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <label htmlFor="contract-upload">
-                    <Button variant="outline" className="w-full" asChild>
-                      <span>בחר קובץ PDF</span>
-                    </Button>
-                  </label>
-                )}
+            {request?.requires_contract_signature && (
+              <div className="mt-4 p-3 bg-success/10 border border-success/30 rounded-lg">
+                <CheckCircle className="h-6 w-6 mx-auto text-success mb-1" />
+                <p className="text-sm font-medium">החוזה הועלה בהצלחה</p>
+                <p className="text-xs text-muted-foreground">ממתין לחתימות מנכ"ל ומנהל רכש</p>
               </div>
             )}
             
-            {contractUploaded && (
-              <div className="mt-6 p-4 bg-success/10 border border-success/30 rounded-lg">
-                <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
-                <p className="font-medium">החוזה הועלה בהצלחה</p>
-                <p className="text-sm text-muted-foreground">ממתין לחתימות מנכ"ל ומנהל רכש</p>
-              </div>
-            )}
-            
-            {(!request?.requires_contract_signature || contractUploaded) && (
-              <>
-                <p className="text-muted-foreground mb-4 mt-4">
-                  שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
-                </p>
-                <a 
-                  href={statusLink}
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-                >
-                  מעקב סטטוס הבקשה
-                </a>
-              </>
-            )}
+            <p className="text-muted-foreground mb-4 mt-4">
+              שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
+            </p>
+            <a 
+              href={statusLink}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              מעקב סטטוס הבקשה
+            </a>
           </CardContent>
         </Card>
       </div>
@@ -1677,6 +1604,53 @@ export default function VendorForm() {
                       />
                     </div>
                   ))}
+                  
+                  {/* Contract Upload - if required */}
+                  {request?.requires_contract_signature && (
+                    <div className="md:col-span-2">
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center bg-warning/5 border-warning/30">
+                        <FileText className="h-8 w-8 mx-auto mb-2 text-warning" />
+                        <h4 className="font-medium mb-1">חוזה חתום *</h4>
+                        <p className="text-sm text-muted-foreground mb-3">נא להעלות את החוזה החתום בפורמט PDF</p>
+                        
+                        {request?.contract_file_path && !contractFile ? (
+                          <div className="flex items-center justify-center gap-2 p-2 bg-success/10 rounded">
+                            <CheckCircle className="h-4 w-4 text-success" />
+                            <span className="text-sm text-success">חוזה הועלה</span>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => document.getElementById('contract-upload-step1')?.click()}
+                            >
+                              החלף קובץ
+                            </Button>
+                          </div>
+                        ) : contractFile ? (
+                          <div className="flex items-center justify-center gap-2 p-2 bg-muted rounded">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm truncate max-w-[200px]">{contractFile.name}</span>
+                            <Button variant="ghost" size="sm" onClick={() => setContractFile(null)}>
+                              ✕
+                            </Button>
+                          </div>
+                        ) : (
+                          <label htmlFor="contract-upload-step1" className="cursor-pointer">
+                            <Button variant="outline" asChild>
+                              <span>בחר קובץ PDF</span>
+                            </Button>
+                          </label>
+                        )}
+                        
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => setContractFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          id="contract-upload-step1"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
