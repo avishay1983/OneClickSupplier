@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
+import { Copy, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -149,9 +149,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
     });
   };
 
-  const openVendorForm = (token: string) => {
-    window.open(`/vendor/${token}`, '_blank');
-  };
 
   const viewDocuments = (request: VendorRequest) => {
     setSelectedRequest(request);
@@ -497,14 +494,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                       ) : (
                         <Mail className="h-4 w-4" />
                       )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openVendorForm(request.secure_token)}
-                      title="פתח טופס"
-                    >
-                      <ExternalLink className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
