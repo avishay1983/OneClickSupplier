@@ -1611,16 +1611,16 @@ export default function VendorForm() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 animate-bounce-gentle">
               {/* Dots pattern - 2 top, 1 middle, 2 bottom */}
-              <div className="flex flex-col items-center gap-0.5">
+              <div className="flex flex-col items-center gap-px">
                 {/* Top row - 2 dots */}
-                <div className="flex gap-0.5">
+                <div className="flex gap-px">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
                 </div>
                 {/* Middle - 1 dot */}
                 <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
                 {/* Bottom row - 2 dots */}
-                <div className="flex gap-0.5">
+                <div className="flex gap-px">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
                   <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
                 </div>
