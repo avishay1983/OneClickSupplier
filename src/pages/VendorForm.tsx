@@ -1610,19 +1610,21 @@ export default function VendorForm() {
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 animate-bounce-gentle">
-              {/* Dots pattern - 2 top, 1 middle, 2 bottom */}
-              <div className="flex flex-col items-center gap-px">
+              {/* Dots pattern - matching original logo */}
+              <div className="flex flex-col items-start gap-0.5">
                 {/* Top row - 2 dots */}
-                <div className="flex gap-px">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                <div className="flex gap-0.5">
+                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
                 </div>
-                {/* Middle - 1 dot */}
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                {/* Middle - 1 dot offset right */}
+                <div className="flex justify-end w-full pr-0.5">
+                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
+                </div>
                 {/* Bottom row - 2 dots */}
-                <div className="flex gap-px">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                <div className="flex gap-0.5">
+                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
                 </div>
               </div>
               {/* Text */}
