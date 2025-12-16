@@ -134,6 +134,50 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
     }));
   };
 
+  const handleToggleAdminRole = async (approval: PendingApproval, grantAdmin: boolean) => {
+    setProcessingId(approval.id);
+    try {
+      if (grantAdmin) {
+        // Add admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: approval.user_id, role: 'admin' });
+        
+        if (error) throw error;
+        
+        toast({
+          title: 'הרשאות עודכנו',
+          description: `${approval.user_email} קיבל הרשאות מנהל`,
+        });
+      } else {
+        // Remove admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', approval.user_id)
+          .eq('role', 'admin');
+        
+        if (error) throw error;
+        
+        toast({
+          title: 'הרשאות עודכנו',
+          description: `הרשאות מנהל הוסרו מ-${approval.user_email}`,
+        });
+      }
+      
+      fetchApprovals();
+    } catch (error: any) {
+      console.error('Error updating admin role:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן לעדכן הרשאות',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -283,6 +327,45 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
                               </>
                             )}
                           </Button>
+                        </div>
+                      )}
+                      {approval.status === 'approved' && (
+                        <div className="flex items-center gap-2">
+                          {adminUserIds.has(approval.user_id) ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => handleToggleAdminRole(approval, false)}
+                              disabled={processingId === approval.id}
+                            >
+                              {processingId === approval.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Shield className="h-4 w-4 ml-1" />
+                                  הסר מנהל
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                              onClick={() => handleToggleAdminRole(approval, true)}
+                              disabled={processingId === approval.id}
+                            >
+                              {processingId === approval.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Shield className="h-4 w-4 ml-1" />
+                                  הפוך למנהל
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>
