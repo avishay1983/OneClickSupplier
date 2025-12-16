@@ -464,9 +464,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56 text-right">
-                        <DropdownMenuLabel className="text-muted-foreground text-xs">
-                          צפייה ומעקב
-                        </DropdownMenuLabel>
                         <DropdownMenuItem 
                           onClick={() => viewDocuments(request)}
                           className="gap-3 cursor-pointer"
