@@ -1532,40 +1532,42 @@ export default function VendorForm() {
         </div>
       </div>
 
-      {/* Welcome Banner */}
-      <div className="border-b animate-fade-in">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 animate-bounce-gentle flex-row-reverse">
-              {/* Text */}
-              <div className="flex flex-col text-[#202A65] font-black text-lg leading-tight text-right" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <span>ביטוח</span>
-                <span>ישיר</span>
+      {/* Welcome Banner - Only in Step 1 */}
+      {currentStep === 1 && (
+        <div className="border-b animate-fade-in">
+          <div className="container mx-auto px-4 py-6 max-w-4xl">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 animate-bounce-gentle flex-row-reverse">
+                {/* Text */}
+                <div className="flex flex-col text-[#202A65] font-black text-lg leading-tight text-right" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+                  <span>ביטוח</span>
+                  <span>ישיר</span>
+                </div>
+                {/* Dots pattern - matching original SVG logo */}
+                <div className="relative w-8 h-9">
+                  {/* Top row - 2 dots */}
+                  <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: 0, top: 0 }}></div>
+                  <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ right: 0, top: 0 }}></div>
+                  {/* Middle - 1 dot centered */}
+                  <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}></div>
+                  {/* Bottom row - 2 dots */}
+                  <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: 0, bottom: 0 }}></div>
+                  <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ right: 0, bottom: 0 }}></div>
+                </div>
               </div>
-              {/* Dots pattern - matching original SVG logo */}
-              <div className="relative w-8 h-9">
-                {/* Top row - 2 dots */}
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: 0, top: 0 }}></div>
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ right: 0, top: 0 }}></div>
-                {/* Middle - 1 dot centered */}
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}></div>
-                {/* Bottom row - 2 dots */}
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ left: 0, bottom: 0 }}></div>
-                <div className="absolute w-2.5 h-2.5 rounded-full bg-[#FF2D55]" style={{ right: 0, bottom: 0 }}></div>
+              <div>
+                <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                  שמחים שבחרת להצטרף אלינו!
+                  <Heart className="h-5 w-5 text-red-500 fill-red-500 animate-pulse-slow" />
+                </h2>
+                <p className="text-muted-foreground">
+                  אנחנו כאן כדי לעזור לך בכל שלב בדרך. נשמח לשרת אותך!
+                </p>
               </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-                שמחים שבחרת להצטרף אלינו!
-                <Heart className="h-5 w-5 text-red-500 fill-red-500 animate-pulse-slow" />
-              </h2>
-              <p className="text-muted-foreground">
-                אנחנו כאן כדי לעזור לך בכל שלב בדרך. נשמח לשרת אותך!
-              </p>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Form */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
