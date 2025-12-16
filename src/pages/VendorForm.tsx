@@ -1609,28 +1609,22 @@ export default function VendorForm() {
       <div className="border-b animate-fade-in">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 animate-bounce-gentle">
-              {/* Dots pattern - matching original logo */}
-              <div className="flex flex-col items-start gap-0.5">
-                {/* Top row - 2 dots */}
-                <div className="flex gap-0.5">
-                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
-                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
-                </div>
-                {/* Middle - 1 dot offset right */}
-                <div className="flex justify-end w-full pr-0.5">
-                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
-                </div>
-                {/* Bottom row - 2 dots */}
-                <div className="flex gap-0.5">
-                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
-                  <div className="w-2 h-2 rounded-full bg-[#00a0e3]"></div>
-                </div>
-              </div>
+            <div className="flex items-center gap-3 animate-bounce-gentle flex-row-reverse">
               {/* Text */}
-              <div className="flex flex-col text-[#1a2b5f] font-bold text-lg leading-tight text-right">
+              <div className="flex flex-col text-[#1e2258] font-black text-xl leading-tight text-right" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
                 <span>ביטוח</span>
-                <span>ישיר</span>
+                <span className="mr-4">ישיר</span>
+              </div>
+              {/* Dots pattern - matching original SVG logo */}
+              <div className="relative w-10 h-12">
+                {/* Top row - 2 dots */}
+                <div className="absolute w-3 h-3 rounded-full bg-[#ff2d55]" style={{ left: 0, top: 0 }}></div>
+                <div className="absolute w-3 h-3 rounded-full bg-[#ff2d55]" style={{ right: 0, top: 0 }}></div>
+                {/* Middle - 1 dot centered */}
+                <div className="absolute w-3 h-3 rounded-full bg-[#ff2d55]" style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}></div>
+                {/* Bottom row - 2 dots */}
+                <div className="absolute w-3 h-3 rounded-full bg-[#ff2d55]" style={{ left: 0, bottom: 0 }}></div>
+                <div className="absolute w-3 h-3 rounded-full bg-[#ff2d55]" style={{ right: 0, bottom: 0 }}></div>
               </div>
             </div>
             <div>
