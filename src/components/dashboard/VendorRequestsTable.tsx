@@ -294,7 +294,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     onClick={() => handleSort('handler_name')}
                   >
                     {getSortIcon('handler_name')}
-                    מטפל בתהליך
+                    מזמין הספק
                   </Button>
                 </TableHead>
                 <TableHead className="text-right font-semibold">
@@ -451,7 +451,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                         className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-8 px-3 text-xs animate-pulse"
                       >
                         <UserCheck className="h-3.5 w-3.5" />
-                        <span>אישור מזמין</span>
+                        <span>ממתין לאישור {request.handler_name || 'מזמין'}</span>
                       </Button>
                     )}
                     
@@ -519,9 +519,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                         )}
                         
                         <DropdownMenuSeparator />
-                        <DropdownMenuLabel className="text-muted-foreground text-xs">
-                          פעולות
-                        </DropdownMenuLabel>
                         
                         <DropdownMenuItem 
                           onClick={() => resendEmail(request)}
