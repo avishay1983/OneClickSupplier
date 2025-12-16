@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Copy, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X, MoreHorizontal, Eye, Send, CheckCircle, Wrench } from 'lucide-react';
+import { Copy, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X, MoreHorizontal, Eye, Send, CheckCircle, SlidersHorizontal } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -459,7 +459,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="h-8 px-3 gap-1.5">
-                          <Wrench className="h-4 w-4" />
+                          <SlidersHorizontal className="h-4 w-4" />
                           <span className="text-xs">פעולות</span>
                         </Button>
                       </DropdownMenuTrigger>
