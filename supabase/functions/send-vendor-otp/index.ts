@@ -207,11 +207,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("OTP email sent successfully via raw SMTP");
 
+    const maskedEmail = vendorRequest.vendor_email.replace(/(.{2})(.*)(@.*)/, "$1***$3");
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: "קוד אימות נשלח למייל",
-        email: vendorRequest.vendor_email.replace(/(.{2})(.*)(@.*)/, "$1***$3") // Mask email
+        maskedEmail: maskedEmail
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
