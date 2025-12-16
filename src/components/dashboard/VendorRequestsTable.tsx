@@ -16,7 +16,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Copy, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X, MoreHorizontal, Eye, Send, CheckCircle } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
@@ -430,7 +438,8 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   {new Date(request.created_at).toLocaleDateString('he-IL')}
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {/* Primary action button for first_review */}
                     {request.status === 'first_review' && (
                       <Button
                         variant="default"
@@ -439,79 +448,131 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                           setSelectedRequest(request);
                           setHandlerApprovalDialogOpen(true);
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-8 px-2.5 text-xs animate-pulse"
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-8 px-3 text-xs animate-pulse"
                       >
                         <UserCheck className="h-3.5 w-3.5" />
                         <span>אישור מזמין</span>
                       </Button>
                     )}
-                    {request.status === 'submitted' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setApprovalStatusDialogOpen(true);
-                        }}
-                        className="gap-1.5 h-8 px-2.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
-                      >
-                        <ClipboardCheck className="h-3.5 w-3.5" />
-                        <span>סטטוס אישור</span>
-                      </Button>
-                    )}
-                    {request.requires_contract_signature && request.contract_file_path && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setContractSigningDialogOpen(true);
-                        }}
-                        className={`gap-1.5 h-8 px-2.5 text-xs ${
-                          request.ceo_signed && request.procurement_manager_signed 
-                            ? 'text-success border-success/30 hover:bg-success/10' 
-                            : 'text-warning border-warning/30 hover:bg-warning/10'
-                        }`}
-                      >
-                        <FileSignature className="h-3.5 w-3.5" />
-                        <span>חתימה</span>
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => viewDocuments(request)}
-                      className="gap-1.5 h-8 px-2.5 text-xs"
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      <span>מסמכים</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => resendEmail(request)}
-                      disabled={sendingEmailId === request.id}
-                      className="gap-1.5 h-8 px-2.5 text-xs"
-                    >
-                      {sendingEmailId === request.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5" />
-                      )}
-                      <span>מייל</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setEditDialogOpen(true);
-                      }}
-                      className="gap-1.5 h-8 px-2.5 text-xs"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      <span>עריכה</span>
-                    </Button>
+                    
+                    {/* Dropdown menu for all actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 px-3 gap-1.5">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="text-xs">פעולות</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56 text-right">
+                        <DropdownMenuLabel className="text-muted-foreground text-xs">
+                          צפייה ומעקב
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem 
+                          onClick={() => viewDocuments(request)}
+                          className="gap-3 cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4 text-primary" />
+                          <div className="flex flex-col">
+                            <span>צפה במסמכים ובפרטים</span>
+                            <span className="text-xs text-muted-foreground">מסמכים, פרטי ספק ותגיות</span>
+                          </div>
+                        </DropdownMenuItem>
+                        
+                        {request.status === 'submitted' && (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setApprovalStatusDialogOpen(true);
+                            }}
+                            className="gap-3 cursor-pointer"
+                          >
+                            <ClipboardCheck className="h-4 w-4 text-primary" />
+                            <div className="flex flex-col">
+                              <span>סטטוס אישור מנהלים</span>
+                              <span className="text-xs text-muted-foreground">צפה בשלבי האישור</span>
+                            </div>
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {request.requires_contract_signature && request.contract_file_path && (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setContractSigningDialogOpen(true);
+                            }}
+                            className="gap-3 cursor-pointer"
+                          >
+                            <FileSignature className={`h-4 w-4 ${
+                              request.ceo_signed && request.procurement_manager_signed 
+                                ? 'text-success' 
+                                : 'text-warning'
+                            }`} />
+                            <div className="flex flex-col">
+                              <span>חתימה על הצעת מחיר</span>
+                              <span className="text-xs text-muted-foreground">
+                                {request.ceo_signed && request.procurement_manager_signed 
+                                  ? 'כל החתימות הושלמו' 
+                                  : 'ממתין לחתימות'}
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-muted-foreground text-xs">
+                          פעולות
+                        </DropdownMenuLabel>
+                        
+                        <DropdownMenuItem 
+                          onClick={() => resendEmail(request)}
+                          disabled={sendingEmailId === request.id}
+                          className="gap-3 cursor-pointer"
+                        >
+                          {sendingEmailId === request.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4 text-blue-500" />
+                          )}
+                          <div className="flex flex-col">
+                            <span>שלח מייל מחדש</span>
+                            <span className="text-xs text-muted-foreground">שלח לינק חדש לספק</span>
+                          </div>
+                        </DropdownMenuItem>
+                        
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setEditDialogOpen(true);
+                          }}
+                          className="gap-3 cursor-pointer"
+                        >
+                          <Pencil className="h-4 w-4 text-orange-500" />
+                          <div className="flex flex-col">
+                            <span>עריכת בקשה</span>
+                            <span className="text-xs text-muted-foreground">שנה פרטי בקשה</span>
+                          </div>
+                        </DropdownMenuItem>
+
+                        {request.status === 'first_review' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setHandlerApprovalDialogOpen(true);
+                              }}
+                              className="gap-3 cursor-pointer bg-blue-50 dark:bg-blue-950"
+                            >
+                              <CheckCircle className="h-4 w-4 text-blue-600" />
+                              <div className="flex flex-col">
+                                <span className="font-medium text-blue-700 dark:text-blue-300">אישור מזמין הספק</span>
+                                <span className="text-xs text-muted-foreground">אשר, דחה או שלח מחדש</span>
+                              </div>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
