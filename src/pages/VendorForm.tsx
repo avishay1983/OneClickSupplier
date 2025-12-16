@@ -14,7 +14,7 @@ import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 import { BankMismatchDialog, getBankNameFromCode } from '@/components/vendor/BankMismatchDialog';
 import { DocumentMismatchDialog } from '@/components/vendor/DocumentMismatchDialog';
-import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, ArrowLeft, ArrowRight, Sparkles, Heart } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, ArrowLeft, ArrowRight, Sparkles, Heart, X } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
@@ -1605,50 +1605,87 @@ export default function VendorForm() {
                     </div>
                   ))}
                   
-                  {/* Contract Upload - if required */}
+                  {/* Price Quote Upload - if required */}
                   {request?.requires_contract_signature && (
-                    <div className="md:col-span-2">
-                      <div className="border-2 border-dashed rounded-lg p-4 text-center bg-warning/5 border-warning/30">
-                        <FileText className="h-8 w-8 mx-auto mb-2 text-warning" />
-                        <h4 className="font-medium mb-1">הצעת מחיר חתומה *</h4>
-                        <p className="text-sm text-muted-foreground mb-3">נא להעלות את הצעת המחיר החתומה בפורמט PDF</p>
-                        
-                        {request?.contract_file_path && !contractFile ? (
-                          <div className="flex items-center justify-center gap-2 p-2 bg-success/10 rounded">
-                            <CheckCircle className="h-4 w-4 text-success" />
-                            <span className="text-sm text-success">הצעת מחיר הועלתה</span>
-                            <Button 
-                              variant="ghost" 
+                    <div className="relative">
+                      {contractFile ? (
+                        <div className="border rounded-lg p-4 bg-success/10 border-success/30">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="h-5 w-5 text-success" />
+                              <div>
+                                <p className="font-medium text-sm">הצעת מחיר חתומה</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  {contractFile.name}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setContractFile(null)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : request?.contract_file_path ? (
+                        <div className="border rounded-lg p-4 bg-primary/10 border-primary/30">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="font-medium text-sm">הצעת מחיר חתומה</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  קובץ קיים
+                                  <span className="text-xs text-primary">(קיים)</span>
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
                               size="sm"
                               onClick={() => document.getElementById('contract-upload-step1')?.click()}
+                              className="text-xs"
                             >
                               החלף קובץ
                             </Button>
                           </div>
-                        ) : contractFile ? (
-                          <div className="flex items-center justify-center gap-2 p-2 bg-muted rounded">
-                            <FileText className="h-4 w-4" />
-                            <span className="text-sm truncate max-w-[200px]">{contractFile.name}</span>
-                            <Button variant="ghost" size="sm" onClick={() => setContractFile(null)}>
-                              ✕
-                            </Button>
-                          </div>
-                        ) : (
-                          <label htmlFor="contract-upload-step1" className="cursor-pointer">
-                            <Button variant="outline" asChild>
-                              <span>בחר קובץ PDF</span>
-                            </Button>
-                          </label>
-                        )}
-                        
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          onChange={(e) => setContractFile(e.target.files?.[0] || null)}
-                          className="hidden"
-                          id="contract-upload-step1"
-                        />
-                      </div>
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={(e) => setContractFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="contract-upload-step1"
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer border-border hover:border-primary/50 hover:bg-muted/50"
+                          onClick={() => document.getElementById('contract-upload-step1')?.click()}
+                        >
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={(e) => setContractFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="contract-upload-step1"
+                          />
+                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="font-medium text-sm mb-1">הצעת מחיר חתומה</p>
+                          <p className="text-xs text-muted-foreground">
+                            גרור קובץ לכאן או לחץ לבחירה
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            (PDF)
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
