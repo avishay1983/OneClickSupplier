@@ -13,7 +13,7 @@ import { StreetAutocomplete } from '@/components/ui/street-autocomplete';
 import { BankAutocomplete } from '@/components/ui/bank-autocomplete';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 import { BankMismatchDialog, getBankNameFromCode } from '@/components/vendor/BankMismatchDialog';
-import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Mail, Loader2, Upload, FileText, ArrowLeft, ArrowRight, Sparkles, Heart } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { VendorRequest, VendorDocument, DOCUMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/vendor';
@@ -1511,6 +1511,26 @@ export default function VendorForm() {
                 <FileText className="h-4 w-4" />
               </div>
               <span>שלב 2: מילוי פרטים</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border-b">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                שמחים שבחרת להצטרף אלינו!
+                <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+              </h2>
+              <p className="text-muted-foreground">
+                אנחנו כאן כדי לעזור לך בכל שלב בדרך. נשמח לשרת אותך!
+              </p>
             </div>
           </div>
         </div>
