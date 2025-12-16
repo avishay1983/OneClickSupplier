@@ -107,7 +107,7 @@ export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export const VENDOR_TYPE_LABELS: Record<string, string> = {
-  general: 'ספק כללי',
+  general: 'ספק משרד',
   claims: 'ספק תביעות',
 };
 
