@@ -458,9 +458,8 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     {/* Dropdown menu for all actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-8 px-3 gap-1.5">
+                        <Button variant="outline" size="icon" className="h-8 w-8">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="text-xs">פעולות</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56 text-right">
