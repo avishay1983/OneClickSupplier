@@ -1378,7 +1378,7 @@ GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
                             { key: 'pending', label: 'ממתין לספק', desc: 'נוצרה בקשה, לינק נשלח' },
                             { key: 'with_vendor', label: 'ממתין לספק', desc: 'הספק בתהליך מילוי הטופס' },
                             { key: 'submitted', label: 'ממתין לאישור מנהלים', desc: 'הספק שלח את הטופס' },
-                            { key: 'first_review', label: 'בקרה ראשונה', desc: 'ממתין לאישור מטפל' },
+                            { key: 'first_review', label: 'בקרה ראשונה', desc: 'ממתין לאישור מזמין הספק' },
                             { key: 'approved', label: 'אושר', desc: 'הספק אושר לחלוטין' },
                             { key: 'resent', label: 'נשלח מחדש', desc: 'הטופס נשלח מחדש לספק' },
                             { key: 'rejected', label: 'נדחה', desc: 'הבקשה נדחתה' },

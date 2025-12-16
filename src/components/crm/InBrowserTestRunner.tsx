@@ -41,7 +41,7 @@ const e2eTests: TestResult[] = [
   { name: 'E2E: אימות OTP (קוד מאסטר)', status: 'pending' },
   { name: 'E2E: עדכון פרטי ספק בטופס', status: 'pending' },
   { name: 'E2E: שינוי סטטוס ל-submitted', status: 'pending' },
-  { name: 'E2E: אישור מטפל (Handler Approval)', status: 'pending' },
+  { name: 'E2E: אישור מזמין הספק (Handler Approval)', status: 'pending' },
   { name: 'E2E: אישור מנהל רכש', status: 'pending' },
   { name: 'E2E: אישור סמנכ"ל (VP)', status: 'pending' },
   { name: 'E2E: בדיקת סטטוס סופי - approved', status: 'pending' },
@@ -1287,7 +1287,7 @@ startxref
 
           <TabsContent value="e2e" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
-              יצירה → OTP → מילוי → אישור מטפל → מנהל רכש → סמנכ"ל
+              יצירה → OTP → מילוי → אישור מזמין הספק → מנהל רכש → סמנכ"ל
             </p>
           </TabsContent>
 

@@ -443,7 +443,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                         className="bg-blue-600 hover:bg-blue-700 text-white gap-1 animate-pulse"
                       >
                         <UserCheck className="h-4 w-4" />
-                        <span>אישור מטפל</span>
+                        <span>אישור מזמין הספק</span>
                       </Button>
                     )}
                     {request.status === 'submitted' && (

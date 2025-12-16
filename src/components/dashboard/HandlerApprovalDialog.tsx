@@ -262,6 +262,28 @@ export function HandlerApprovalDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* View Documents Button - First */}
+          <div className="p-4 border rounded-lg bg-primary/10 border-primary/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6 text-primary" />
+                <div>
+                  <h4 className="font-medium">צפה במסמכים ובפרטים</h4>
+                  <p className="text-sm text-muted-foreground">
+                    צפה במסמכים ובפרטים שהספק עדכן
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowDocuments(true)}
+                variant="outline"
+              >
+                <FileText className="h-4 w-4 ml-2" />
+                צפה
+              </Button>
+            </div>
+          </div>
+
           {/* Contract Required Warning */}
           {requiresContract && !contractUploaded && (
             <Alert variant="destructive">
@@ -406,28 +428,6 @@ export function HandlerApprovalDialog({
                     שלח מחדש לספק
                   </>
                 )}
-              </Button>
-            </div>
-          </div>
-
-          {/* View Documents Button */}
-          <div className="p-4 border rounded-lg bg-primary/10 border-primary/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-primary" />
-                <div>
-                  <h4 className="font-medium">צפה במסמכים ובפרטים</h4>
-                  <p className="text-sm text-muted-foreground">
-                    צפה במסמכים ובפרטים שהספק עדכן
-                  </p>
-                </div>
-              </div>
-              <Button 
-                onClick={() => setShowDocuments(true)}
-                variant="outline"
-              >
-                <FileText className="h-4 w-4 ml-2" />
-                צפה
               </Button>
             </div>
           </div>
