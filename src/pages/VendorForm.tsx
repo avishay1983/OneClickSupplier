@@ -1692,31 +1692,75 @@ export default function VendorForm() {
           /* Step 2: Fill Form */
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            {/* Uploaded Documents Summary */}
+            {/* Uploaded Documents Summary with Replace Option */}
             <Card className="bg-success/5 border-success/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-success" />
                   מסמכים שהועלו
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">לחץ על מסמך להחלפה</p>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {Object.entries(files).map(([docType, file]) => {
                     const existingDoc = existingDocuments[docType as DocumentType];
                     const hasDoc = file || existingDoc;
                     if (!hasDoc) return null;
+                    const inputId = `replace-${docType}-step2`;
                     return (
-                      <div key={docType} className="flex items-center gap-1 px-3 py-1 bg-success/10 rounded-full text-sm">
-                        <CheckCircle className="h-3 w-3 text-success" />
-                        <span>{DOCUMENT_TYPE_LABELS[docType]}</span>
+                      <div key={docType} className="relative group">
+                        <label 
+                          htmlFor={inputId}
+                          className="flex items-center gap-2 px-3 py-2 bg-success/10 rounded-lg text-sm cursor-pointer hover:bg-success/20 transition-colors border border-success/20"
+                        >
+                          <CheckCircle className="h-4 w-4 text-success" />
+                          <span>{DOCUMENT_TYPE_LABELS[docType]}</span>
+                          <Upload className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </label>
+                        <input
+                          type="file"
+                          id={inputId}
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const newFile = e.target.files?.[0];
+                            if (newFile) {
+                              handleFileSelectWithClassification(docType as DocumentType, newFile);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
                       </div>
                     );
                   })}
                   {request?.requires_contract_signature && (contractFile || request?.contract_file_path) && (
-                    <div className="flex items-center gap-1 px-3 py-1 bg-warning/10 rounded-full text-sm border border-warning/30">
-                      <FileText className="h-3 w-3 text-warning" />
-                      <span>הצעת מחיר</span>
+                    <div className="relative group">
+                      <label 
+                        htmlFor="replace-contract-step2"
+                        className="flex items-center gap-2 px-3 py-2 bg-warning/10 rounded-lg text-sm cursor-pointer hover:bg-warning/20 transition-colors border border-warning/30"
+                      >
+                        <FileText className="h-4 w-4 text-warning" />
+                        <span>הצעת מחיר</span>
+                        <Upload className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </label>
+                      <input
+                        type="file"
+                        id="replace-contract-step2"
+                        accept=".pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          const newFile = e.target.files?.[0];
+                          if (newFile) {
+                            setContractFile(newFile);
+                            toast({
+                              title: 'הצעת מחיר הוחלפה',
+                              description: newFile.name,
+                            });
+                          }
+                          e.target.value = '';
+                        }}
+                      />
                     </div>
                   )}
                 </div>
