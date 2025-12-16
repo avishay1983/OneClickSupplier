@@ -448,10 +448,10 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                           setSelectedRequest(request);
                           setHandlerApprovalDialogOpen(true);
                         }}
-                        className="h-7 px-2 text-[11px] gap-1 bg-blue-600 hover:bg-blue-700 text-white animate-pulse"
+                        className="h-auto min-h-7 px-2 py-1 text-[11px] gap-1 bg-blue-600 hover:bg-blue-700 text-white animate-pulse whitespace-normal text-right"
                       >
-                        <UserCheck className="h-3 w-3" />
-                        <span className="max-w-[80px] truncate">ממתין ל{request.handler_name || 'אישור'}</span>
+                        <UserCheck className="h-3 w-3 shrink-0" />
+                        <span>ממתין ל{request.handler_name || 'אישור'}</span>
                       </Button>
                     )}
                     
