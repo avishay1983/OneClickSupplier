@@ -554,20 +554,20 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             {isAdmin && (
-              <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-                <UserCircle className="h-4 w-4 text-muted-foreground" />
-                <Label htmlFor="show-all" className="text-sm cursor-pointer">הבקשות שלי</Label>
+              <div className="flex items-center gap-3 bg-muted/50 rounded-lg px-4 py-2 flex-row-reverse">
+                <div className="flex items-center gap-1.5">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="show-all" className="text-sm cursor-pointer whitespace-nowrap">כל הבקשות</Label>
+                </div>
                 <Switch
                   id="show-all"
                   checked={showAllRequests}
                   onCheckedChange={setShowAllRequests}
                 />
-                <Label htmlFor="show-all" className="text-sm cursor-pointer">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    כל הבקשות
-                  </span>
-                </Label>
+                <div className="flex items-center gap-1.5">
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="show-all" className="text-sm cursor-pointer whitespace-nowrap">הבקשות שלי</Label>
+                </div>
               </div>
             )}
             <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
