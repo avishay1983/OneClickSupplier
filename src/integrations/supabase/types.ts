@@ -280,6 +280,7 @@ export type Database = {
           crm_status: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending: number | null
           expires_at: string | null
+          expiry_reminder_sent_at: string | null
           fax: string | null
           first_review_approved: boolean | null
           first_review_approved_at: string | null
@@ -352,6 +353,7 @@ export type Database = {
           crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
           expires_at?: string | null
+          expiry_reminder_sent_at?: string | null
           fax?: string | null
           first_review_approved?: boolean | null
           first_review_approved_at?: string | null
@@ -424,6 +426,7 @@ export type Database = {
           crm_status?: Database["public"]["Enums"]["crm_vendor_status"] | null
           expected_spending?: number | null
           expires_at?: string | null
+          expiry_reminder_sent_at?: string | null
           fax?: string | null
           first_review_approved?: boolean | null
           first_review_approved_at?: string | null
