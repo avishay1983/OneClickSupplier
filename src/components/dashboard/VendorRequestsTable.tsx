@@ -430,7 +430,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                   {new Date(request.created_at).toLocaleDateString('he-IL')}
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {request.status === 'first_review' && (
                       <Button
                         variant="default"
@@ -439,72 +439,78 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                           setSelectedRequest(request);
                           setHandlerApprovalDialogOpen(true);
                         }}
-                        title="בקרה ראשונה - לחץ לאישור"
-                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1 animate-pulse"
+                        className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 h-8 px-2.5 text-xs animate-pulse"
                       >
-                        <UserCheck className="h-4 w-4" />
-                        <span>אישור מזמין הספק</span>
+                        <UserCheck className="h-3.5 w-3.5" />
+                        <span>אישור מזמין</span>
                       </Button>
                     )}
                     {request.status === 'submitted' && (
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setSelectedRequest(request);
                           setApprovalStatusDialogOpen(true);
                         }}
-                        title="סטטוס אישור מנהלים"
-                        className="text-primary"
+                        className="gap-1.5 h-8 px-2.5 text-xs text-primary border-primary/30 hover:bg-primary/10"
                       >
-                        <ClipboardCheck className="h-4 w-4" />
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        <span>סטטוס אישור</span>
                       </Button>
                     )}
                     {request.requires_contract_signature && request.contract_file_path && (
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           setSelectedRequest(request);
                           setContractSigningDialogOpen(true);
                         }}
-                        title="חתימה על הסכם"
-                        className={`${request.ceo_signed && request.procurement_manager_signed ? 'text-success' : 'text-warning'}`}
+                        className={`gap-1.5 h-8 px-2.5 text-xs ${
+                          request.ceo_signed && request.procurement_manager_signed 
+                            ? 'text-success border-success/30 hover:bg-success/10' 
+                            : 'text-warning border-warning/30 hover:bg-warning/10'
+                        }`}
                       >
-                        <FileSignature className="h-4 w-4" />
+                        <FileSignature className="h-3.5 w-3.5" />
+                        <span>חתימה</span>
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => viewDocuments(request)}
-                      title="צפה במסמכים"
+                      className="gap-1.5 h-8 px-2.5 text-xs"
                     >
-                      <FileText className="h-4 w-4" />
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>מסמכים</span>
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => resendEmail(request)}
                       disabled={sendingEmailId === request.id}
-                      title="שלח מייל שוב"
+                      className="gap-1.5 h-8 px-2.5 text-xs"
                     >
                       {sendingEmailId === request.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Mail className="h-4 w-4" />
+                        <Mail className="h-3.5 w-3.5" />
                       )}
+                      <span>מייל</span>
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      variant="outline"
+                      size="sm"
                       onClick={() => {
                         setSelectedRequest(request);
                         setEditDialogOpen(true);
                       }}
-                      title="עריכת בקשה"
+                      className="gap-1.5 h-8 px-2.5 text-xs"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span>עריכה</span>
                     </Button>
                   </div>
                 </TableCell>
