@@ -168,7 +168,7 @@ export function ManagerSignaturesView({ role, pendingSignatures, onRefresh }: Ma
                         className="gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px]"
                       >
                         <Pen className="h-5 w-5" />
-                        חתום עכשיו
+                        לחתימה
                       </Button>
                     </div>
                   </CardContent>
