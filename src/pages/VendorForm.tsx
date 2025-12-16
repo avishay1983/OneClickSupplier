@@ -1609,18 +1609,18 @@ export default function VendorForm() {
       <div className="border-b animate-fade-in">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 animate-bounce-gentle">
+            <div className="flex items-center gap-2 animate-bounce-gentle flex-row-reverse">
+              <div className="grid grid-cols-2 gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63] translate-y-1"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63] -translate-y-1"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63] translate-y-1"></div>
+              </div>
               <div className="flex flex-col items-center text-[#1a2b5f] font-bold text-lg leading-tight">
                 <span>ביטוח</span>
                 <span>ישיר</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-[#e91e63]"></div>
               </div>
             </div>
             <div>
