@@ -1609,8 +1609,9 @@ export default function VendorForm() {
       <div className="border-b animate-fade-in">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
           <div className="flex items-center gap-4">
-            <div className="animate-bounce-gentle">
-              <img src="/images/bituach-yashir-logo-dark.png" alt="ביטוח ישיר" className="h-12 w-auto" />
+            <div className="flex flex-col items-center text-[#1a2b5f] font-bold text-lg leading-tight animate-bounce-gentle">
+              <span>ביטוח</span>
+              <span>ישיר</span>
             </div>
             <div>
               <h2 className="text-xl font-bold text-primary flex items-center gap-2">
