@@ -343,7 +343,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     תאריך יצירה
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">פעולות</TableHead>
+                <TableHead className="text-right font-semibold"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
