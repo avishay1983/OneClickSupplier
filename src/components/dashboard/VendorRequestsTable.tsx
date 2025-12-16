@@ -442,16 +442,16 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     {/* Primary action button for first_review */}
                     {request.status === 'first_review' && (
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={() => {
                           setSelectedRequest(request);
                           setHandlerApprovalDialogOpen(true);
                         }}
-                        className="h-8 px-2 text-xs gap-1 border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                        className="h-7 px-2 text-[11px] gap-1 bg-blue-600 hover:bg-blue-700 text-white animate-pulse"
                       >
-                        <UserCheck className="h-3.5 w-3.5" />
-                        <span className="max-w-[100px] truncate">ממתין ל{request.handler_name || 'אישור'}</span>
+                        <UserCheck className="h-3 w-3" />
+                        <span className="max-w-[80px] truncate">ממתין ל{request.handler_name || 'אישור'}</span>
                       </Button>
                     )}
                     
