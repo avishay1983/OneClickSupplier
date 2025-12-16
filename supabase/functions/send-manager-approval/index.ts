@@ -203,7 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
       const actionSection = hasContract 
         ? `<div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
             <h3 style="margin: 0 0 15px 0; color: #0369a1;">נדרשת חתימה דיגיטלית</h3>
-            <p style="margin: 10px 0; color: #333;">החוזה מצורף למייל זה.</p>
+            <p style="margin: 10px 0; color: #333;">הצעת המחיר מצורפת למייל זה.</p>
             <p style="margin: 10px 0; color: #333;">אנא פתח את הקובץ המצורף, חתום עליו דיגיטלית, וצרף את הקובץ החתום במערכת.</p>
             <a href="${signingLink}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 15px;">היכנס למערכת לחתימה</a>
           </div>`
@@ -221,11 +221,11 @@ const handler = async (req: Request): Promise<Response> => {
 <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
 <div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
 <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
-<h1 style="margin: 0; text-align: center; color: white;">${hasContract ? 'חוזה לחתימה - הקמת ספק' : 'אישור הקמת ספק'}</h1>
+<h1 style="margin: 0; text-align: center; color: white;">${hasContract ? 'הצעת מחיר לחתימה - הקמת ספק' : 'אישור הקמת ספק'}</h1>
 </div>
 <div style="padding: 30px;">
 <p style="margin: 12px 0;">שלום ${recipientName},</p>
-<p style="margin: 12px 0;">${hasContract ? 'ספק חדש דורש את חתימתך על החוזה המצורף.' : 'ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.'}</p>
+<p style="margin: 12px 0;">${hasContract ? 'ספק חדש דורש את חתימתך על הצעת המחיר המצורפת.' : 'ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.'}</p>
 <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
 <h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי הספק:</h3>
 <table style="width: 100%; border-collapse: collapse;">
@@ -266,7 +266,7 @@ ${actionSection}
     if (shouldSendToProcurement) {
       const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementManagerName, hasContract);
       await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail, 
-        hasContract ? `חוזה לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
+        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
         procurementEmailHtml, 
         contractAttachment
       );
@@ -284,7 +284,7 @@ ${actionSection}
     if (shouldSendToVp) {
       const vpEmailHtml = createApprovalEmail('vp', vpName, hasContract);
       await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail, 
-        hasContract ? `חוזה לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
+        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
         vpEmailHtml, 
         contractAttachment
       );

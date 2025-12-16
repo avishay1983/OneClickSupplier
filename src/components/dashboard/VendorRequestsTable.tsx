@@ -323,7 +323,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     סטטוס
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">חתימות חוזה</TableHead>
+                <TableHead className="text-right font-semibold">חתימות הצעת מחיר</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"

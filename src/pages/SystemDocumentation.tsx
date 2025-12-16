@@ -1133,7 +1133,7 @@ GET /functions/v1/approve-user?token=abc-123&action=approve
                     { name: 'managerEmail', type: 'string', required: true, desc: 'אימייל המנהל' },
                     { name: 'managerName', type: 'string', required: true, desc: 'שם המנהל' },
                     { name: 'vendorName', type: 'string', required: true, desc: 'שם הספק' },
-                    { name: 'contractPdfBase64', type: 'string', required: false, desc: 'חוזה מצורף ב-Base64' },
+                    { name: 'contractPdfBase64', type: 'string', required: false, desc: 'הצעת מחיר מצורפת ב-Base64' },
                   ],
                   example: `await supabase.functions.invoke('send-manager-approval', {
   body: {

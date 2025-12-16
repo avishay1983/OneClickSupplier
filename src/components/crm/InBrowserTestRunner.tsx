@@ -74,15 +74,15 @@ const authTests: TestResult[] = [
 ];
 
 const docsAndSignatureTests: TestResult[] = [
-  { name: 'מסמכים: יצירת בקשת ספק עם דרישת חוזה', status: 'pending' },
+  { name: 'מסמכים: יצירת בקשת ספק עם דרישת הצעת מחיר', status: 'pending' },
   { name: 'מסמכים: העלאת אישור ניהול ספרים', status: 'pending' },
   { name: 'מסמכים: העלאת אישור ניכוי מס', status: 'pending' },
   { name: 'מסמכים: העלאת אישור בנק', status: 'pending' },
   { name: 'מסמכים: העלאת צילום חשבונית', status: 'pending' },
   { name: 'מסמכים: אימות 4 מסמכים הועלו', status: 'pending' },
-  { name: 'חתימות: העלאת חוזה חתום ע"י ספק', status: 'pending' },
-  { name: 'חתימות: חתימת סמנכ"ל על חוזה', status: 'pending' },
-  { name: 'חתימות: חתימת מנהל רכש על חוזה', status: 'pending' },
+  { name: 'חתימות: העלאת הצעת מחיר חתומה ע"י ספק', status: 'pending' },
+  { name: 'חתימות: חתימת סמנכ"ל על הצעת מחיר', status: 'pending' },
+  { name: 'חתימות: חתימת מנהל רכש על הצעת מחיר', status: 'pending' },
   { name: 'חתימות: אימות כל החתימות הושלמו', status: 'pending' },
   { name: 'ניקוי: מחיקת מסמכים ובקשת טסט', status: 'pending' },
 ];
@@ -901,7 +901,7 @@ startxref
       if (error) throw error;
       vendorId = data.id;
       setTestVendorId(vendorId);
-      updateDocsTest(0, { status: 'passed', message: `נוצר ספק עם דרישת חוזה`, duration: Date.now() - start0 });
+      updateDocsTest(0, { status: 'passed', message: `נוצר ספק עם דרישת הצעת מחיר`, duration: Date.now() - start0 });
     } catch (e: any) {
       updateDocsTest(0, { status: 'failed', message: e.message, duration: Date.now() - start0 });
       setIsRunning(false);
@@ -1091,7 +1091,7 @@ startxref
         .eq('id', vendorId);
       
       if (error) throw error;
-      updateDocsTest(6, { status: 'passed', message: 'חוזה חתום הועלה ל-Storage', duration: Date.now() - start6 });
+      updateDocsTest(6, { status: 'passed', message: 'הצעת מחיר חתומה הועלתה ל-Storage', duration: Date.now() - start6 });
     } catch (e: any) {
       updateDocsTest(6, { status: 'failed', message: e.message, duration: Date.now() - start6 });
     }
@@ -1117,7 +1117,7 @@ startxref
         .eq('id', vendorId);
       
       if (error) throw error;
-      updateDocsTest(7, { status: 'passed', message: 'סמנכ"ל חתם על החוזה', duration: Date.now() - start7 });
+      updateDocsTest(7, { status: 'passed', message: 'סמנכ"ל חתם על הצעת המחיר', duration: Date.now() - start7 });
     } catch (e: any) {
       updateDocsTest(7, { status: 'failed', message: e.message, duration: Date.now() - start7 });
     }
@@ -1139,7 +1139,7 @@ startxref
         .eq('id', vendorId);
       
       if (error) throw error;
-      updateDocsTest(8, { status: 'passed', message: 'מנהל רכש חתם על החוזה', duration: Date.now() - start8 });
+      updateDocsTest(8, { status: 'passed', message: 'מנהל רכש חתם על הצעת המחיר', duration: Date.now() - start8 });
     } catch (e: any) {
       updateDocsTest(8, { status: 'failed', message: e.message, duration: Date.now() - start8 });
     }
@@ -1158,14 +1158,14 @@ startxref
       
       if (!data.ceo_signed) throw new Error('חתימת סמנכ"ל חסרה');
       if (!data.procurement_manager_signed) throw new Error('חתימת מנהל רכש חסרה');
-      if (!data.contract_file_path) throw new Error('קובץ חוזה חסר');
+      if (!data.contract_file_path) throw new Error('קובץ הצעת מחיר חסר');
       
       // Verify contract is downloadable
       const { data: contractFile } = await supabase.storage
         .from('vendor_documents')
         .download(data.contract_file_path);
       
-      if (!contractFile) throw new Error('לא ניתן להוריד את החוזה מ-Storage');
+      if (!contractFile) throw new Error('לא ניתן להוריד את הצעת המחיר מ-Storage');
       
       // Update to approved
       await supabase
@@ -1173,7 +1173,7 @@ startxref
         .update({ status: 'approved', crm_status: 'active' })
         .eq('id', vendorId);
       
-      updateDocsTest(9, { status: 'passed', message: `חתימות הושלמו + חוזה ניתן להורדה (${Math.round(contractFile.size / 1024)}KB)`, duration: Date.now() - start9 });
+      updateDocsTest(9, { status: 'passed', message: `חתימות הושלמו + הצעת מחיר ניתנת להורדה (${Math.round(contractFile.size / 1024)}KB)`, duration: Date.now() - start9 });
     } catch (e: any) {
       updateDocsTest(9, { status: 'failed', message: e.message, duration: Date.now() - start9 });
     }
@@ -1293,7 +1293,7 @@ startxref
 
           <TabsContent value="docs" className="mt-4">
             <p className="text-sm text-muted-foreground mb-4">
-              העלאת מסמכים → חוזה → חתימת סמנכ"ל → חתימת מנהל רכש
+              העלאת מסמכים → הצעת מחיר → חתימת סמנכ"ל → חתימת מנהל רכש
             </p>
           </TabsContent>
 
