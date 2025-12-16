@@ -1692,6 +1692,37 @@ export default function VendorForm() {
           /* Step 2: Fill Form */
           <form onSubmit={handleSubmit} className="space-y-6">
             
+            {/* Uploaded Documents Summary */}
+            <Card className="bg-success/5 border-success/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  מסמכים שהועלו
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(files).map(([docType, file]) => {
+                    const existingDoc = existingDocuments[docType as DocumentType];
+                    const hasDoc = file || existingDoc;
+                    if (!hasDoc) return null;
+                    return (
+                      <div key={docType} className="flex items-center gap-1 px-3 py-1 bg-success/10 rounded-full text-sm">
+                        <CheckCircle className="h-3 w-3 text-success" />
+                        <span>{DOCUMENT_TYPE_LABELS[docType]}</span>
+                      </div>
+                    );
+                  })}
+                  {request?.requires_contract_signature && (contractFile || request?.contract_file_path) && (
+                    <div className="flex items-center gap-1 px-3 py-1 bg-warning/10 rounded-full text-sm border border-warning/30">
+                      <FileText className="h-3 w-3 text-warning" />
+                      <span>הצעת מחיר</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
             {/* Basic Info */}
             <Card>
               <CardHeader>
