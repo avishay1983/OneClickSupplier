@@ -16,26 +16,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, History, Trash2, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
+import { Copy, ExternalLink, FileText, Mail, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, ClipboardCheck, UserCheck, Info, FileSignature, Check, X } from 'lucide-react';
 import { VendorRequest, STATUS_LABELS, VendorStatus, VENDOR_TYPE_LABELS, CLAIMS_AREA_LABELS } from '@/types/vendor';
 import { toast } from '@/hooks/use-toast';
 import { ViewDocumentsDialog } from './ViewDocumentsDialog';
-import { StatusHistoryDialog } from './StatusHistoryDialog';
 import { EditRequestDialog } from './EditRequestDialog';
 import { ManagerApprovalStatusDialog } from './ManagerApprovalStatusDialog';
 import { HandlerApprovalDialog } from './HandlerApprovalDialog';
 import { ContractSigningDialog } from './ContractSigningDialog';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 interface VendorRequestsTableProps {
   requests: VendorRequest[];
@@ -82,13 +71,10 @@ type SortDirection = 'asc' | 'desc';
 export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUserName }: VendorRequestsTableProps) {
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
   const [documentsDialogOpen, setDocumentsDialogOpen] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [approvalStatusDialogOpen, setApprovalStatusDialogOpen] = useState(false);
   const [handlerApprovalDialogOpen, setHandlerApprovalDialogOpen] = useState(false);
   const [contractSigningDialogOpen, setContractSigningDialogOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [handlerFilter, setHandlerFilter] = useState<string>('all');
@@ -223,58 +209,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
       });
     } finally {
       setSendingEmailId(null);
-    }
-  };
-
-  const deleteRequest = async () => {
-    if (!selectedRequest) return;
-    
-    setDeletingId(selectedRequest.id);
-    try {
-      // First delete related documents
-      const { error: docsError } = await supabase
-        .from('vendor_documents')
-        .delete()
-        .eq('vendor_request_id', selectedRequest.id);
-
-      if (docsError) {
-        console.error('Error deleting documents:', docsError);
-      }
-
-      // Delete status history
-      const { error: historyError } = await supabase
-        .from('vendor_status_history')
-        .delete()
-        .eq('vendor_request_id', selectedRequest.id);
-
-      if (historyError) {
-        console.error('Error deleting status history:', historyError);
-      }
-
-      // Delete the vendor request
-      const { error } = await supabase
-        .from('vendor_requests')
-        .delete()
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'הבקשה נמחקה',
-        description: `הבקשה של ${selectedRequest.vendor_name} נמחקה בהצלחה`,
-      });
-
-      window.location.reload();
-    } catch (error: any) {
-      console.error('Error deleting request:', error);
-      toast({
-        title: 'שגיאה במחיקה',
-        description: error.message || 'לא ניתן למחוק את הבקשה',
-        variant: 'destructive',
-      });
-    } finally {
-      setDeletingId(null);
-      setDeleteDialogOpen(false);
     }
   };
 
@@ -546,17 +480,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setHistoryDialogOpen(true);
-                      }}
-                      title="היסטוריית סטטוס"
-                    >
-                      <History className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
                       onClick={() => viewDocuments(request)}
                       title="צפה במסמכים"
                     >
@@ -594,23 +517,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedRequest(request);
-                        setDeleteDialogOpen(true);
-                      }}
-                      disabled={deletingId === request.id}
-                      title="מחק בקשה"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {deletingId === request.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -627,14 +533,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             onOpenChange={setDocumentsDialogOpen}
             vendorRequestId={selectedRequest.id}
             vendorName={selectedRequest.vendor_name}
-          />
-          <StatusHistoryDialog
-            open={historyDialogOpen}
-            onOpenChange={setHistoryDialogOpen}
-            vendorName={selectedRequest.vendor_name}
-            status={selectedRequest.status}
-            createdAt={selectedRequest.created_at}
-            updatedAt={selectedRequest.updated_at}
           />
           <EditRequestDialog
             open={editDialogOpen}
@@ -667,27 +565,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
         </>
       )}
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-right">מחיקת בקשה</AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              האם אתה בטוח שברצונך למחוק את הבקשה של "{selectedRequest?.vendor_name}"?
-              <br />
-              פעולה זו לא ניתנת לביטול ותמחק גם את כל המסמכים הקשורים.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogCancel>ביטול</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={deleteRequest}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              מחק
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
