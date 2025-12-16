@@ -459,9 +459,7 @@ export function ContractSigningDialog({
           // Signature pad view
           <div className="space-y-4">
             <div className="text-center mb-2">
-              <p className="font-medium">
-                חתימה כ{signerRole === 'ceo' ? 'סמנכ"ל' : 'מנהל רכש'}
-              </p>
+              <p className="font-medium text-lg">חתימה על המסמך</p>
               <p className="text-sm text-muted-foreground">{userName}</p>
             </div>
             
@@ -571,7 +569,7 @@ export function ContractSigningDialog({
                       size="lg"
                     >
                       <Pen className="h-5 w-5" />
-                      חתום כסמנכ"ל
+                      לחתימה
                     </Button>
                   )}
                   {signatureStatus.ceoSigned && (
@@ -622,7 +620,7 @@ export function ContractSigningDialog({
                           size="lg"
                         >
                           <Pen className="h-5 w-5" />
-                          חתום כמנהל רכש
+                          לחתימה
                         </Button>
                       )}
                     </div>
