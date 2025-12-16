@@ -189,8 +189,9 @@ export default function Dashboard() {
     }
     
     const secureToken = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (data.expires_in_days || 7));
+    // Use milliseconds calculation to support fractional days (e.g., 10 minutes = 0.007 days)
+    const expiresInMs = (data.expires_in_days || 7) * 24 * 60 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + expiresInMs);
     
     // Remove fields that are not DB columns
     const { expires_in_days, skip_manager_approval, ...dbData } = data;
@@ -273,8 +274,9 @@ export default function Dashboard() {
     for (const vendor of vendors) {
       try {
         const secureToken = crypto.randomUUID();
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + (vendor.expires_in_days || 7));
+        // Use milliseconds calculation to support fractional days
+        const expiresInMs = (vendor.expires_in_days || 7) * 24 * 60 * 60 * 1000;
+        const expiresAt = new Date(Date.now() + expiresInMs);
 
         const { error } = await supabase
           .from('vendor_requests')

@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle, XCircle, RotateCcw, Mail, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -42,6 +43,7 @@ export function HandlerApprovalDialog({
   const [action, setAction] = useState<'approve' | 'reject' | 'resend' | null>(null);
   const [resendReason, setResendReason] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [resendExpiryDays, setResendExpiryDays] = useState<number>(7);
   const [userName, setUserName] = useState<string | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [vendorRequestData, setVendorRequestData] = useState<VendorRequestData | null>(null);
@@ -202,13 +204,15 @@ export function HandlerApprovalDialog({
     setIsLoading(true);
     setAction('resend');
     try {
-      // Update status to resent and save reason
+      // Update status to resent and save reason with selected expiry
+      const expiresInMs = resendExpiryDays * 24 * 60 * 60 * 1000;
       const { error: updateError } = await supabase
         .from('vendor_requests')
         .update({
           status: 'resent',
           handler_rejection_reason: resendReason,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+          otp_verified: false, // Reset OTP verification for resend
         })
         .eq('id', vendorRequestId);
 
@@ -233,6 +237,7 @@ export function HandlerApprovalDialog({
       onOpenChange(false);
       onActionComplete();
       setResendReason('');
+      setResendExpiryDays(7);
     } catch (error: any) {
       console.error('Error resending to vendor:', error);
       toast({
@@ -356,6 +361,24 @@ export function HandlerApprovalDialog({
               </div>
             </div>
             <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="resendExpiry">תוקף הקישור החדש</Label>
+                <Select
+                  value={String(resendExpiryDays)}
+                  onValueChange={(value) => setResendExpiryDays(Number(value))}
+                >
+                  <SelectTrigger className="flex-row-reverse">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0.007">10 דקות</SelectItem>
+                    <SelectItem value="3">3 ימים</SelectItem>
+                    <SelectItem value="7">7 ימים</SelectItem>
+                    <SelectItem value="14">14 ימים</SelectItem>
+                    <SelectItem value="30">30 ימים</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="resendReason">סיבה לשליחה מחדש *</Label>
                 <Textarea
