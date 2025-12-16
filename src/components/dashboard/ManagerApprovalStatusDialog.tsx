@@ -275,7 +275,7 @@ export function ManagerApprovalStatusDialog({
                   <Clock className="h-8 w-8 text-muted-foreground" />
                 )}
                 <div>
-                  <h4 className="font-medium">אישור מטפל בבקשה</h4>
+                  <h4 className="font-medium">אישור מזמין הספק</h4>
                   {status.handler_approved_at && (
                     <p className="text-sm text-muted-foreground">
                       {new Date(status.handler_approved_at).toLocaleDateString('he-IL')} בשעה {new Date(status.handler_approved_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
