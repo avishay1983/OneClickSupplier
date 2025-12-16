@@ -35,6 +35,7 @@ export interface NewRequestData {
   handler_email: string;
   requires_contract_signature: boolean;
   requires_vp_approval: boolean;
+  skip_manager_approval: boolean;
 }
 
 export interface BulkVendorData {
@@ -69,8 +70,9 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     claims_sub_category: null,
     handler_name: '',
     handler_email: '',
-  requires_contract_signature: true, // Always required
-  requires_vp_approval: true,
+    requires_contract_signature: true,
+    requires_vp_approval: true,
+    skip_manager_approval: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -134,8 +136,9 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       claims_sub_category: null,
       handler_name: '',
       handler_email: '',
-      requires_contract_signature: false,
+      requires_contract_signature: true,
       requires_vp_approval: true,
+      skip_manager_approval: false,
     });
     setBulkVendors([]);
     setUploadedFileName('');
@@ -530,14 +533,35 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   <Label className="font-medium block text-right">סוג אישור נדרש</Label>
                   
                   <div className="flex items-center gap-2 justify-end">
+                    <Label htmlFor="approval_none" className="cursor-pointer">
+                      ללא צורך באישור מנהל
+                    </Label>
+                    <Checkbox
+                      id="approval_none"
+                      checked={formData.skip_manager_approval === true}
+                      onCheckedChange={(checked) => 
+                        setFormData({ 
+                          ...formData, 
+                          skip_manager_approval: checked as boolean,
+                          requires_vp_approval: checked ? false : formData.requires_vp_approval
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 justify-end">
                     <Label htmlFor="approval_pm_only" className="cursor-pointer">
                       אישור מנהל רכש בלבד
                     </Label>
                     <Checkbox
                       id="approval_pm_only"
-                      checked={!formData.requires_vp_approval}
+                      checked={!formData.requires_vp_approval && !formData.skip_manager_approval}
                       onCheckedChange={(checked) => 
-                        setFormData({ ...formData, requires_vp_approval: !(checked as boolean) })
+                        setFormData({ 
+                          ...formData, 
+                          requires_vp_approval: !(checked as boolean),
+                          skip_manager_approval: false
+                        })
                       }
                     />
                   </div>
@@ -548,9 +572,13 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                     </Label>
                     <Checkbox
                       id="approval_both"
-                      checked={formData.requires_vp_approval}
+                      checked={formData.requires_vp_approval && !formData.skip_manager_approval}
                       onCheckedChange={(checked) => 
-                        setFormData({ ...formData, requires_vp_approval: checked as boolean })
+                        setFormData({ 
+                          ...formData, 
+                          requires_vp_approval: checked as boolean,
+                          skip_manager_approval: false
+                        })
                       }
                     />
                   </div>

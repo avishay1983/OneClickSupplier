@@ -192,13 +192,22 @@ export default function Dashboard() {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (data.expires_in_days || 7));
     
-    // Remove expires_in_days from data as it's not a DB column
-    const { expires_in_days, ...dbData } = data;
+    // Remove fields that are not DB columns
+    const { expires_in_days, skip_manager_approval, ...dbData } = data;
     
     // Set handler_email to current user's email if handler_name is the current user
     const requestData = {
       ...dbData,
       handler_email: user?.email || null,
+      // If skip_manager_approval is true, pre-approve manager fields
+      ...(skip_manager_approval && {
+        procurement_manager_approved: true,
+        procurement_manager_approved_at: new Date().toISOString(),
+        procurement_manager_approved_by: 'ללא צורך באישור',
+        vp_approved: true,
+        vp_approved_at: new Date().toISOString(),
+        vp_approved_by: 'ללא צורך באישור',
+      }),
     };
     
     const { error } = await supabase
