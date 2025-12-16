@@ -139,7 +139,7 @@ export function ContractSigningDialog({
         console.error('Error fetching contract status:', error);
         toast({
           title: 'שגיאה',
-          description: 'לא ניתן לטעון את נתוני החוזה',
+          description: 'לא ניתן לטעון את נתוני הצעת המחיר',
           variant: 'destructive',
         });
       } finally {
@@ -214,7 +214,7 @@ export function ContractSigningDialog({
     if (!vendorRequestId || !signatureStatus?.contractFilePath) {
       toast({
         title: 'שגיאה',
-        description: 'לא נמצא חוזה לחתימה',
+        description: 'לא נמצאה הצעת מחיר לחתימה',
         variant: 'destructive',
       });
       return;
@@ -387,7 +387,7 @@ export function ContractSigningDialog({
       console.error('Error viewing contract:', error);
       toast({
         title: 'שגיאה',
-        description: 'לא ניתן לפתוח את החוזה',
+        description: 'לא ניתן לפתוח את הצעת המחיר',
         variant: 'destructive',
       });
     }
@@ -419,7 +419,7 @@ export function ContractSigningDialog({
       console.error('Error downloading contract:', error);
       toast({
         title: 'שגיאה',
-        description: 'לא ניתן להוריד את החוזה',
+        description: 'לא ניתן להוריד את הצעת המחיר',
         variant: 'destructive',
       });
     }
@@ -440,9 +440,9 @@ export function ContractSigningDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle>חתימה על הסכם - {vendorName}</DialogTitle>
+          <DialogTitle>חתימה על הצעת מחיר - {vendorName}</DialogTitle>
           <DialogDescription>
-            חתום על ההסכם המצורף
+            חתום על הצעת המחיר המצורפת
           </DialogDescription>
         </DialogHeader>
 
@@ -453,7 +453,7 @@ export function ContractSigningDialog({
         ) : !signatureStatus?.contractFilePath ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">הספק עדיין לא העלה חוזה חתום</p>
+            <p className="text-muted-foreground">הספק עדיין לא העלה הצעת מחיר חתומה</p>
           </div>
         ) : signerRole ? (
           // Signature pad view
@@ -520,18 +520,18 @@ export function ContractSigningDialog({
                 <div className="flex items-center gap-3">
                   <FileText className="h-6 w-6 text-primary" />
                   <div>
-                    <h4 className="font-medium">חוזה {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתום' : 'מהספק'}</h4>
+                    <h4 className="font-medium">הצעת מחיר {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתומה' : 'מהספק'}</h4>
                     <p className="text-sm text-muted-foreground">
                       {signatureStatus.requiresVpApproval ? (
                         signatureStatus.ceoSigned && signatureStatus.procurementSigned 
                           ? 'כל החתימות הושלמו' 
                           : signatureStatus.ceoSigned 
                             ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
-                            : 'הורד את החוזה לצפייה'
+                            : 'הורד את הצעת המחיר לצפייה'
                       ) : (
                         signatureStatus.procurementSigned
                           ? 'נחתם ע"י מנהל רכש'
-                          : 'הורד את החוזה לצפייה'
+                          : 'הורד את הצעת המחיר לצפייה'
                       )}
                     </p>
                   </div>

@@ -110,7 +110,7 @@ export function HandlerApprovalDialog({
 
       toast({
         title: 'הבקשה אושרה',
-        description: 'מייל עם החוזה נשלח למנהל הרכש ולסמנכ"ל לחתימה',
+        description: 'מייל עם הצעת המחיר נשלח למנהל הרכש ולסמנכ"ל לחתימה',
       });
       
       onOpenChange(false);
@@ -267,7 +267,7 @@ export function HandlerApprovalDialog({
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                לא ניתן לאשר את הבקשה - הספק טרם העלה את החוזה החתום
+                לא ניתן לאשר את הבקשה - הספק טרם העלה את הצעת המחיר החתומה
               </AlertDescription>
             </Alert>
           )}
@@ -281,7 +281,7 @@ export function HandlerApprovalDialog({
                   <h4 className="font-medium">אשר ושלח למנהלים</h4>
                   <p className="text-sm text-muted-foreground">
                     {requiresContract 
-                      ? 'החוזה יישלח למנהל רכש ולסמנכ"ל לחתימה דיגיטלית'
+                      ? 'הצעת המחיר תישלח למנהל רכש ולסמנכ"ל לחתימה דיגיטלית'
                       : 'הבקשה תועבר לאישור מנהל רכש וסמנכ"ל'}
                   </p>
                 </div>

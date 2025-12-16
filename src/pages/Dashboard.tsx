@@ -507,12 +507,12 @@ export default function Dashboard() {
                 <div>
                   <h3 className="text-xl font-bold text-primary">
                     {pendingSignatures.length === 1 
-                      ? 'יש חוזה אחד ממתין לחתימתך!'
-                      : `יש ${pendingSignatures.length} חוזים ממתינים לחתימתך!`
+                      ? 'יש הצעת מחיר אחת ממתינה לחתימתך!'
+                      : `יש ${pendingSignatures.length} הצעות מחיר ממתינות לחתימתך!`
                     }
                   </h3>
                   <p className="text-muted-foreground">
-                    לחץ על הכפתור כדי לחתום על החוזה{pendingSignatures.length > 1 ? 'ים' : ''}
+                    לחץ על הכפתור כדי לחתום על הצעת המחיר{pendingSignatures.length > 1 ? '' : ''}
                   </p>
                 </div>
               </div>

@@ -186,7 +186,7 @@ export function ViewDocumentsDialog({
                           <FileText className="h-5 w-5 text-primary-foreground" />
                         </div>
                         <div className="text-right min-w-0">
-                          <Badge className="mb-1">חוזה חתום</Badge>
+                          <Badge className="mb-1">הצעת מחיר חתומה</Badge>
                           <p className="font-semibold truncate">
                             {vendorData.contract_file_path.split('/').pop() || 'contract.pdf'}
                           </p>

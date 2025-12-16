@@ -1359,8 +1359,8 @@ export default function VendorForm() {
             {request?.requires_contract_signature && (
               <div className="mt-4 p-3 bg-success/10 border border-success/30 rounded-lg">
                 <CheckCircle className="h-6 w-6 mx-auto text-success mb-1" />
-                <p className="text-sm font-medium">החוזה הועלה בהצלחה</p>
-                <p className="text-xs text-muted-foreground">ממתין לחתימות מנכ"ל ומנהל רכש</p>
+                <p className="text-sm font-medium">הצעת המחיר הועלתה בהצלחה</p>
+                <p className="text-xs text-muted-foreground">ממתין לחתימות סמנכ"ל ומנהל רכש</p>
               </div>
             )}
             
@@ -1610,13 +1610,13 @@ export default function VendorForm() {
                     <div className="md:col-span-2">
                       <div className="border-2 border-dashed rounded-lg p-4 text-center bg-warning/5 border-warning/30">
                         <FileText className="h-8 w-8 mx-auto mb-2 text-warning" />
-                        <h4 className="font-medium mb-1">חוזה חתום *</h4>
-                        <p className="text-sm text-muted-foreground mb-3">נא להעלות את החוזה החתום בפורמט PDF</p>
+                        <h4 className="font-medium mb-1">הצעת מחיר חתומה *</h4>
+                        <p className="text-sm text-muted-foreground mb-3">נא להעלות את הצעת המחיר החתומה בפורמט PDF</p>
                         
                         {request?.contract_file_path && !contractFile ? (
                           <div className="flex items-center justify-center gap-2 p-2 bg-success/10 rounded">
                             <CheckCircle className="h-4 w-4 text-success" />
-                            <span className="text-sm text-success">חוזה הועלה</span>
+                            <span className="text-sm text-success">הצעת מחיר הועלתה</span>
                             <Button 
                               variant="ghost" 
                               size="sm"
