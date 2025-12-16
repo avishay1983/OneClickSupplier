@@ -51,10 +51,12 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [adminFlags, setAdminFlags] = useState<Record<string, boolean>>({});
+  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
 
   const fetchApprovals = async () => {
     setIsLoading(true);
     try {
+      // Fetch approvals
       const { data, error } = await supabase
         .from('pending_approvals')
         .select('*')
@@ -62,6 +64,16 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
 
       if (error) throw error;
       setApprovals(data || []);
+
+      // Fetch admin user IDs
+      const { data: adminRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (!rolesError && adminRoles) {
+        setAdminUserIds(new Set(adminRoles.map(r => r.user_id)));
+      }
     } catch (error) {
       console.error('Error fetching approvals:', error);
       toast({
@@ -213,7 +225,15 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
                     <TableCell>
                       {format(new Date(approval.created_at), 'dd/MM/yyyy HH:mm')}
                     </TableCell>
-                    <TableCell>{getStatusBadge(approval.status)}</TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      {getStatusBadge(approval.status)}
+                      {approval.status === 'approved' && adminUserIds.has(approval.user_id) && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          <Shield className="h-3 w-3 ml-1" />
+                          מנהל
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {approval.status === 'pending' && (
                         <div className="flex items-center gap-2">
