@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import PptxGenJS from 'pptxgenjs';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -621,6 +622,59 @@ const Presentation = () => {
     }
   };
 
+  const downloadPPTX = async () => {
+    if (!slideRef.current) return;
+    
+    setIsDownloading(true);
+    const originalSlide = currentSlide;
+    
+    try {
+      const pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_WIDE';
+      pptx.title = 'ספק בקליק - מצגת';
+      pptx.author = 'ביטוח ישיר';
+
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const canvas = await html2canvas(slideRef.current, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.7);
+        
+        const slide = pptx.addSlide();
+        slide.addImage({
+          data: imgData,
+          x: 0,
+          y: 0,
+          w: '100%',
+          h: '100%',
+        });
+      }
+
+      await pptx.writeFile({ fileName: 'ספק-בקליק-מצגת.pptx' });
+      
+      toast({
+        title: 'הורדה הושלמה',
+        description: 'המצגת הורדה בהצלחה כקובץ PowerPoint',
+      });
+    } catch (error) {
+      console.error('Error generating PPTX:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להוריד את המצגת',
+        variant: 'destructive',
+      });
+    } finally {
+      setCurrentSlide(originalSlide);
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen bg-background flex flex-col"
@@ -643,12 +697,30 @@ const Presentation = () => {
             {isDownloading ? (
               <>
                 <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                מייצר PDF...
+                מייצר...
               </>
             ) : (
               <>
                 <Download className="h-4 w-4 ml-2" />
-                הורד PDF
+                PDF
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={downloadPPTX}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                מייצר...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 ml-2" />
+                PowerPoint
               </>
             )}
           </Button>
