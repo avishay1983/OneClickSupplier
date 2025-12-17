@@ -56,7 +56,8 @@ import {
   LogOut,
   Play,
   Receipt,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ShieldCheck
 } from 'lucide-react';
 
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
@@ -123,6 +124,7 @@ const CRM_STATUS_LABELS: Record<string, string> = {
   suspended: 'מושהה',
   closed: 'סגור',
   vip: 'VIP',
+  security_approved: 'אושר ביטחון',
 };
 
 const CRM_STATUS_COLORS: Record<string, string> = {
@@ -130,6 +132,7 @@ const CRM_STATUS_COLORS: Record<string, string> = {
   suspended: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   closed: 'bg-red-100 text-red-800 border-red-200',
   vip: 'bg-purple-100 text-purple-800 border-purple-200',
+  security_approved: 'bg-blue-100 text-blue-800 border-blue-200',
 };
 
 const VENDOR_TYPE_LABELS: Record<string, string> = {
@@ -290,7 +293,7 @@ export default function CRM() {
     await fetchHistory(vendor.id);
   };
 
-  const handleStatusChange = async (vendor: CRMVendor, newStatus: 'active' | 'suspended' | 'closed' | 'vip') => {
+  const handleStatusChange = async (vendor: CRMVendor, newStatus: 'active' | 'suspended' | 'closed' | 'vip' | 'security_approved') => {
     try {
       const oldStatus = vendor.crm_status;
       
@@ -709,6 +712,10 @@ export default function CRM() {
                                   <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'closed')}>
                                     <XCircle className="h-4 w-4 ml-2 text-red-500" />
                                     סגור ספק
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'security_approved')}>
+                                    <ShieldCheck className="h-4 w-4 ml-2 text-blue-500" />
+                                    אושר ביטחון
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
