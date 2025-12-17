@@ -616,6 +616,7 @@ export default function CRM() {
                       <SelectItem value="vip">VIP</SelectItem>
                       <SelectItem value="suspended">מושהה</SelectItem>
                       <SelectItem value="closed">סגור</SelectItem>
+                      <SelectItem value="security_approved">אושר ביטחון</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
