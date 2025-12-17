@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [selectedContractRequest, setSelectedContractRequest] = useState<VendorRequest | null>(null);
   const [showAllRequests, setShowAllRequests] = useState(false); // For admin toggle
   const [viewMode, setViewMode] = useState<'manager' | 'regular'>('manager'); // Manager view toggle
+  const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
 
   // Check if user is approved and get user name
   useEffect(() => {
@@ -167,6 +168,28 @@ export default function Dashboard() {
     if (user && isApproved) {
       fetchRequests();
     }
+  }, [user, isApproved]);
+
+  // Fetch pending receipts count
+  useEffect(() => {
+    const fetchPendingReceiptsCount = async () => {
+      if (!user || !isApproved) return;
+      
+      try {
+        const { count, error } = await supabase
+          .from('vendor_receipts')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        
+        if (!error && count !== null) {
+          setPendingReceiptsCount(count);
+        }
+      } catch (error) {
+        console.error('Error fetching pending receipts count:', error);
+      }
+    };
+
+    fetchPendingReceiptsCount();
   }, [user, isApproved]);
 
   // Filter requests based on user role and toggle
@@ -490,10 +513,15 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/crm')}
-                className="text-white hover:bg-white/10 gap-2"
+                className="text-white hover:bg-white/10 gap-2 relative"
               >
                 <Building2 className="h-5 w-5" />
                 <span className="hidden sm:inline">CRM ספקים</span>
+                {pendingReceiptsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                    {pendingReceiptsCount > 99 ? '99+' : pendingReceiptsCount}
+                  </span>
+                )}
               </Button>
               {isAdmin && (
                 <Button
