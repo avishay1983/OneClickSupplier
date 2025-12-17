@@ -467,11 +467,11 @@ export default function CRM() {
 
           <TabsContent value="vendors">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" dir="rtl">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between flex-row-reverse">
+                    <div className="text-right">
                       <p className="text-sm text-muted-foreground">סה"כ ספקים</p>
                       <p className="text-2xl font-bold">{vendors.length}</p>
                     </div>
@@ -481,8 +481,8 @@ export default function CRM() {
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between flex-row-reverse">
+                    <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקים פעילים</p>
                       <p className="text-2xl font-bold text-green-600">
                         {vendors.filter(v => (v.crm_status || 'active') === 'active').length}
@@ -494,8 +494,8 @@ export default function CRM() {
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between flex-row-reverse">
+                    <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקי VIP</p>
                       <p className="text-2xl font-bold text-purple-600">
                         {vendors.filter(v => v.crm_status === 'vip').length}
@@ -507,8 +507,8 @@ export default function CRM() {
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between flex-row-reverse">
+                    <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקים מושהים</p>
                       <p className="text-2xl font-bold text-yellow-600">
                         {vendors.filter(v => v.crm_status === 'suspended').length}
@@ -523,7 +523,7 @@ export default function CRM() {
             {/* Filters */}
             <Card className="mb-6">
               <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col md:flex-row-reverse gap-4">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -531,7 +531,7 @@ export default function CRM() {
                         placeholder="חיפוש לפי שם, אימייל או ח.פ..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pr-10"
+                        className="pr-10 text-right"
                       />
                     </div>
                   </div>
