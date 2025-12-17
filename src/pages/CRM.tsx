@@ -41,7 +41,6 @@ import {
   Search, 
   Edit, 
   History, 
-  MoreHorizontal, 
   Loader2,
   Building2,
   Phone,
@@ -55,9 +54,9 @@ import {
   CheckCircle,
   Settings,
   LogOut,
-  
   Play,
-  Receipt
+  Receipt,
+  SlidersHorizontal
 } from 'lucide-react';
 
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
@@ -669,7 +668,7 @@ export default function CRM() {
                           <TableHead className="text-right">מטפל</TableHead>
                           <TableHead className="text-right">דירוג</TableHead>
                           <TableHead className="text-right">סטטוס</TableHead>
-                          <TableHead className="text-right">פעולות</TableHead>
+                          <TableHead className="text-left">פעולות</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -703,11 +702,15 @@ export default function CRM() {
                                 {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-left">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 transition-all hover:rotate-90 duration-300"
+                                  >
+                                    <SlidersHorizontal className="h-5 w-5" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
