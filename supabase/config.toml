@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.vendor-receipt-upload]
 verify_jwt = false
+
+[functions.send-receipt-status]
+verify_jwt = false

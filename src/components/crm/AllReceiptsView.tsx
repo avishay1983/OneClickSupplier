@@ -158,9 +158,24 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
 
       if (error) throw error;
 
+      // Send email to vendor
+      try {
+        await supabase.functions.invoke('send-receipt-status', {
+          body: {
+            vendorName: receipt.vendor_name,
+            vendorEmail: receipt.vendor_email,
+            receiptAmount: receipt.amount,
+            receiptDate: receipt.receipt_date,
+            status: 'approved',
+          },
+        });
+      } catch (emailError) {
+        console.error('Error sending approval email:', emailError);
+      }
+
       toast({
         title: 'הקבלה אושרה',
-        description: `קבלה בסכום ₪${receipt.amount.toLocaleString()} מספק ${receipt.vendor_name} אושרה`,
+        description: `קבלה בסכום ₪${receipt.amount.toLocaleString()} מספק ${receipt.vendor_name} אושרה ונשלח מייל לספק`,
       });
 
       fetchReceipts();
@@ -200,9 +215,25 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
 
       if (error) throw error;
 
+      // Send email to vendor
+      try {
+        await supabase.functions.invoke('send-receipt-status', {
+          body: {
+            vendorName: selectedReceipt.vendor_name,
+            vendorEmail: selectedReceipt.vendor_email,
+            receiptAmount: selectedReceipt.amount,
+            receiptDate: selectedReceipt.receipt_date,
+            status: 'rejected',
+            rejectionReason: rejectionReason,
+          },
+        });
+      } catch (emailError) {
+        console.error('Error sending rejection email:', emailError);
+      }
+
       toast({
         title: 'הקבלה נדחתה',
-        description: 'הקבלה נדחתה בהצלחה',
+        description: 'הקבלה נדחתה ונשלח מייל לספק',
       });
 
       setRejectDialogOpen(false);
