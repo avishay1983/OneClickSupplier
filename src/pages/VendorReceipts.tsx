@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Upload, FileText, CheckCircle, Clock, XCircle, Plus, Trash2, Sparkles, Heart } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle, Clock, XCircle, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -256,25 +256,6 @@ export default function VendorReceipts() {
         </div>
       </header>
 
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border-b">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Sparkles className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-                שמחים שבחרת להצטרף אלינו!
-                <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-              </h2>
-              <p className="text-muted-foreground">
-                אנחנו כאן כדי לעזור לך בכל שלב בדרך. נשמח לשרת אותך!
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-6">
