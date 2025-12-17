@@ -16,7 +16,6 @@ export function StarRating({ rating, onRatingChange }: StarRatingProps) {
       className="flex items-center gap-1 justify-end"
       onMouseLeave={() => setHoverRating(null)}
     >
-      <span className="text-[10px] text-muted-foreground ml-1">גבוה</span>
       {[5, 4, 3, 2, 1].map((star) => (
         <button
           key={star}
@@ -34,7 +33,6 @@ export function StarRating({ rating, onRatingChange }: StarRatingProps) {
           />
         </button>
       ))}
-      <span className="text-[10px] text-muted-foreground mr-1">נמוך</span>
     </div>
   );
 }
