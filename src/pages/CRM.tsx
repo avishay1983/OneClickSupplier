@@ -536,7 +536,7 @@ export default function CRM() {
                     </div>
                   </div>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] text-right">
                       <SelectValue placeholder="סטטוס" />
                     </SelectTrigger>
                     <SelectContent>
@@ -548,7 +548,7 @@ export default function CRM() {
                     </SelectContent>
                   </Select>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] text-right">
                       <SelectValue placeholder="סוג ספק" />
                     </SelectTrigger>
                     <SelectContent>
@@ -564,7 +564,7 @@ export default function CRM() {
             {/* Vendors Table */}
             <Card>
               <CardHeader>
-                <CardTitle>רשימת ספקים ({filteredVendors.length})</CardTitle>
+                <CardTitle className="text-right">רשימת ספקים ({filteredVendors.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
