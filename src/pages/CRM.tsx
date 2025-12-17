@@ -692,18 +692,19 @@ export default function CRM() {
                             <TableCell className="text-right">{vendor.city || '-'}</TableCell>
                             <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center gap-0.5 justify-end">
+                              <div className="flex items-center gap-1 justify-end">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <button
                                     key={star}
                                     onClick={() => handleRatingChange(vendor, star)}
-                                    className="p-0.5 hover:scale-110 transition-transform"
+                                    className="p-0.5 hover:scale-125 transition-transform cursor-pointer"
+                                    title={`דירוג ${star}`}
                                   >
                                     <Star
-                                      className={`h-4 w-4 ${
+                                      className={`h-5 w-5 ${
                                         vendor.rating && star <= vendor.rating
-                                          ? 'fill-yellow-400 text-yellow-400'
-                                          : 'text-gray-300'
+                                          ? 'fill-yellow-500 text-yellow-500'
+                                          : 'fill-gray-200 text-gray-300 hover:fill-yellow-300 hover:text-yellow-300'
                                       }`}
                                     />
                                   </button>
