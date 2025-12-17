@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { 
   ArrowRight, 
   Search, 
@@ -167,6 +168,8 @@ export default function CRM() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<string>('vendors');
+  const [showTestVendors, setShowTestVendors] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -198,6 +201,21 @@ export default function CRM() {
       }
     };
     getUserName();
+  }, [user]);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        setIsAdmin(!!data);
+      }
+    };
+    checkAdminStatus();
   }, [user]);
 
   useEffect(() => {
@@ -379,7 +397,19 @@ export default function CRM() {
     }
   };
 
+  const isTestVendor = (vendor: CRMVendor) => {
+    const name = vendor.vendor_name.toLowerCase();
+    const email = vendor.vendor_email.toLowerCase();
+    return name.includes('test') || name.includes('טסט') || 
+           email.includes('test') || email.includes('e2e');
+  };
+
   const filteredVendors = vendors.filter((vendor) => {
+    // Hide test vendors unless admin with toggle enabled
+    if (isTestVendor(vendor) && !(isAdmin && showTestVendors)) {
+      return false;
+    }
+
     const matchesSearch =
       vendor.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.vendor_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -523,7 +553,7 @@ export default function CRM() {
             {/* Filters */}
             <Card className="mb-6">
               <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row-reverse gap-4">
+                <div className="flex flex-col md:flex-row-reverse gap-4 items-center">
                   <div className="flex-1">
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -557,6 +587,18 @@ export default function CRM() {
                       <SelectItem value="claims">תביעות</SelectItem>
                     </SelectContent>
                   </Select>
+                  {isAdmin && (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="show-test-vendors"
+                        checked={showTestVendors}
+                        onCheckedChange={setShowTestVendors}
+                      />
+                      <Label htmlFor="show-test-vendors" className="text-sm cursor-pointer">
+                        הצג ספקי טסט
+                      </Label>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
