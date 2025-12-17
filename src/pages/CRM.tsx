@@ -668,7 +668,7 @@ export default function CRM() {
                           <TableHead className="text-right">טלפון</TableHead>
                           <TableHead className="text-right">סוג</TableHead>
                           <TableHead className="text-right">ח.פ</TableHead>
-                          <TableHead className="text-left">שם הספק</TableHead>
+                          <TableHead className="text-right">שם הספק</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -735,7 +735,7 @@ export default function CRM() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">{vendor.company_id || '-'}</TableCell>
-                            <TableCell className="font-medium text-left">
+                            <TableCell className="font-medium text-right">
                               <div>
                                 <div>{vendor.vendor_name}</div>
                                 <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
