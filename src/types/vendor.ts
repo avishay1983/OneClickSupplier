@@ -1,6 +1,6 @@
 export type VendorStatus = 'pending' | 'with_vendor' | 'submitted' | 'approved' | 'resent' | 'first_review' | 'rejected';
 
-export type CRMVendorStatus = 'active' | 'suspended' | 'closed' | 'vip';
+export type CRMVendorStatus = 'active' | 'suspended' | 'closed' | 'vip' | 'security_approved';
 
 export interface VendorRequest {
   id: string;
@@ -135,4 +135,5 @@ export const CRM_STATUS_LABELS: Record<CRMVendorStatus, string> = {
   suspended: 'מושהה',
   closed: 'סגור',
   vip: 'VIP',
+  security_approved: 'אושר ביטחון',
 };

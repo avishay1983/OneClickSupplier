@@ -533,7 +533,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      crm_vendor_status: "active" | "suspended" | "closed" | "vip"
+      crm_vendor_status:
+        | "active"
+        | "suspended"
+        | "closed"
+        | "vip"
+        | "security_approved"
       document_type:
         | "bookkeeping_cert"
         | "tax_cert"
@@ -676,7 +681,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      crm_vendor_status: ["active", "suspended", "closed", "vip"],
+      crm_vendor_status: [
+        "active",
+        "suspended",
+        "closed",
+        "vip",
+        "security_approved",
+      ],
       document_type: [
         "bookkeeping_cert",
         "tax_cert",
