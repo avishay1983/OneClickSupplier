@@ -54,11 +54,11 @@ import {
   CheckCircle,
   Settings,
   LogOut,
-  FlaskConical,
+  
   Play,
   Receipt
 } from 'lucide-react';
-import { TestRunnerDialog } from '@/components/crm/TestRunnerDialog';
+
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
 import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
@@ -171,7 +171,7 @@ export default function CRM() {
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [testRunnerDialogOpen, setTestRunnerDialogOpen] = useState(false);
+  
   const [inBrowserTestOpen, setInBrowserTestOpen] = useState(false);
   const [history, setHistory] = useState<CRMHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -429,14 +429,6 @@ export default function CRM() {
               >
                 <Play className="h-4 w-4" />
                 טסטים בדפדפן
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setTestRunnerDialogOpen(true)}
-                className="text-white hover:bg-white/10 gap-2"
-              >
-                <FlaskConical className="h-4 w-4" />
-                טסטים Playwright
               </Button>
               <Button
                 variant="ghost"
@@ -1169,11 +1161,6 @@ export default function CRM() {
         </DialogContent>
       </Dialog>
 
-      {/* Test Runner Dialog */}
-      <TestRunnerDialog
-        open={testRunnerDialogOpen}
-        onOpenChange={setTestRunnerDialogOpen}
-      />
       
       {/* In-Browser Test Runner */}
       <InBrowserTestRunner
