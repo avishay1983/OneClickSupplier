@@ -127,7 +127,7 @@ export default function Dashboard() {
   // Redirect to auth if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
@@ -348,9 +348,13 @@ export default function Dashboard() {
     );
   }
 
-  // Don't render if not authenticated (will redirect)
+  // Show loading while redirecting to auth
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   const handleResendApprovalRequest = async () => {
@@ -532,7 +536,7 @@ export default function Dashboard() {
         )}
 
         {/* Manager Signatures View */}
-        {showManagerView ? (
+        {showManagerView && userManagerRole ? (
           <ManagerSignaturesView
             role={userManagerRole}
             pendingSignatures={pendingSignatures}
