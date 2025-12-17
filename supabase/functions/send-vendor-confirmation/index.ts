@@ -133,22 +133,24 @@ const handler = async (req: Request): Promise<Response> => {
 <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
 <div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
 <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
-<h1 style="margin: 0; text-align: center; color: white;">בקשתך אושרה!</h1>
+<h1 style="margin: 0; text-align: center; color: white;">ברוכים הבאים למשפחה! 🌟</h1>
 </div>
 <div style="padding: 30px;">
-<div style="text-align: center; font-size: 48px; margin-bottom: 16px;">🎉</div>
+<div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
+<div style="font-size: 40px; margin-bottom: 10px;">✨</div>
+<p style="margin: 0; font-size: 18px; color: #1e40af; font-weight: bold;">שמחים שהצטרפת אלינו!</p>
+<p style="margin: 8px 0 0 0; color: #475569;">אנחנו מתרגשים לקבל אותך כחלק מצוות הספקים שלנו</p>
+</div>
 <p style="margin: 12px 0;">שלום ${vendorRequest.vendor_name},</p>
-<p style="margin: 12px 0;">שמחים לבשר לך שבקשתך להצטרף כספק של ביטוח ישיר <strong>אושרה בהצלחה!</strong></p>
+<p style="margin: 12px 0;">בקשתך להצטרף כספק של ביטוח ישיר <strong style="color: #16a34a;">אושרה בהצלחה!</strong></p>
 <p style="margin: 12px 0;">מעתה תוכל להעלות קבלות להתחשבנות דרך הקישור הבא:</p>
 <div style="text-align: center; margin: 25px 0;">
-<a href="${receiptsLink}" style="display: inline-block; background: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 5px;">העלאת קבלות</a>
-<a href="${statusLink}" style="display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 5px;">מעקב סטטוס</a>
+<a href="${receiptsLink}" style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);">📄 העלאת קבלות</a>
 </div>
-<p style="margin: 12px 0;">שמור על קישורים אלו - תוכל להשתמש בהם בכל פעם שתרצה להעלות קבלות חדשות.</p>
-<div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
-<p style="margin: 0; color: #166534; font-weight: bold;">ברוכים הבאים למשפחת ספקי ביטוח ישיר!</p>
+<p style="margin: 12px 0; color: #64748b; font-size: 14px;">שמור על קישור זה - תוכל להשתמש בו בכל פעם שתרצה להעלות קבלות חדשות.</p>
+<div style="border-top: 1px solid #e2e8f0; margin-top: 25px; padding-top: 20px;">
+<p style="margin: 0; font-size: 12px; color: #94a3b8;">הודעה זו נשלחה באופן אוטומטי ממערכת ספק בקליק.</p>
 </div>
-<p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
 </div>
 </div>
 </body>
