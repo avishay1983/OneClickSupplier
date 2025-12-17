@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.send-expiry-reminder]
 verify_jwt = false
+
+[functions.vendor-receipt-upload]
+verify_jwt = false
