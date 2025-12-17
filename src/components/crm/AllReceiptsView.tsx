@@ -280,31 +280,38 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setStatusFilter('all')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">סה"כ קבלות</p>
                 <p className="text-2xl font-bold">{receipts.length}</p>
-                <p className="text-sm text-muted-foreground">₪{totalAmount.toLocaleString()}</p>
               </div>
               <Receipt className="h-8 w-8 text-primary opacity-50" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-warning">
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md border-warning ${statusFilter === 'pending' ? 'ring-2 ring-warning' : ''}`}
+          onClick={() => setStatusFilter('pending')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">ממתינות לאישור</p>
                 <p className="text-2xl font-bold text-warning">{pendingCount}</p>
-                <p className="text-sm text-warning">₪{pendingAmount.toLocaleString()}</p>
               </div>
               <Clock className="h-8 w-8 text-warning opacity-50" />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'approved' ? 'ring-2 ring-success' : ''}`}
+          onClick={() => setStatusFilter('approved')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
@@ -312,13 +319,15 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
                 <p className="text-2xl font-bold text-success">
                   {receipts.filter(r => r.status === 'approved').length}
                 </p>
-                <p className="text-sm text-success">₪{approvedAmount.toLocaleString()}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-success opacity-50" />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'rejected' ? 'ring-2 ring-destructive' : ''}`}
+          onClick={() => setStatusFilter('rejected')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
