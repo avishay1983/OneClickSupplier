@@ -361,21 +361,47 @@ export function ContractSigningDialog({
         }
       }
 
-      // Check if both signatures are complete
-      const bothSigned = (signerRole === 'ceo' && signatureStatus.procurementSigned) ||
-                        (signerRole === 'procurement' && signatureStatus.ceoSigned);
+      // Check if all required signatures are complete
+      const requiresVp = signatureStatus.requiresVpApproval;
       
-      if (bothSigned) {
-        // Update status to approved if both signed
+      // Determine if the request is now fully signed
+      let isFullySigned = false;
+      if (requiresVp) {
+        // Both VP and procurement must sign
+        isFullySigned = (signerRole === 'ceo' && signatureStatus.procurementSigned) ||
+                       (signerRole === 'procurement' && signatureStatus.ceoSigned);
+      } else {
+        // Only procurement needs to sign (VP not required)
+        isFullySigned = signerRole === 'procurement';
+      }
+      
+      if (isFullySigned) {
+        // Update status to approved
         await supabase
           .from('vendor_requests')
           .update({ status: 'approved' })
           .eq('id', vendorRequestId);
+        
+        // Send approval email to vendor with receipts link
+        try {
+          console.log('All signatures complete, sending approval email to vendor...');
+          const { error: emailError } = await supabase.functions.invoke('send-vendor-confirmation', {
+            body: { vendorRequestId, sendReceiptsLink: true },
+          });
+          if (emailError) {
+            console.error('Error sending vendor approval email:', emailError);
+          } else {
+            console.log('Vendor approval email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Error invoking send-vendor-confirmation:', emailError);
+          // Don't fail the signing process if email fails
+        }
       }
 
       toast({
         title: 'החתימה נשמרה',
-        description: bothSigned ? 'שני החותמים חתמו - ההסכם אושר' : 'החתימה נוספה למסמך',
+        description: isFullySigned ? 'כל החתימות הושלמו - הספק אושר ונשלחה הודעה' : 'החתימה נוספה למסמך',
       });
 
       setSignerRole(null);

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,9 +7,12 @@ const corsHeaders = {
 };
 
 interface SendConfirmationRequest {
-  vendorName: string;
-  vendorEmail: string;
-  statusLink: string;
+  vendorName?: string;
+  vendorEmail?: string;
+  statusLink?: string;
+  // New fields for approval notification
+  vendorRequestId?: string;
+  sendReceiptsLink?: boolean;
 }
 
 // Encode string to Base64 for proper UTF-8 handling
@@ -87,17 +91,94 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { vendorName, vendorEmail, statusLink }: SendConfirmationRequest = await req.json();
-
-    console.log("Sending confirmation email to vendor:", vendorEmail);
-    console.log("Status link:", statusLink);
-
+    const body: SendConfirmationRequest = await req.json();
+    
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
     if (!gmailUser || !gmailAppPassword) {
       throw new Error("Gmail credentials not configured");
     }
+
+    // Check if this is an approval notification request
+    if (body.vendorRequestId && body.sendReceiptsLink) {
+      console.log("Sending approval notification to vendor for request:", body.vendorRequestId);
+      
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Fetch vendor request data
+      const { data: vendorRequest, error: fetchError } = await supabase
+        .from("vendor_requests")
+        .select("vendor_name, vendor_email, secure_token")
+        .eq("id", body.vendorRequestId)
+        .single();
+
+      if (fetchError || !vendorRequest) {
+        console.error("Error fetching vendor request:", fetchError);
+        throw new Error("Vendor request not found");
+      }
+
+      const baseUrl = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+      const receiptsLink = `${baseUrl}/vendor-receipts/${vendorRequest.secure_token}`;
+      const statusLink = `${baseUrl}/vendor-status/${vendorRequest.secure_token}`;
+
+      const approvalEmailHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+<h1 style="margin: 0; text-align: center; color: white;">בקשתך אושרה!</h1>
+</div>
+<div style="padding: 30px;">
+<div style="text-align: center; font-size: 48px; margin-bottom: 16px;">🎉</div>
+<p style="margin: 12px 0;">שלום ${vendorRequest.vendor_name},</p>
+<p style="margin: 12px 0;">שמחים לבשר לך שבקשתך להצטרף כספק של ביטוח ישיר <strong>אושרה בהצלחה!</strong></p>
+<p style="margin: 12px 0;">מעתה תוכל להעלות קבלות להתחשבנות דרך הקישור הבא:</p>
+<div style="text-align: center; margin: 25px 0;">
+<a href="${receiptsLink}" style="display: inline-block; background: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 5px;">העלאת קבלות</a>
+<a href="${statusLink}" style="display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 5px;">מעקב סטטוס</a>
+</div>
+<p style="margin: 12px 0;">שמור על קישורים אלו - תוכל להשתמש בהם בכל פעם שתרצה להעלות קבלות חדשות.</p>
+<div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 8px; padding: 15px; margin: 20px 0;">
+<p style="margin: 0; color: #166534; font-weight: bold;">ברוכים הבאים למשפחת ספקי ביטוח ישיר!</p>
+</div>
+<p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
+</div>
+</div>
+</body>
+</html>`;
+
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vendorRequest.vendor_email, "בקשתך אושרה - ברוכים הבאים לביטוח ישיר!", approvalEmailHtml);
+
+      // Update receipts_link_sent_at
+      await supabase
+        .from("vendor_requests")
+        .update({ receipts_link_sent_at: new Date().toISOString() })
+        .eq("id", body.vendorRequestId);
+
+      console.log("Approval notification email sent successfully to:", vendorRequest.vendor_email);
+
+      return new Response(JSON.stringify({ success: true, type: 'approval' }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Original flow: form submission confirmation
+    const { vendorName, vendorEmail, statusLink } = body;
+
+    if (!vendorName || !vendorEmail || !statusLink) {
+      throw new Error("Missing required fields: vendorName, vendorEmail, statusLink");
+    }
+
+    console.log("Sending form submission confirmation to vendor:", vendorEmail);
+    console.log("Status link:", statusLink);
 
     const emailHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -129,7 +210,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Confirmation email sent successfully via raw SMTP");
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, type: 'submission' }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
