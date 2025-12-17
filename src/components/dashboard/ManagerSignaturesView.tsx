@@ -10,11 +10,12 @@ import { he } from 'date-fns/locale';
 
 interface ManagerSignaturesViewProps {
   role: 'vp' | 'procurement';
+  managerName: string;
   pendingSignatures: VendorRequest[];
   onRefresh: () => void;
 }
 
-export function ManagerSignaturesView({ role, pendingSignatures, onRefresh }: ManagerSignaturesViewProps) {
+export function ManagerSignaturesView({ role, managerName, pendingSignatures, onRefresh }: ManagerSignaturesViewProps) {
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<VendorRequest | null>(null);
 
@@ -34,7 +35,7 @@ export function ManagerSignaturesView({ role, pendingSignatures, onRefresh }: Ma
             <FileSignature className="h-10 w-10 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">שלום, {roleName}</h1>
+            <h1 className="text-3xl font-bold text-foreground">שלום, {managerName}</h1>
             <p className="text-muted-foreground text-lg mt-1">
               {pendingSignatures.length === 0 
                 ? 'אין חוזים ממתינים לחתימתך' 
