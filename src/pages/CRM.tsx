@@ -67,6 +67,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { StarRating } from '@/components/crm/StarRating';
 
 interface CRMVendor {
   id: string;
@@ -692,26 +693,10 @@ export default function CRM() {
                             <TableCell className="text-right">{vendor.city || '-'}</TableCell>
                             <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center gap-1 justify-end">
-                                <span className="text-[10px] text-muted-foreground ml-1">גבוה</span>
-                                {[5, 4, 3, 2, 1].map((star) => (
-                                  <button
-                                    key={star}
-                                    onClick={() => handleRatingChange(vendor, star)}
-                                    className="p-0.5 hover:scale-125 transition-transform cursor-pointer"
-                                    title={`דירוג ${star} מתוך 5`}
-                                  >
-                                    <Star
-                                      className={`h-5 w-5 ${
-                                        vendor.rating && star <= vendor.rating
-                                          ? 'fill-yellow-500 text-yellow-500'
-                                          : 'fill-gray-200 text-gray-300 hover:fill-yellow-300 hover:text-yellow-300'
-                                      }`}
-                                    />
-                                  </button>
-                                ))}
-                                <span className="text-[10px] text-muted-foreground mr-1">נמוך</span>
-                              </div>
+                              <StarRating
+                                rating={vendor.rating}
+                                onRatingChange={(newRating) => handleRatingChange(vendor, newRating)}
+                              />
                             </TableCell>
                             <TableCell className="text-right">
                               <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
