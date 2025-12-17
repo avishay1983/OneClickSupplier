@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [resendingApproval, setResendingApproval] = useState(false);
   const [currentUserName, setCurrentUserName] = useState<string>('');
   const [userManagerRole, setUserManagerRole] = useState<'vp' | 'procurement' | null>(null);
+  const [userManagerName, setUserManagerName] = useState<string>('');
   const [pendingSignatures, setPendingSignatures] = useState<VendorRequest[]>([]);
   const [contractDialogOpen, setContractDialogOpen] = useState(false);
   const [selectedContractRequest, setSelectedContractRequest] = useState<VendorRequest | null>(null);
@@ -90,12 +91,16 @@ export default function Dashboard() {
         const userEmail = user.email?.toLowerCase().trim();
 
         let role: 'vp' | 'procurement' | null = null;
+        let managerName = '';
         if (userEmail === vpEmail) {
           role = 'vp';
+          managerName = settingsMap.vp_name || 'סמנכ"ל';
         } else if (userEmail === procurementEmail) {
           role = 'procurement';
+          managerName = settingsMap.car_manager_name || 'מנהל רכש';
         }
         setUserManagerRole(role);
+        setUserManagerName(managerName);
 
         // Find requests pending this user's signature
         if (role) {
@@ -539,6 +544,7 @@ export default function Dashboard() {
         {showManagerView && userManagerRole ? (
           <ManagerSignaturesView
             role={userManagerRole}
+            managerName={userManagerName}
             pendingSignatures={pendingSignatures}
             onRefresh={fetchRequests}
           />
