@@ -110,7 +110,7 @@ export default function VendorReceipts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file || !amount || !receiptDate || !vendor) {
+    if (!file || !amount || !receiptDate || !vendor || !token) {
       toast({
         title: 'שגיאה',
         description: 'יש למלא את כל השדות הנדרשים',
@@ -122,34 +122,31 @@ export default function VendorReceipts() {
     setIsSubmitting(true);
 
     try {
-      // Upload file
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${file.name}`;
-      const filePath = `receipts/${vendor.id}/${fileName}`;
+      // Use edge function to upload receipt
+      const formData = new FormData();
+      formData.append('token', token);
+      formData.append('file', file);
+      formData.append('amount', amount);
+      formData.append('receiptDate', receiptDate);
+      if (description) {
+        formData.append('description', description);
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('vendor_documents')
-        .upload(filePath, file);
+      const response = await fetch(
+        'https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-receipt-upload',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
 
-      if (uploadError) throw uploadError;
+      const result = await response.json();
 
-      // Insert receipt record
-      const { data: receiptData, error: insertError } = await supabase
-        .from('vendor_receipts')
-        .insert({
-          vendor_request_id: vendor.id,
-          file_path: filePath,
-          file_name: file.name,
-          amount: parseFloat(amount),
-          receipt_date: receiptDate,
-          description: description || null,
-        })
-        .select()
-        .single();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to upload receipt');
+      }
 
-      if (insertError) throw insertError;
-
-      setReceipts([receiptData as Receipt, ...receipts]);
+      setReceipts([result.receipt as Receipt, ...receipts]);
       
       // Reset form
       setFile(null);
