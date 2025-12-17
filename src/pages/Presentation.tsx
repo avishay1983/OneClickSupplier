@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -21,7 +24,9 @@ import {
   Send,
   UserCheck,
   Scan,
-  Home
+  Home,
+  Download,
+  Loader2
 } from 'lucide-react';
 
 const slides = [
@@ -546,7 +551,9 @@ const slides = [
 
 const Presentation = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
   const navigate = useNavigate();
+  const slideRef = useRef<HTMLDivElement>(null);
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
@@ -565,6 +572,55 @@ const Presentation = () => {
     if (e.key === 'ArrowLeft') nextSlide();
   };
 
+  const downloadPDF = async () => {
+    if (!slideRef.current) return;
+    
+    setIsDownloading(true);
+    const originalSlide = currentSlide;
+    
+    try {
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const canvas = await html2canvas(slideRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      }
+
+      pdf.save('ספק-בקליק-מצגת.pdf');
+      
+      toast({
+        title: 'הורדה הושלמה',
+        description: 'המצגת הורדה בהצלחה כקובץ PDF',
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להוריד את המצגת',
+        variant: 'destructive',
+      });
+    } finally {
+      setCurrentSlide(originalSlide);
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen bg-background flex flex-col"
@@ -577,7 +633,25 @@ const Presentation = () => {
           <Home className="h-4 w-4 ml-2" />
           חזרה לדף הבית
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={downloadPDF}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                מייצר PDF...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 ml-2" />
+                הורד PDF
+              </>
+            )}
+          </Button>
           <span className="text-sm text-muted-foreground">
             {currentSlide + 1} / {slides.length}
           </span>
@@ -586,7 +660,7 @@ const Presentation = () => {
       </div>
 
       {/* Slide Content */}
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-8 overflow-auto" ref={slideRef}>
         <div className="max-w-6xl mx-auto h-full">
           {slides[currentSlide].content}
         </div>
