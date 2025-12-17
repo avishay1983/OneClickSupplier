@@ -427,8 +427,8 @@ export default function CRM() {
                 onClick={() => setInBrowserTestOpen(true)}
                 className="text-white hover:bg-white/10 gap-2"
               >
-                <Play className="h-4 w-4" />
-                טסטים בדפדפן
+              <Play className="h-4 w-4" />
+                טסטים
               </Button>
               <Button
                 variant="ghost"
