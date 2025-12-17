@@ -68,9 +68,21 @@ export function ContractSigningDialog({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        let currentUserEmail = '';
+        // Get current user - check if session is still valid
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.error('No active session found');
+          toast({
+            title: 'שגיאה',
+            description: 'נדרש להתחבר מחדש',
+            variant: 'destructive',
+          });
+          onOpenChange(false);
+          return;
+        }
+        
+        const user = session.user;
+        let currentUserEmail = user?.email || '';
         
         if (user) {
           currentUserEmail = user.email || '';
@@ -121,9 +133,20 @@ export function ContractSigningDialog({
           .from('vendor_requests')
           .select('ceo_signed, ceo_signed_at, ceo_signed_by, procurement_manager_signed, procurement_manager_signed_at, procurement_manager_signed_by, contract_file_path, requires_vp_approval')
           .eq('id', vendorRequestId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
+        
+        if (!data) {
+          console.error('Vendor request not found:', vendorRequestId);
+          toast({
+            title: 'שגיאה',
+            description: 'לא נמצאה בקשת הספק',
+            variant: 'destructive',
+          });
+          onOpenChange(false);
+          return;
+        }
 
         setSignatureStatus({
           ceoSigned: data.ceo_signed || false,
