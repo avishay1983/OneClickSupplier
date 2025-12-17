@@ -103,6 +103,7 @@ interface CRMVendor {
   is_sensitive: boolean | null;
   approver_name: string | null;
   crm_status: 'active' | 'suspended' | 'closed' | 'vip' | null;
+  rating: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -321,6 +322,43 @@ export default function CRM() {
       toast({
         title: 'שגיאה',
         description: 'לא ניתן לעדכן את הסטטוס',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRatingChange = async (vendor: CRMVendor, newRating: number) => {
+    try {
+      const oldRating = vendor.rating;
+      
+      const { error: updateError } = await supabase
+        .from('vendor_requests')
+        .update({ rating: newRating })
+        .eq('id', vendor.id);
+
+      if (updateError) throw updateError;
+
+      // Log the change
+      await supabase.from('crm_history').insert({
+        vendor_request_id: vendor.id,
+        action: 'rating_change',
+        field_name: 'rating',
+        old_value: oldRating?.toString() || null,
+        new_value: newRating.toString(),
+        changed_by: currentUserName,
+      });
+
+      toast({
+        title: 'הדירוג עודכן',
+        description: `הספק קיבל דירוג של ${newRating} כוכבים`,
+      });
+
+      fetchVendors();
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לעדכן את הדירוג',
         variant: 'destructive',
       });
     }
@@ -628,6 +666,7 @@ export default function CRM() {
                           <TableHead className="text-right">טלפון</TableHead>
                           <TableHead className="text-right">עיר</TableHead>
                           <TableHead className="text-right">מטפל</TableHead>
+                          <TableHead className="text-right">דירוג</TableHead>
                           <TableHead className="text-right">סטטוס</TableHead>
                           <TableHead className="text-right">פעולות</TableHead>
                         </TableRow>
@@ -652,6 +691,25 @@ export default function CRM() {
                             </TableCell>
                             <TableCell className="text-right">{vendor.city || '-'}</TableCell>
                             <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center gap-0.5 justify-end">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    onClick={() => handleRatingChange(vendor, star)}
+                                    className="p-0.5 hover:scale-110 transition-transform"
+                                  >
+                                    <Star
+                                      className={`h-4 w-4 ${
+                                        vendor.rating && star <= vendor.rating
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            </TableCell>
                             <TableCell className="text-right">
                               <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
                                 {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
