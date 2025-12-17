@@ -593,14 +593,14 @@ export default function CRM() {
                       <TableBody>
                         {filteredVendors.map((vendor) => (
                           <TableRow key={vendor.id}>
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium text-right">
                               <div>
                                 <div>{vendor.vendor_name}</div>
                                 <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
                               </div>
                             </TableCell>
-                            <TableCell>{vendor.company_id || '-'}</TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">{vendor.company_id || '-'}</TableCell>
+                            <TableCell className="text-right">
                               <Badge variant="outline">
                                 {VENDOR_TYPE_LABELS[vendor.vendor_type || 'general'] || 'כללי'}
                               </Badge>
@@ -608,14 +608,14 @@ export default function CRM() {
                             <TableCell dir="ltr" className="text-right">
                               {vendor.phone || vendor.mobile || '-'}
                             </TableCell>
-                            <TableCell>{vendor.city || '-'}</TableCell>
-                            <TableCell>{vendor.handler_name || '-'}</TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">{vendor.city || '-'}</TableCell>
+                            <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
+                            <TableCell className="text-right">
                               <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
                                 {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
                               </Badge>
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
