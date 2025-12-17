@@ -55,10 +55,12 @@ import {
   Settings,
   LogOut,
   FlaskConical,
-  Play
+  Play,
+  Receipt
 } from 'lucide-react';
 import { TestRunnerDialog } from '@/components/crm/TestRunnerDialog';
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
+import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -164,6 +166,7 @@ export default function CRM() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('vendors');
   
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -457,198 +460,218 @@ export default function CRM() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">סה"כ ספקים</p>
-                  <p className="text-2xl font-bold">{vendors.length}</p>
-                </div>
-                <Building2 className="h-8 w-8 text-primary opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">ספקים פעילים</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {vendors.filter(v => (v.crm_status || 'active') === 'active').length}
-                  </p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">ספקי VIP</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {vendors.filter(v => v.crm_status === 'vip').length}
-                  </p>
-                </div>
-                <Star className="h-8 w-8 text-purple-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">ספקים מושהים</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {vendors.filter(v => v.crm_status === 'suspended').length}
-                  </p>
-                </div>
-                <Pause className="h-8 w-8 text-yellow-500 opacity-50" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="vendors" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              ספקים
+            </TabsTrigger>
+            <TabsTrigger value="receipts" className="gap-2">
+              <Receipt className="h-4 w-4" />
+              קבלות ספקים
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="חיפוש לפי שם, אימייל או ח.פ..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
-                  />
-                </div>
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="סטטוס" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">כל הסטטוסים</SelectItem>
-                  <SelectItem value="active">פעיל</SelectItem>
-                  <SelectItem value="vip">VIP</SelectItem>
-                  <SelectItem value="suspended">מושהה</SelectItem>
-                  <SelectItem value="closed">סגור</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="סוג ספק" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">כל הסוגים</SelectItem>
-                  <SelectItem value="general">כללי</SelectItem>
-                  <SelectItem value="claims">תביעות</SelectItem>
-                </SelectContent>
-              </Select>
+          <TabsContent value="vendors">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">סה"כ ספקים</p>
+                      <p className="text-2xl font-bold">{vendors.length}</p>
+                    </div>
+                    <Building2 className="h-8 w-8 text-primary opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">ספקים פעילים</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {vendors.filter(v => (v.crm_status || 'active') === 'active').length}
+                      </p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">ספקי VIP</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {vendors.filter(v => v.crm_status === 'vip').length}
+                      </p>
+                    </div>
+                    <Star className="h-8 w-8 text-purple-500 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">ספקים מושהים</p>
+                      <p className="text-2xl font-bold text-yellow-600">
+                        {vendors.filter(v => v.crm_status === 'suspended').length}
+                      </p>
+                    </div>
+                    <Pause className="h-8 w-8 text-yellow-500 opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Vendors Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>רשימת ספקים ({filteredVendors.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredVendors.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {vendors.length === 0 ? 'אין ספקים מאושרים במערכת' : 'לא נמצאו ספקים התואמים לחיפוש'}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">שם הספק</TableHead>
-                      <TableHead className="text-right">ח.פ</TableHead>
-                      <TableHead className="text-right">סוג</TableHead>
-                      <TableHead className="text-right">טלפון</TableHead>
-                      <TableHead className="text-right">עיר</TableHead>
-                      <TableHead className="text-right">מטפל</TableHead>
-                      <TableHead className="text-right">סטטוס</TableHead>
-                      <TableHead className="text-right">פעולות</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVendors.map((vendor) => (
-                      <TableRow key={vendor.id}>
-                        <TableCell className="font-medium">
-                          <div>
-                            <div>{vendor.vendor_name}</div>
-                            <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vendor.company_id || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {VENDOR_TYPE_LABELS[vendor.vendor_type || 'general'] || 'כללי'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell dir="ltr" className="text-right">
-                          {vendor.phone || vendor.mobile || '-'}
-                        </TableCell>
-                        <TableCell>{vendor.city || '-'}</TableCell>
-                        <TableCell>{vendor.handler_name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
-                            {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(vendor)}>
-                                <Edit className="h-4 w-4 ml-2" />
-                                עריכה
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleViewHistory(vendor)}>
-                                <History className="h-4 w-4 ml-2" />
-                                היסטוריה
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'active')}>
-                                <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
-                                סמן כפעיל
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'vip')}>
-                                <Star className="h-4 w-4 ml-2 text-purple-500" />
-                                סמן כ-VIP
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'suspended')}>
-                                <Pause className="h-4 w-4 ml-2 text-yellow-500" />
-                                השהה ספק
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'closed')}>
-                                <XCircle className="h-4 w-4 ml-2 text-red-500" />
-                                סגור ספק
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            {/* Filters */}
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="חיפוש לפי שם, אימייל או ח.פ..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pr-10"
+                      />
+                    </div>
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="סטטוס" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">כל הסטטוסים</SelectItem>
+                      <SelectItem value="active">פעיל</SelectItem>
+                      <SelectItem value="vip">VIP</SelectItem>
+                      <SelectItem value="suspended">מושהה</SelectItem>
+                      <SelectItem value="closed">סגור</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="סוג ספק" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">כל הסוגים</SelectItem>
+                      <SelectItem value="general">כללי</SelectItem>
+                      <SelectItem value="claims">תביעות</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Vendors Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>רשימת ספקים ({filteredVendors.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : filteredVendors.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {vendors.length === 0 ? 'אין ספקים מאושרים במערכת' : 'לא נמצאו ספקים התואמים לחיפוש'}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">שם הספק</TableHead>
+                          <TableHead className="text-right">ח.פ</TableHead>
+                          <TableHead className="text-right">סוג</TableHead>
+                          <TableHead className="text-right">טלפון</TableHead>
+                          <TableHead className="text-right">עיר</TableHead>
+                          <TableHead className="text-right">מטפל</TableHead>
+                          <TableHead className="text-right">סטטוס</TableHead>
+                          <TableHead className="text-right">פעולות</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredVendors.map((vendor) => (
+                          <TableRow key={vendor.id}>
+                            <TableCell className="font-medium">
+                              <div>
+                                <div>{vendor.vendor_name}</div>
+                                <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{vendor.company_id || '-'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {VENDOR_TYPE_LABELS[vendor.vendor_type || 'general'] || 'כללי'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell dir="ltr" className="text-right">
+                              {vendor.phone || vendor.mobile || '-'}
+                            </TableCell>
+                            <TableCell>{vendor.city || '-'}</TableCell>
+                            <TableCell>{vendor.handler_name || '-'}</TableCell>
+                            <TableCell>
+                              <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
+                                {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(vendor)}>
+                                    <Edit className="h-4 w-4 ml-2" />
+                                    עריכה
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleViewHistory(vendor)}>
+                                    <History className="h-4 w-4 ml-2" />
+                                    היסטוריה
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'active')}>
+                                    <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                    סמן כפעיל
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'vip')}>
+                                    <Star className="h-4 w-4 ml-2 text-purple-500" />
+                                    סמן כ-VIP
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'suspended')}>
+                                    <Pause className="h-4 w-4 ml-2 text-yellow-500" />
+                                    השהה ספק
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'closed')}>
+                                    <XCircle className="h-4 w-4 ml-2 text-red-500" />
+                                    סגור ספק
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="receipts">
+            <AllReceiptsView currentUserName={currentUserName} />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Edit Dialog */}
