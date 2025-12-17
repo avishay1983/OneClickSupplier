@@ -470,51 +470,51 @@ export default function CRM() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" dir="rtl">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between flex-row-reverse">
+                  <div className="flex items-center justify-between">
+                    <Building2 className="h-8 w-8 text-primary opacity-50" />
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">סה"כ ספקים</p>
                       <p className="text-2xl font-bold">{vendors.length}</p>
                     </div>
-                    <Building2 className="h-8 w-8 text-primary opacity-50" />
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between flex-row-reverse">
+                  <div className="flex items-center justify-between">
+                    <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקים פעילים</p>
                       <p className="text-2xl font-bold text-green-600">
                         {vendors.filter(v => (v.crm_status || 'active') === 'active').length}
                       </p>
                     </div>
-                    <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between flex-row-reverse">
+                  <div className="flex items-center justify-between">
+                    <Star className="h-8 w-8 text-purple-500 opacity-50" />
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקי VIP</p>
                       <p className="text-2xl font-bold text-purple-600">
                         {vendors.filter(v => v.crm_status === 'vip').length}
                       </p>
                     </div>
-                    <Star className="h-8 w-8 text-purple-500 opacity-50" />
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between flex-row-reverse">
+                  <div className="flex items-center justify-between">
+                    <Pause className="h-8 w-8 text-yellow-500 opacity-50" />
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">ספקים מושהים</p>
                       <p className="text-2xl font-bold text-yellow-600">
                         {vendors.filter(v => v.crm_status === 'suspended').length}
                       </p>
                     </div>
-                    <Pause className="h-8 w-8 text-yellow-500 opacity-50" />
                   </div>
                 </CardContent>
               </Card>
