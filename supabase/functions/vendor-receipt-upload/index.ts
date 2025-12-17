@@ -61,10 +61,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Upload file
+    // Upload file - use safe filename (no Hebrew characters)
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}_${file.name}`;
-    const filePath = `receipts/${vendorRequest.id}/${fileName}`;
+    const safeFileName = `receipt_${Date.now()}.${fileExt}`;
+    const filePath = `receipts/${vendorRequest.id}/${safeFileName}`;
     
     const arrayBuffer = await file.arrayBuffer();
     const { error: uploadError } = await supabase.storage
