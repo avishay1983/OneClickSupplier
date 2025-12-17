@@ -660,49 +660,21 @@ export default function CRM() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="text-right">שם הספק</TableHead>
-                          <TableHead className="text-right">ח.פ</TableHead>
-                          <TableHead className="text-right">סוג</TableHead>
-                          <TableHead className="text-right">טלפון</TableHead>
-                          <TableHead className="text-right">עיר</TableHead>
-                          <TableHead className="text-right">מטפל</TableHead>
-                          <TableHead className="text-right">דירוג</TableHead>
+                          <TableHead className="text-right">פעולות</TableHead>
                           <TableHead className="text-right">סטטוס</TableHead>
-                          <TableHead className="text-left">פעולות</TableHead>
+                          <TableHead className="text-right">דירוג</TableHead>
+                          <TableHead className="text-right">מטפל</TableHead>
+                          <TableHead className="text-right">עיר</TableHead>
+                          <TableHead className="text-right">טלפון</TableHead>
+                          <TableHead className="text-right">סוג</TableHead>
+                          <TableHead className="text-right">ח.פ</TableHead>
+                          <TableHead className="text-left">שם הספק</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredVendors.map((vendor) => (
                           <TableRow key={vendor.id}>
-                            <TableCell className="font-medium text-right">
-                              <div>
-                                <div>{vendor.vendor_name}</div>
-                                <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">{vendor.company_id || '-'}</TableCell>
                             <TableCell className="text-right">
-                              <Badge variant="outline">
-                                {VENDOR_TYPE_LABELS[vendor.vendor_type || 'general'] || 'כללי'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell dir="ltr" className="text-right">
-                              {vendor.phone || vendor.mobile || '-'}
-                            </TableCell>
-                            <TableCell className="text-right">{vendor.city || '-'}</TableCell>
-                            <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
-                            <TableCell className="text-right">
-                              <StarRating
-                                rating={vendor.rating}
-                                onRatingChange={(newRating) => handleRatingChange(vendor, newRating)}
-                              />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
-                                {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-left">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button 
@@ -713,7 +685,7 @@ export default function CRM() {
                                     <SlidersHorizontal className="h-5 w-5" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="start">
                                   <DropdownMenuItem onClick={() => handleEdit(vendor)}>
                                     <Edit className="h-4 w-4 ml-2" />
                                     עריכה
@@ -740,6 +712,34 @@ export default function CRM() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge className={CRM_STATUS_COLORS[vendor.crm_status || 'active']}>
+                                {CRM_STATUS_LABELS[vendor.crm_status || 'active']}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <StarRating
+                                rating={vendor.rating}
+                                onRatingChange={(newRating) => handleRatingChange(vendor, newRating)}
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
+                            <TableCell className="text-right">{vendor.city || '-'}</TableCell>
+                            <TableCell dir="ltr" className="text-right">
+                              {vendor.phone || vendor.mobile || '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="outline">
+                                {VENDOR_TYPE_LABELS[vendor.vendor_type || 'general'] || 'כללי'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">{vendor.company_id || '-'}</TableCell>
+                            <TableCell className="font-medium text-left">
+                              <div>
+                                <div>{vendor.vendor_name}</div>
+                                <div className="text-sm text-muted-foreground">{vendor.vendor_email}</div>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
