@@ -1557,7 +1557,7 @@ export default function VendorForm() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-                  שמחים שבחרת להצטרף אלינו!
+                  שמחים שבחרת להיות שותף שלנו!
                   <Heart className="h-5 w-5 text-red-500 fill-red-500 animate-pulse-slow" />
                 </h2>
                 <p className="text-muted-foreground">
