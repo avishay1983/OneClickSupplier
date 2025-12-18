@@ -124,35 +124,8 @@ serve(async (req: Request): Promise<Response> => {
               <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden;">
                 <!-- Header with Logo -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 40px; text-align: center;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                      <tr>
-                        <!-- Red dots -->
-                        <td style="padding-right: 15px;">
-                          <table role="presentation" cellspacing="6" cellpadding="0">
-                            <tr>
-                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                            </tr>
-                            <tr>
-                              <td style="padding-left: 9px;"><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                              <td style="padding-right: 9px;"><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                            </tr>
-                            <tr>
-                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
-                            </tr>
-                          </table>
-                        </td>
-                        <!-- Text -->
-                        <td>
-                          <div style="color: #ffffff; font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; line-height: 1.2; text-align: right;">
-                            <div>ביטוח</div>
-                            <div>ישיר</div>
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+                    <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
                   </td>
                 </tr>
                 
