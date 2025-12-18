@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +11,67 @@ interface SendQuoteRequestPayload {
   vendorEmail: string;
   vendorName: string;
   handlerName: string;
+}
+
+function encodeBase64(str: string): string {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+async function sendEmailViaSMTP(
+  gmailUser: string,
+  gmailPassword: string,
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const conn = await Deno.connect({ hostname: "smtp.gmail.com", port: 465 });
+  const tlsConn = await Deno.startTls(conn, { hostname: "smtp.gmail.com" });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(command: string): Promise<string> {
+    await tlsConn.write(encoder.encode(command + "\r\n"));
+    const buffer = new Uint8Array(1024);
+    const n = await tlsConn.read(buffer);
+    return decoder.decode(buffer.subarray(0, n || 0));
+  }
+
+  await sendCommand("");
+  await sendCommand("EHLO smtp.gmail.com");
+  await sendCommand("AUTH LOGIN");
+  await sendCommand(btoa(gmailUser));
+  await sendCommand(btoa(gmailPassword));
+  await sendCommand(`MAIL FROM:<${gmailUser}>`);
+  await sendCommand(`RCPT TO:<${to}>`);
+  await sendCommand("DATA");
+
+  const boundary = "----=_Part_" + Math.random().toString(36).substring(2);
+  
+  const emailContent = [
+    `From: =?UTF-8?B?${encodeBase64("ביטוח ישיר")}?= <${gmailUser}>`,
+    `To: ${to}`,
+    `Subject: =?UTF-8?B?${encodeBase64(subject)}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    encodeBase64(htmlContent),
+    ``,
+    `--${boundary}--`,
+    `.`
+  ].join("\r\n");
+
+  await tlsConn.write(encoder.encode(emailContent + "\r\n"));
+  
+  const buffer = new Uint8Array(1024);
+  await tlsConn.read(buffer);
+
+  await sendCommand("QUIT");
+  tlsConn.close();
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -90,17 +148,26 @@ serve(async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const emailResponse = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
-      to: [vendorEmail],
-      subject: "בקשה להגשת הצעת מחיר - ביטוח ישיר",
-      html: emailHtml,
-    });
+    // Get Gmail credentials
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
-    console.log("Email sent successfully:", emailResponse);
+    if (!gmailUser || !gmailPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
+
+    await sendEmailViaSMTP(
+      gmailUser,
+      gmailPassword,
+      vendorEmail,
+      "בקשה להגשת הצעת מחיר - ביטוח ישיר",
+      emailHtml
+    );
+
+    console.log("Email sent successfully via Gmail SMTP");
 
     return new Response(
-      JSON.stringify({ success: true, emailResponse }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
