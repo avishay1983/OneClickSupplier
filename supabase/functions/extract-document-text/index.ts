@@ -6,9 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// OpenAI API endpoint
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
   const prefix = {
@@ -162,9 +159,9 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -175,44 +172,33 @@ serve(async (req) => {
 
     const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
 
-    // OpenAI API format
-    const response = await fetch(OPENAI_API_URL, {
+    // Gemini API format
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ],
-        max_tokens: 2048,
-        temperature: 0.1,
+        contents: [{
+          parts: [
+            { text: SYSTEM_PROMPT + '\n\n' + userPrompt }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logOCR('error', `[${requestId}] OpenAI API error`, { status: response.status, error: errorText });
+      logOCR('error', `[${requestId}] Gemini API error`, { status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'payment_required', message: 'שגיאת שירות OCR' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -223,8 +209,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    // OpenAI response format
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`);
