@@ -115,6 +115,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   const [sendQuoteDialogOpen, setSendQuoteDialogOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
+  const [resendingQuoteId, setResendingQuoteId] = useState<string | null>(null);
   
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<VendorQuote | null>(null);
@@ -239,6 +240,51 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleResendQuoteRequest = async (quote: VendorQuote) => {
+    if (!quote.vendor_email || !quote.vendor_name) {
+      toast({
+        title: 'שגיאה',
+        description: 'חסרים פרטי ספק',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setResendingQuoteId(quote.id);
+    try {
+      // Send email to vendor
+      const { error: emailError } = await supabase.functions.invoke('send-quote-request', {
+        body: {
+          quoteId: quote.id,
+          vendorEmail: quote.vendor_email,
+          vendorName: quote.vendor_name,
+          handlerName: currentUserName,
+        },
+      });
+
+      if (emailError) {
+        console.error('Email error:', emailError);
+        throw emailError;
+      }
+
+      toast({
+        title: 'המייל נשלח שוב',
+        description: `נשלח מייל חוזר לספק ${quote.vendor_name}`,
+      });
+
+      fetchQuotes();
+    } catch (error) {
+      console.error('Error resending quote request:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את המייל מחדש',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingQuoteId(null);
     }
   };
 
@@ -738,6 +784,24 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
+                            {/* Resend button for pending_vendor status */}
+                            {quoteStatus === 'pending_vendor' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleResendQuoteRequest(quote)}
+                                disabled={resendingQuoteId === quote.id}
+                                title="שלח מייל מחדש"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                {resendingQuoteId === quote.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                            
                             {quote.file_path && (
                               <Button
                                 variant="ghost"
