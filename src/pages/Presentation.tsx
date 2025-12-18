@@ -38,14 +38,14 @@ const slides = [
     content: (
       <div className="flex flex-col items-center justify-center h-full space-y-8">
         <div className="text-8xl animate-bounce">🚀</div>
-        <h1 className="text-5xl font-bold text-primary text-center">ספק בקליק</h1>
+        <h1 className="text-5xl font-bold text-gradient-brand text-center">ספק בקליק</h1>
         <p className="text-2xl text-muted-foreground text-center max-w-2xl">
           מערכת דיגיטלית מתקדמת להקמת ספקים - מהבקשה ועד האישור הסופי
         </p>
         <div className="flex gap-4 mt-8">
-          <Badge variant="outline" className="text-lg px-4 py-2">אוטומציה מלאה</Badge>
-          <Badge variant="outline" className="text-lg px-4 py-2">OCR חכם</Badge>
-          <Badge variant="outline" className="text-lg px-4 py-2">חתימות דיגיטליות</Badge>
+          <Badge variant="outline" className="text-lg px-4 py-2 border-accent text-accent">אוטומציה מלאה</Badge>
+          <Badge variant="outline" className="text-lg px-4 py-2 border-brand-purple text-brand-purple">OCR חכם</Badge>
+          <Badge variant="outline" className="text-lg px-4 py-2 border-brand-coral text-brand-coral">חתימות דיגיטליות</Badge>
         </div>
       </div>
     ),
@@ -58,11 +58,11 @@ const slides = [
       <div className="flex flex-col items-center justify-center h-full space-y-6">
         <div className="grid grid-cols-5 gap-4 w-full max-w-5xl">
           {[
-            { icon: Send, label: 'שליחת בקשה', color: 'bg-blue-100 text-blue-600' },
-            { icon: FileText, label: 'מילוי פרטים', color: 'bg-green-100 text-green-600' },
-            { icon: UserCheck, label: 'בקרה ראשונה', color: 'bg-yellow-100 text-yellow-600' },
-            { icon: FileSignature, label: 'חתימות מנהלים', color: 'bg-purple-100 text-purple-600' },
-            { icon: CheckCircle, label: 'אישור סופי', color: 'bg-emerald-100 text-emerald-600' },
+            { icon: Send, label: 'שליחת בקשה', color: 'bg-accent/10 text-accent' },
+            { icon: FileText, label: 'מילוי פרטים', color: 'bg-success/10 text-success' },
+            { icon: UserCheck, label: 'בקרה ראשונה', color: 'bg-warning/10 text-warning' },
+            { icon: FileSignature, label: 'חתימות מנהלים', color: 'bg-brand-purple/10 text-brand-purple' },
+            { icon: CheckCircle, label: 'אישור סופי', color: 'bg-success/10 text-success' },
           ].map((step, index) => (
             <div key={index} className="flex flex-col items-center text-center">
               <div className={`w-20 h-20 rounded-full ${step.color} flex items-center justify-center mb-3`}>
@@ -75,7 +75,7 @@ const slides = [
             </div>
           ))}
         </div>
-        <div className="mt-8 p-6 bg-muted/50 rounded-xl max-w-3xl">
+        <div className="mt-8 p-6 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
           <p className="text-lg text-center">
             תהליך מובנה ומאובטח שמבטיח עמידה בכל דרישות הארגון והרגולציה
           </p>
@@ -93,40 +93,40 @@ const slides = [
           <h3 className="text-3xl font-bold text-primary">יצירת בקשת ספק חדש</h3>
           <ul className="space-y-4 text-lg">
             <li className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
               <span>הזנת פרטי ספק בסיסיים (שם + אימייל)</span>
             </li>
             <li className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
               <span>בחירת סוג ספק: משרד / תביעות</span>
             </li>
             <li className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
               <span>הקצאת מטפל לבקשה</span>
             </li>
             <li className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
               <span>בחירת סוג אישור נדרש</span>
             </li>
           </ul>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Badge className="bg-blue-100 text-blue-700">העלאה בודדת</Badge>
-            <Badge className="bg-purple-100 text-purple-700">העלאה מאקסל</Badge>
+            <Badge className="bg-accent/10 text-accent border-accent/20">העלאה בודדת</Badge>
+            <Badge className="bg-brand-purple/10 text-brand-purple border-brand-purple/20">העלאה מאקסל</Badge>
           </div>
         </div>
-        <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10">
+        <Card className="p-6 gradient-brand-light border-primary/10">
           <CardContent className="space-y-4">
-            <h4 className="font-bold text-xl mb-4">אפשרויות אישור:</h4>
+            <h4 className="font-bold text-xl mb-4 text-primary">אפשרויות אישור:</h4>
             <div className="space-y-3">
-              <div className="p-4 bg-background rounded-lg border">
+              <div className="p-4 bg-background rounded-lg border border-primary/10">
                 <div className="font-medium">אישור מנהל רכש בלבד</div>
                 <div className="text-sm text-muted-foreground">תהליך מהיר - חתימה אחת</div>
               </div>
-              <div className="p-4 bg-background rounded-lg border">
+              <div className="p-4 bg-background rounded-lg border border-primary/10">
                 <div className="font-medium">אישור מנהל רכש + סמנכ"ל</div>
                 <div className="text-sm text-muted-foreground">תהליך מלא - שתי חתימות</div>
               </div>
-              <div className="p-4 bg-background rounded-lg border">
+              <div className="p-4 bg-background rounded-lg border border-primary/10">
                 <div className="font-medium">ללא צורך באישור מנהל</div>
                 <div className="text-sm text-muted-foreground">אישור מיידי - מעקף תהליך</div>
               </div>
@@ -145,9 +145,9 @@ const slides = [
         <div className="space-y-6">
           <h3 className="text-3xl font-bold text-primary">תהליך דו-שלבי חכם</h3>
           
-          <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+          <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">1</div>
+              <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold">1</div>
               <span className="font-bold text-lg">העלאת מסמכים</span>
             </div>
             <ul className="space-y-2 text-sm mr-11">
@@ -159,9 +159,9 @@ const slides = [
             </ul>
           </div>
 
-          <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+          <div className="p-4 bg-success/5 rounded-xl border border-success/20">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">2</div>
+              <div className="w-8 h-8 rounded-full bg-success text-success-foreground flex items-center justify-center font-bold">2</div>
               <span className="font-bold text-lg">מילוי פרטים</span>
             </div>
             <ul className="space-y-2 text-sm mr-11">
@@ -172,35 +172,35 @@ const slides = [
           </div>
         </div>
 
-        <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+        <Card className="p-6 bg-gradient-to-br from-warning/5 to-brand-coral/5 border-warning/20">
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <Scan className="h-10 w-10 text-amber-600" />
-              <h4 className="font-bold text-2xl text-amber-800">OCR חכם</h4>
+              <Scan className="h-10 w-10 text-warning" />
+              <h4 className="font-bold text-2xl text-warning">OCR חכם</h4>
             </div>
             <p className="text-lg">
               המערכת סורקת את המסמכים ומחלצת אוטומטית:
             </p>
             <ul className="space-y-3">
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 <span>מספר בנק, סניף וחשבון</span>
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 <span>שם חברה וח.פ</span>
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 <span>כתובת ופרטי קשר</span>
               </li>
               <li className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-5 w-5 text-success" />
                 <span>טלפון ופקס</span>
               </li>
             </ul>
-            <div className="mt-4 p-3 bg-amber-100 rounded-lg">
-              <p className="text-sm text-amber-800">
+            <div className="mt-4 p-3 bg-warning/10 rounded-lg border border-warning/20">
+              <p className="text-sm text-warning">
                 <strong>תמיכה:</strong> PDF, תמונות, Word
               </p>
             </div>
@@ -219,9 +219,9 @@ const slides = [
         <h3 className="text-3xl font-bold text-center">מנגנוני אבטחה</h3>
         
         <div className="grid grid-cols-3 gap-6 w-full max-w-4xl">
-          <Card className="p-6 text-center">
+          <Card className="p-6 text-center border-accent/20 hover:border-accent/40 transition-colors">
             <CardContent>
-              <Mail className="h-12 w-12 mx-auto mb-4 text-blue-500" />
+              <Mail className="h-12 w-12 mx-auto mb-4 text-accent" />
               <h4 className="font-bold text-lg mb-2">קישור מאובטח</h4>
               <p className="text-sm text-muted-foreground">
                 קישור ייחודי לכל ספק עם תוקף מוגבל (3-30 ימים)
@@ -229,9 +229,9 @@ const slides = [
             </CardContent>
           </Card>
           
-          <Card className="p-6 text-center">
+          <Card className="p-6 text-center border-warning/20 hover:border-warning/40 transition-colors">
             <CardContent>
-              <Clock className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+              <Clock className="h-12 w-12 mx-auto mb-4 text-warning" />
               <h4 className="font-bold text-lg mb-2">אימות OTP</h4>
               <p className="text-sm text-muted-foreground">
                 קוד חד פעמי נשלח למייל הספק לאימות זהות
@@ -239,9 +239,9 @@ const slides = [
             </CardContent>
           </Card>
           
-          <Card className="p-6 text-center">
+          <Card className="p-6 text-center border-success/20 hover:border-success/40 transition-colors">
             <CardContent>
-              <Eye className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <Eye className="h-12 w-12 mx-auto mb-4 text-success" />
               <h4 className="font-bold text-lg mb-2">תזכורת פקיעה</h4>
               <p className="text-sm text-muted-foreground">
                 התראה אוטומטית 24 שעות לפני סיום תוקף הקישור
@@ -265,9 +265,9 @@ const slides = [
           </p>
           
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+            <div className="p-4 bg-success/5 rounded-xl border border-success/20">
               <div className="flex items-center gap-3">
-                <CheckCircle className="h-8 w-8 text-green-500" />
+                <CheckCircle className="h-8 w-8 text-success" />
                 <div>
                   <div className="font-bold">אישור</div>
                   <div className="text-sm text-muted-foreground">ממשיך לשלב החתימות</div>
@@ -275,9 +275,9 @@ const slides = [
               </div>
             </div>
             
-            <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+            <div className="p-4 bg-warning/5 rounded-xl border border-warning/20">
               <div className="flex items-center gap-3">
-                <Send className="h-8 w-8 text-yellow-500" />
+                <Send className="h-8 w-8 text-warning" />
                 <div>
                   <div className="font-bold">שליחה מחדש</div>
                   <div className="text-sm text-muted-foreground">הספק מתבקש לתקן/להשלים</div>
@@ -285,9 +285,9 @@ const slides = [
               </div>
             </div>
             
-            <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+            <div className="p-4 bg-destructive/5 rounded-xl border border-destructive/20">
               <div className="flex items-center gap-3">
-                <Users className="h-8 w-8 text-red-500" />
+                <Users className="h-8 w-8 text-destructive" />
                 <div>
                   <div className="font-bold">דחייה</div>
                   <div className="text-sm text-muted-foreground">הספק מקבל הודעה ליצור קשר</div>
@@ -297,27 +297,27 @@ const slides = [
           </div>
         </div>
         
-        <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10">
+        <Card className="p-6 gradient-brand-light border-primary/10">
           <CardContent className="space-y-4">
-            <h4 className="font-bold text-xl">צפייה במסמכים</h4>
+            <h4 className="font-bold text-xl text-primary">צפייה במסמכים</h4>
             <p className="text-muted-foreground">
               המטפל יכול לצפות בכל המסמכים ובפרטי הספק לפני קבלת החלטה
             </p>
             <div className="space-y-2 mt-4">
-              <div className="flex items-center gap-2 p-2 bg-background rounded">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2 p-2 bg-background rounded border border-primary/10">
+                <FileText className="h-5 w-5 text-accent" />
                 <span>אישור ניהול ספרים</span>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-background rounded">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2 p-2 bg-background rounded border border-primary/10">
+                <FileText className="h-5 w-5 text-accent" />
                 <span>אישור ניכוי מס</span>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-background rounded">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2 p-2 bg-background rounded border border-primary/10">
+                <FileText className="h-5 w-5 text-accent" />
                 <span>אישור בנק</span>
               </div>
-              <div className="flex items-center gap-2 p-2 bg-background rounded">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className="flex items-center gap-2 p-2 bg-background rounded border border-primary/10">
+                <FileText className="h-5 w-5 text-accent" />
                 <span>חשבונית לדוגמא</span>
               </div>
             </div>
@@ -335,32 +335,32 @@ const slides = [
         <h3 className="text-3xl font-bold text-primary">תהליך החתימות</h3>
         
         <div className="flex items-center gap-8 w-full max-w-4xl justify-center">
-          <Card className="p-6 w-64 text-center border-2 border-purple-200">
+          <Card className="p-6 w-64 text-center border-2 border-brand-purple/30 hover:border-brand-purple/60 transition-colors">
             <CardContent>
-              <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
-                <FileSignature className="h-8 w-8 text-purple-600" />
+              <div className="w-16 h-16 rounded-full bg-brand-purple/10 flex items-center justify-center mx-auto mb-4">
+                <FileSignature className="h-8 w-8 text-brand-purple" />
               </div>
               <h4 className="font-bold text-lg">סמנכ"ל</h4>
               <p className="text-sm text-muted-foreground mt-2">חתימה ראשונה</p>
-              <Badge className="mt-3 bg-purple-100 text-purple-700">חובה בתהליך מלא</Badge>
+              <Badge className="mt-3 bg-brand-purple/10 text-brand-purple border-brand-purple/20">חובה בתהליך מלא</Badge>
             </CardContent>
           </Card>
           
           <ArrowLeft className="h-10 w-10 text-muted-foreground" />
           
-          <Card className="p-6 w-64 text-center border-2 border-blue-200">
+          <Card className="p-6 w-64 text-center border-2 border-accent/30 hover:border-accent/60 transition-colors">
             <CardContent>
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-                <FileSignature className="h-8 w-8 text-blue-600" />
+              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                <FileSignature className="h-8 w-8 text-accent" />
               </div>
               <h4 className="font-bold text-lg">מנהל רכש</h4>
               <p className="text-sm text-muted-foreground mt-2">חתימה שנייה</p>
-              <Badge className="mt-3 bg-blue-100 text-blue-700">חובה תמיד</Badge>
+              <Badge className="mt-3 bg-accent/10 text-accent border-accent/20">חובה תמיד</Badge>
             </CardContent>
           </Card>
         </div>
         
-        <div className="mt-8 p-6 bg-muted/50 rounded-xl max-w-3xl">
+        <div className="mt-8 p-6 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
           <div className="grid grid-cols-2 gap-6">
             <div>
               <h5 className="font-bold mb-2">✉️ התראות במייל</h5>
@@ -387,8 +387,8 @@ const slides = [
       <div className="grid grid-cols-2 gap-8 h-full items-center" dir="rtl">
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-            <h3 className="text-3xl font-bold text-green-600">הספק אושר!</h3>
+            <CheckCircle className="h-16 w-16 text-success" />
+            <h3 className="text-3xl font-bold text-success">הספק אושר!</h3>
           </div>
           
           <p className="text-lg">
@@ -397,43 +397,43 @@ const slides = [
           
           <ul className="space-y-3">
             <li className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-primary" />
+              <Mail className="h-5 w-5 text-accent" />
               <span>מייל אישור נשלח לספק</span>
             </li>
             <li className="flex items-center gap-3">
-              <Receipt className="h-5 w-5 text-primary" />
+              <Receipt className="h-5 w-5 text-accent" />
               <span>קישור להעלאת קבלות</span>
             </li>
             <li className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-primary" />
+              <Building2 className="h-5 w-5 text-accent" />
               <span>הספק מופיע ב-CRM</span>
             </li>
           </ul>
         </div>
         
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+        <Card className="p-6 bg-gradient-to-br from-success/5 to-success/10 border-success/20">
           <CardContent className="space-y-4">
-            <h4 className="font-bold text-xl text-green-800">סטטוסי CRM</h4>
+            <h4 className="font-bold text-xl text-success">סטטוסי CRM</h4>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-success/10">
                 <span>פעיל</span>
-                <Badge className="bg-green-100 text-green-700">Active</Badge>
+                <Badge className="bg-success/10 text-success border-success/20">Active</Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-brand-purple/10">
                 <span>VIP</span>
-                <Badge className="bg-purple-100 text-purple-700">VIP</Badge>
+                <Badge className="bg-brand-purple/10 text-brand-purple border-brand-purple/20">VIP</Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-warning/10">
                 <span>מושהה</span>
-                <Badge className="bg-yellow-100 text-yellow-700">Suspended</Badge>
+                <Badge className="bg-warning/10 text-warning border-warning/20">Suspended</Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-destructive/10">
                 <span>סגור</span>
-                <Badge className="bg-red-100 text-red-700">Closed</Badge>
+                <Badge className="bg-destructive/10 text-destructive border-destructive/20">Closed</Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-accent/10">
                 <span>אושר ביטחון</span>
-                <Badge className="bg-blue-100 text-blue-700">Security</Badge>
+                <Badge className="bg-accent/10 text-accent border-accent/20">Security</Badge>
               </div>
             </div>
           </CardContent>
@@ -451,9 +451,9 @@ const slides = [
         <h3 className="text-3xl font-bold">מערכת קבלות</h3>
         
         <div className="grid grid-cols-3 gap-6 w-full max-w-4xl">
-          <Card className="p-6">
+          <Card className="p-6 border-accent/20 hover:border-accent/40 transition-colors">
             <CardContent className="text-center">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-blue-500" />
+              <Upload className="h-12 w-12 mx-auto mb-4 text-accent" />
               <h4 className="font-bold mb-2">העלאה</h4>
               <p className="text-sm text-muted-foreground">
                 הספק מעלה קבלות דרך קישור מאובטח
@@ -461,9 +461,9 @@ const slides = [
             </CardContent>
           </Card>
           
-          <Card className="p-6">
+          <Card className="p-6 border-warning/20 hover:border-warning/40 transition-colors">
             <CardContent className="text-center">
-              <Eye className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+              <Eye className="h-12 w-12 mx-auto mb-4 text-warning" />
               <h4 className="font-bold mb-2">בדיקה</h4>
               <p className="text-sm text-muted-foreground">
                 המטפל בודק ומאשר/דוחה כל קבלה
@@ -471,9 +471,9 @@ const slides = [
             </CardContent>
           </Card>
           
-          <Card className="p-6">
+          <Card className="p-6 border-success/20 hover:border-success/40 transition-colors">
             <CardContent className="text-center">
-              <Star className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <Star className="h-12 w-12 mx-auto mb-4 text-success" />
               <h4 className="font-bold mb-2">דירוג</h4>
               <p className="text-sm text-muted-foreground">
                 דירוג ספקים לפי ביצועים
@@ -482,7 +482,7 @@ const slides = [
           </Card>
         </div>
         
-        <div className="p-4 bg-muted/50 rounded-xl max-w-2xl">
+        <div className="p-4 bg-primary/5 rounded-xl max-w-2xl border border-primary/10">
           <p className="text-center text-muted-foreground">
             כל קבלה כוללת: סכום, תאריך, תיאור, וסטטוס (ממתין / מאושר / נדחה)
           </p>
@@ -496,12 +496,12 @@ const slides = [
     subtitle: 'יתרונות המערכת',
     content: (
       <div className="flex flex-col items-center justify-center h-full space-y-8" dir="rtl">
-        <h3 className="text-4xl font-bold text-primary text-center">למה ספק בקליק?</h3>
+        <h3 className="text-4xl font-bold text-gradient-brand text-center">למה ספק בקליק?</h3>
         
         <div className="grid grid-cols-2 gap-6 w-full max-w-4xl">
-          <div className="p-6 bg-blue-50 rounded-xl">
+          <div className="p-6 bg-accent/5 rounded-xl border border-accent/20">
             <div className="flex items-center gap-3 mb-3">
-              <Clock className="h-8 w-8 text-blue-600" />
+              <Clock className="h-8 w-8 text-accent" />
               <span className="font-bold text-xl">חיסכון בזמן</span>
             </div>
             <p className="text-muted-foreground">
@@ -509,9 +509,9 @@ const slides = [
             </p>
           </div>
           
-          <div className="p-6 bg-green-50 rounded-xl">
+          <div className="p-6 bg-success/5 rounded-xl border border-success/20">
             <div className="flex items-center gap-3 mb-3">
-              <Shield className="h-8 w-8 text-green-600" />
+              <Shield className="h-8 w-8 text-success" />
               <span className="font-bold text-xl">אבטחה מלאה</span>
             </div>
             <p className="text-muted-foreground">
@@ -519,9 +519,9 @@ const slides = [
             </p>
           </div>
           
-          <div className="p-6 bg-purple-50 rounded-xl">
+          <div className="p-6 bg-brand-purple/5 rounded-xl border border-brand-purple/20">
             <div className="flex items-center gap-3 mb-3">
-              <Scan className="h-8 w-8 text-purple-600" />
+              <Scan className="h-8 w-8 text-brand-purple" />
               <span className="font-bold text-xl">OCR חכם</span>
             </div>
             <p className="text-muted-foreground">
@@ -529,9 +529,9 @@ const slides = [
             </p>
           </div>
           
-          <div className="p-6 bg-amber-50 rounded-xl">
+          <div className="p-6 bg-warning/5 rounded-xl border border-warning/20">
             <div className="flex items-center gap-3 mb-3">
-              <FileSignature className="h-8 w-8 text-amber-600" />
+              <FileSignature className="h-8 w-8 text-warning" />
               <span className="font-bold text-xl">חתימות דיגיטליות</span>
             </div>
             <p className="text-muted-foreground">
@@ -541,7 +541,7 @@ const slides = [
         </div>
         
         <div className="mt-8">
-          <Badge className="text-xl px-6 py-3 bg-primary text-primary-foreground">
+          <Badge className="text-xl px-6 py-3 gradient-brand text-primary-foreground border-0">
             ביטוח ישיר - ספק בקליק 🚀
           </Badge>
         </div>
@@ -682,8 +682,8 @@ const Presentation = () => {
       tabIndex={0}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+      <div className="flex items-center justify-between p-4 border-b border-primary/10 bg-primary/5">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="hover:bg-primary/10">
           <Home className="h-4 w-4 ml-2" />
           חזרה לדף הבית
         </Button>
@@ -693,6 +693,7 @@ const Presentation = () => {
             size="sm" 
             onClick={downloadPDF}
             disabled={isDownloading}
+            className="border-accent/30 hover:border-accent hover:bg-accent/10"
           >
             {isDownloading ? (
               <>
@@ -711,6 +712,7 @@ const Presentation = () => {
             size="sm" 
             onClick={downloadPPTX}
             disabled={isDownloading}
+            className="border-brand-purple/30 hover:border-brand-purple hover:bg-brand-purple/10"
           >
             {isDownloading ? (
               <>
@@ -728,7 +730,7 @@ const Presentation = () => {
             {currentSlide + 1} / {slides.length}
           </span>
         </div>
-        <div className="text-sm font-medium">{slides[currentSlide].title}</div>
+        <div className="text-sm font-medium text-primary">{slides[currentSlide].title}</div>
       </div>
 
       {/* Slide Content */}
@@ -739,11 +741,12 @@ const Presentation = () => {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between p-4 border-t bg-muted/30">
+      <div className="flex items-center justify-between p-4 border-t border-primary/10 bg-primary/5">
         <Button
           variant="outline"
           onClick={prevSlide}
           disabled={currentSlide === 0}
+          className="border-primary/20 hover:border-primary hover:bg-primary/10"
         >
           <ArrowRight className="h-4 w-4 ml-2" />
           הקודם
@@ -757,8 +760,8 @@ const Presentation = () => {
               onClick={() => setCurrentSlide(index)}
               className={`w-3 h-3 rounded-full transition-all ${
                 index === currentSlide 
-                  ? 'bg-primary w-8' 
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                  ? 'bg-accent w-8' 
+                  : 'bg-primary/20 hover:bg-primary/40'
               }`}
             />
           ))}
@@ -768,6 +771,7 @@ const Presentation = () => {
           variant="outline"
           onClick={nextSlide}
           disabled={currentSlide === slides.length - 1}
+          className="border-primary/20 hover:border-primary hover:bg-primary/10"
         >
           הבא
           <ArrowLeft className="h-4 w-4 mr-2" />
