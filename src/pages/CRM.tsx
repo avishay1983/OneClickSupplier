@@ -540,8 +540,12 @@ export default function CRM() {
             {/* Stats Cards */}
             {(() => {
               const realVendors = vendors.filter(v => !isTestVendor(v));
+              const vendorsWithRating = realVendors.filter(v => v.rating !== null && v.rating !== undefined);
+              const averageRating = vendorsWithRating.length > 0 
+                ? (vendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / vendorsWithRating.length).toFixed(1)
+                : '—';
               return (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" dir="rtl">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6" dir="rtl">
                   <Card>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
@@ -587,6 +591,24 @@ export default function CRM() {
                           <p className="text-sm text-muted-foreground">ספקים מושהים</p>
                           <p className="text-2xl font-bold text-yellow-600">
                             {realVendors.filter(v => v.crm_status === 'suspended').length}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <Star className="h-8 w-8 text-yellow-500 opacity-50 fill-yellow-500" />
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">דירוג ממוצע</p>
+                          <p className="text-2xl font-bold text-yellow-600">
+                            {averageRating}
+                            {vendorsWithRating.length > 0 && (
+                              <span className="text-sm font-normal text-muted-foreground mr-1">
+                                ({vendorsWithRating.length} ספקים)
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
