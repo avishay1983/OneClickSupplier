@@ -68,6 +68,15 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Brand colors
+        brand: {
+          navy: "hsl(230 50% 24%)",
+          purple: "hsl(250 100% 62%)",
+          violet: "hsl(269 68% 53%)",
+          magenta: "hsl(300 52% 45%)",
+          pink: "hsl(330 67% 52%)",
+          coral: "hsl(348 100% 60%)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

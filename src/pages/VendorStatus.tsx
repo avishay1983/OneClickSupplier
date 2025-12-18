@@ -129,7 +129,7 @@ export default function VendorStatus() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-[#1a2b5f] border-b shadow-sm">
+      <header className="bg-primary border-b border-primary/20 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <img 
