@@ -14,6 +14,8 @@ import Auth from "./pages/Auth";
 import ManagerApprovalResult from "./pages/ManagerApprovalResult";
 import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
+import VendorQuoteSubmit from "./pages/VendorQuoteSubmit";
+import QuoteApproval from "./pages/QuoteApproval";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/vendor/:token" element={<VendorForm />} />
             <Route path="/vendor-status/:token" element={<VendorStatus />} />
             <Route path="/vendor-receipts/:token" element={<VendorReceipts />} />
+            <Route path="/vendor-quote/:token" element={<VendorQuoteSubmit />} />
+            <Route path="/quote-approval/:token" element={<QuoteApproval />} />
             <Route path="/documentation" element={<SystemDocumentation />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
             <Route path="*" element={<NotFound />} />
