@@ -27,6 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -44,7 +51,8 @@ import {
   Send,
   Mail,
   User,
-  Settings
+  Settings,
+  SlidersHorizontal
 } from 'lucide-react';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { format } from 'date-fns';
@@ -841,149 +849,123 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-start gap-1">
-                            {/* Resend button for pending_vendor status */}
-                            {quoteStatus === 'pending_vendor' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleResendQuoteRequest(quote)}
-                                disabled={resendingQuoteId === quote.id}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1"
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 transition-all hover:rotate-90 duration-300"
                               >
-                                {resendingQuoteId === quote.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <Mail className="h-4 w-4" />
-                                    <span>שלח שוב</span>
-                                  </>
-                                )}
+                                <SlidersHorizontal className="h-5 w-5" />
                               </Button>
-                            )}
-                            
-                            {quote.file_path && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownload(quote)}
-                                title="הורדה"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            )}
-                            
-                            {/* Handler Approval buttons - for pending_handler status */}
-                            {quoteStatus === 'pending_handler' && isHandler(quote) && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleHandlerApprove(quote)}
-                                  disabled={isUpdating}
-                                  className="text-success hover:text-success hover:bg-success/10"
-                                  title="אשר ושלח לסמנכל"
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="bg-background">
+                              {/* Download - always available if file exists */}
+                              {quote.file_path && (
+                                <DropdownMenuItem onClick={() => handleDownload(quote)}>
+                                  <Download className="h-4 w-4 ml-2" />
+                                  הורד קובץ
+                                </DropdownMenuItem>
+                              )}
+
+                              {/* Resend to vendor - for pending_vendor status */}
+                              {quoteStatus === 'pending_vendor' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleResendQuoteRequest(quote)}
+                                  disabled={resendingQuoteId === quote.id}
                                 >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedQuote(quote);
-                                    setRejectType('handler');
-                                    setRejectDialogOpen(true);
-                                  }}
-                                  disabled={isUpdating}
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="דחה"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                            
-                            {/* VP Approval buttons and resend */}
-                            {quoteStatus === 'pending_vp' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleResendVPEmail(quote)}
-                                  disabled={resendingVPQuoteId === quote.id}
-                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1"
-                                  title="שלח שוב מייל לסמנכ״ל"
-                                >
-                                  {resendingVPQuoteId === quote.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
+                                  <Mail className="h-4 w-4 ml-2 text-blue-500" />
+                                  שלח שוב לספק
+                                </DropdownMenuItem>
+                              )}
+
+                              {/* Handler actions - for pending_handler status */}
+                              {quoteStatus === 'pending_handler' && isHandler(quote) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleHandlerApprove(quote)}
+                                    disabled={isUpdating}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                    אשר ושלח לסמנכ"ל
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedQuote(quote);
+                                      setRejectType('handler');
+                                      setRejectDialogOpen(true);
+                                    }}
+                                    disabled={isUpdating}
+                                  >
+                                    <XCircle className="h-4 w-4 ml-2 text-red-500" />
+                                    דחה הצעה
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+
+                              {/* VP actions - for pending_vp status */}
+                              {quoteStatus === 'pending_vp' && (
+                                <>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleResendVPEmail(quote)}
+                                    disabled={resendingVPQuoteId === quote.id}
+                                  >
+                                    <Mail className="h-4 w-4 ml-2 text-blue-500" />
+                                    שלח שוב לסמנכ"ל
+                                  </DropdownMenuItem>
+                                  {isVP && (
                                     <>
-                                      <Mail className="h-4 w-4" />
-                                      <span>שלח שוב</span>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => handleVPApprove(quote)}
+                                        disabled={isUpdating}
+                                      >
+                                        <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                        אשר (סמנכ"ל)
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => {
+                                          setSelectedQuote(quote);
+                                          setRejectType('vp');
+                                          setRejectDialogOpen(true);
+                                        }}
+                                        disabled={isUpdating}
+                                      >
+                                        <XCircle className="h-4 w-4 ml-2 text-red-500" />
+                                        דחה הצעה
+                                      </DropdownMenuItem>
                                     </>
                                   )}
-                                </Button>
-                                {isVP && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleVPApprove(quote)}
-                                      disabled={isUpdating}
-                                      className="text-success hover:text-success hover:bg-success/10"
-                                      title='אשר (סמנכ"ל)'
-                                    >
-                                      <CheckCircle className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedQuote(quote);
-                                        setRejectType('vp');
-                                        setRejectDialogOpen(true);
-                                      }}
-                                      disabled={isUpdating}
-                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      title="דחה"
-                                    >
-                                      <XCircle className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </>
-                            )}
-                            
-                            {/* Procurement Manager Approval buttons */}
-                            {quoteStatus === 'pending_procurement' && isProcurementManager && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleProcurementApprove(quote)}
-                                  disabled={isUpdating}
-                                  className="text-success hover:text-success hover:bg-success/10"
-                                  title="אשר (מנהל רכש)"
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedQuote(quote);
-                                    setRejectType('procurement');
-                                    setRejectDialogOpen(true);
-                                  }}
-                                  disabled={isUpdating}
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="דחה"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                                </>
+                              )}
+
+                              {/* Procurement Manager actions - for pending_procurement status */}
+                              {quoteStatus === 'pending_procurement' && isProcurementManager && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    onClick={() => handleProcurementApprove(quote)}
+                                    disabled={isUpdating}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                    אשר (מנהל רכש)
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedQuote(quote);
+                                      setRejectType('procurement');
+                                      setRejectDialogOpen(true);
+                                    }}
+                                    disabled={isUpdating}
+                                  >
+                                    <XCircle className="h-4 w-4 ml-2 text-red-500" />
+                                    דחה הצעה
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
