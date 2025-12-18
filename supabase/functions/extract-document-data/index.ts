@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.5-pro',
-  accurate: 'gemini-2.5-pro',
+  fast: 'google/gemini-2.5-flash',
+  accurate: 'google/gemini-2.5-pro',
 };
 
 // Minimum fields threshold for retry
@@ -209,35 +209,40 @@ function getSystemPrompt(documentType: string): string {
 }`;
 }
 
+function toImageDataUrl(imageBase64: string, mimeType?: string) {
+  if (!imageBase64) return '';
+  if (imageBase64.startsWith('data:')) return imageBase64;
+  return `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
+}
+
 async function extractWithModel(imageBase64: string, mimeType: string, documentType: string, model: string, apiKey: string) {
-  const startTime = Date.now();
   logOCR('info', `Starting OCR extraction`, { model, documentType, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
   
   const systemPrompt = getSystemPrompt(documentType);
   const userPrompt = `סרוק בזהירות את התמונה הבאה (סוג מסמך: ${documentType}) וחלץ את כל הנתונים העסקיים. בדוק כל פינה ואזור בתמונה. אם חלק מהטקסט מטושטש, נסה לפענח לפי הקשר.`;
-  
-  // Gemini API format
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+  const imageUrl = toImageDataUrl(imageBase64, mimeType);
+
+  // Lovable AI Gateway (Gemini)
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: systemPrompt + '\n\n' + userPrompt },
-          {
-            inline_data: {
-              mime_type: mimeType || 'image/jpeg',
-              data: imageBase64
-            }
-          }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 2048,
-      }
+      model,
+      temperature: 0.1,
+      max_tokens: 2048,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userPrompt },
+            { type: 'image_url', image_url: { url: imageUrl } },
+          ],
+        },
+      ],
     }),
   });
 
@@ -302,9 +307,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -315,7 +320,7 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, GEMINI_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, LOVABLE_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
@@ -328,6 +333,13 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'payment_required', message: 'נדרשת יתרה לשירות ה-AI (Lovable). אנא הוסף קרדיטים ל-Workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       return new Response(
         JSON.stringify({ error: 'ai_error', message: 'שגיאה בעיבוד התמונה' }),
@@ -336,7 +348,7 @@ serve(async (req) => {
     }
 
     let data = await response.json();
-    let content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let content = data.choices?.[0]?.message?.content || '';
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
@@ -379,12 +391,12 @@ serve(async (req) => {
       
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, GEMINI_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, LOVABLE_API_KEY);
         const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
-          const retryContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const retryContent = data.choices?.[0]?.message?.content || '';
           
           if (retryContent) {
             let retryExtracted = parseResponse(retryContent);
