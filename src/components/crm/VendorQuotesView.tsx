@@ -573,7 +573,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card 
@@ -698,8 +698,8 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
       {/* Quotes Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>הצעות מחיר ({filteredQuotes.length})</CardTitle>
+        <CardHeader className="text-right">
+          <CardTitle className="text-right">הצעות מחיר ({filteredQuotes.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredQuotes.length === 0 ? (
