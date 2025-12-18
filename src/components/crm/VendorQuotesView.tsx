@@ -783,21 +783,23 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-start gap-1">
                             {/* Resend button for pending_vendor status */}
                             {quoteStatus === 'pending_vendor' && (
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => handleResendQuoteRequest(quote)}
                                 disabled={resendingQuoteId === quote.id}
-                                title="שלח מייל מחדש"
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1"
                               >
                                 {resendingQuoteId === quote.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                  <RefreshCw className="h-4 w-4" />
+                                  <>
+                                    <Mail className="h-4 w-4" />
+                                    <span>שלח שוב</span>
+                                  </>
                                 )}
                               </Button>
                             )}
