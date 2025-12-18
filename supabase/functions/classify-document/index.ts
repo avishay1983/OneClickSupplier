@@ -30,12 +30,12 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('[classify-document] OPENAI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('[classify-document] LOVABLE_API_KEY is not configured');
       return new Response(
-        JSON.stringify({ error: 'שגיאת תצורה בשרת' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'שגיאת תצורה בשרת', skip_validation: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -59,7 +59,7 @@ serve(async (req) => {
   "reason": "הסבר קצר למה זה הסוג הזה"
 }`;
 
-    // Extract base64 data from data URL if present
+    // Normalize to data URL
     let imageData = imageBase64;
     let mimeType = 'image/jpeg';
     if (imageBase64.startsWith('data:')) {
@@ -74,15 +74,15 @@ serve(async (req) => {
       ? imageBase64
       : `data:${mimeType};base64,${imageData}`;
 
-    // OpenAI API (vision)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Lovable AI Gateway (Gemini)
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'google/gemini-2.5-flash',
         temperature: 0.1,
         max_tokens: 800,
         messages: [
@@ -99,7 +99,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] OpenAI API error:', response.status, errorText);
+      console.error('[classify-document] AI gateway error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
