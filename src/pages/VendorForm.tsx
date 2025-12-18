@@ -238,19 +238,27 @@ export default function VendorForm() {
 
   // Classify document type using AI
   const classifyDocument = useCallback(async (file: File, expectedType: DocumentType): Promise<{ isMatch: boolean; detectedTypeHebrew: string; reason: string } | null> => {
+    console.log('[classifyDocument] Starting classification for:', file.name, 'Expected type:', expectedType);
+    
     try {
       let base64Data: string;
       
       // Convert file to base64
       if (isPdfFile(file)) {
+        console.log('[classifyDocument] Processing PDF file');
         const pdfResult = await pdfToImage(file);
-        if (!pdfResult) return null;
+        if (!pdfResult) {
+          console.log('[classifyDocument] PDF conversion failed');
+          return null;
+        }
         base64Data = `data:${pdfResult.mimeType};base64,${pdfResult.base64}`;
       } else if (isWordFile(file)) {
+        console.log('[classifyDocument] Skipping Word file classification');
         // Skip classification for Word files
         return null;
       } else {
         // Regular image file
+        console.log('[classifyDocument] Processing image file');
         const reader = new FileReader();
         base64Data = await new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
@@ -259,38 +267,48 @@ export default function VendorForm() {
         });
       }
 
+      console.log('[classifyDocument] Calling classify-document edge function...');
       const { data, error } = await supabase.functions.invoke('classify-document', {
         body: { imageBase64: base64Data, expectedType },
       });
 
+      console.log('[classifyDocument] Response:', { data, error });
+
       if (error) {
-        console.error('Classification error:', error);
+        console.error('[classifyDocument] Classification error:', error);
         return null;
       }
 
       if (data?.skip_validation || data?.error) {
+        console.log('[classifyDocument] Skipping validation due to:', data?.error || 'skip_validation flag');
         return null;
       }
 
-      return {
+      const result = {
         isMatch: data.is_match,
         detectedTypeHebrew: data.detected_type_hebrew || data.detected_type,
         reason: data.reason || '',
       };
+      console.log('[classifyDocument] Classification result:', result);
+      
+      return result;
     } catch (err) {
-      console.error('Document classification error:', err);
+      console.error('[classifyDocument] Document classification error:', err);
       return null;
     }
   }, []);
 
   // Handle file selection with classification
   const handleFileSelectWithClassification = useCallback(async (docType: DocumentType, file: File) => {
+    console.log('[handleFileSelectWithClassification] File selected:', file.name, 'for type:', docType);
     setIsClassifyingDocument(docType);
     
     try {
       const result = await classifyDocument(file, docType);
+      console.log('[handleFileSelectWithClassification] Classification result:', result);
       
       if (result && !result.isMatch) {
+        console.log('[handleFileSelectWithClassification] Mismatch detected! Showing dialog');
         // Show mismatch dialog
         setDocMismatchInfo({
           expectedType: docType,
@@ -301,11 +319,12 @@ export default function VendorForm() {
         });
         setShowDocMismatchDialog(true);
       } else {
+        console.log('[handleFileSelectWithClassification] No mismatch or skipped - setting file directly');
         // No mismatch or classification skipped - set file directly
         setFiles(prev => ({ ...prev, [docType]: file }));
       }
     } catch (error) {
-      console.error('Error during classification:', error);
+      console.error('[handleFileSelectWithClassification] Error during classification:', error);
       // On error, just set the file
       setFiles(prev => ({ ...prev, [docType]: file }));
     } finally {
