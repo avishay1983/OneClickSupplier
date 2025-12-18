@@ -175,7 +175,7 @@ serve(async (req) => {
     const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
 
     // Google Gemini API format
-    const response = await fetch(`${GEMINI_API_URL}/gemini-1.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    const response = await fetch(`${GEMINI_API_URL}/gemini-2.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
