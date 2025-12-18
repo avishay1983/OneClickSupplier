@@ -2,95 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Corporate Design System - Blue & Gray Theme with RTL Support */
+/* Brand Design System - Bituach Yashir Colors */
 
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* Brand Colors:
+       #1e285a - Dark Navy (Primary)
+       #5d3bff - Vibrant Purple (Accent)
+       #8639d6 - Purple
+       #ad36ac - Magenta
+       #d73485 - Pink
+       #ff325c - Coral Red
+    */
+    
+    --background: 230 25% 97%;
+    --foreground: 230 50% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 230 50% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 230 50% 20%;
 
-    --primary: 215 80% 45%;
+    /* Primary - Dark Navy #1e285a */
+    --primary: 230 50% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 15% 92%;
-    --secondary-foreground: 215 25% 25%;
+    /* Secondary - Light Purple tint */
+    --secondary: 250 60% 95%;
+    --secondary-foreground: 250 100% 45%;
 
-    --muted: 215 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    /* Muted - Soft gray with purple undertone */
+    --muted: 250 20% 94%;
+    --muted-foreground: 230 20% 45%;
 
-    --accent: 215 60% 92%;
-    --accent-foreground: 215 80% 35%;
+    /* Accent - Vibrant Purple #5d3bff */
+    --accent: 250 100% 62%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    /* Destructive - Coral Red #ff325c */
+    --destructive: 348 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 215 80% 45%;
+    --border: 250 30% 88%;
+    --input: 250 30% 88%;
+    --ring: 250 100% 62%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
+    /* Success - Green */
     --success: 145 65% 42%;
     --success-foreground: 0 0% 100%;
     
+    /* Warning - Orange */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 215 25% 15%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 215 80% 55%;
+    /* Brand accent colors */
+    --brand-purple: 269 68% 53%;
+    --brand-magenta: 300 52% 45%;
+    --brand-pink: 330 67% 52%;
+    --brand-coral: 348 100% 60%;
+
+    /* Sidebar */
+    --sidebar-background: 230 50% 20%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 250 100% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 22%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 215 25% 25%;
-    --sidebar-ring: 215 80% 55%;
+    --sidebar-accent: 230 50% 28%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 230 40% 30%;
+    --sidebar-ring: 250 100% 62%;
   }
 
   .dark {
-    --background: 215 25% 10%;
-    --foreground: 210 20% 98%;
+    --background: 230 40% 8%;
+    --foreground: 0 0% 98%;
 
-    --card: 215 25% 13%;
-    --card-foreground: 210 20% 98%;
+    --card: 230 40% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 215 25% 13%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 230 40% 12%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 215 80% 55%;
+    /* Primary - Lighter navy for dark mode */
+    --primary: 230 60% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 25% 20%;
-    --secondary-foreground: 210 20% 98%;
+    /* Secondary */
+    --secondary: 250 40% 20%;
+    --secondary-foreground: 250 80% 80%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    /* Muted */
+    --muted: 230 30% 18%;
+    --muted-foreground: 230 20% 60%;
 
-    --accent: 215 40% 25%;
-    --accent-foreground: 210 20% 98%;
+    /* Accent - Vibrant Purple */
+    --accent: 250 100% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 45%;
+    /* Destructive */
+    --destructive: 348 90% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
-    --ring: 215 80% 55%;
+    --border: 230 30% 22%;
+    --input: 230 30% 22%;
+    --ring: 250 100% 65%;
 
-    --sidebar-background: 215 25% 8%;
-    --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 215 80% 55%;
+    /* Sidebar dark */
+    --sidebar-background: 230 50% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 250 100% 70%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 15%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 215 25% 18%;
-    --sidebar-ring: 215 80% 55%;
+    --sidebar-accent: 230 40% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 230 35% 18%;
+    --sidebar-ring: 250 100% 65%;
   }
 }
 
@@ -115,5 +144,25 @@
   
   .ltr {
     direction: ltr;
+  }
+
+  /* Brand gradient utilities */
+  .gradient-brand {
+    background: linear-gradient(135deg, hsl(230 50% 24%) 0%, hsl(250 100% 62%) 100%);
+  }
+
+  .gradient-brand-light {
+    background: linear-gradient(135deg, hsl(250 60% 95%) 0%, hsl(300 40% 95%) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(250 100% 62%) 0%, hsl(269 68% 53%) 100%);
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(135deg, hsl(230 50% 24%) 0%, hsl(250 100% 62%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

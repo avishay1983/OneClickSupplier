@@ -65,7 +65,7 @@ const getStatusClass = (status: VendorStatus) => {
     case 'submitted':
       return 'bg-warning text-warning-foreground';
     case 'first_review':
-      return 'bg-blue-500 text-white';
+      return 'bg-accent text-accent-foreground';
     case 'rejected':
       return 'bg-destructive text-destructive-foreground';
     default:
