@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.send-receipt-status]
 verify_jwt = false
+
+[functions.vendor-quote-submit]
+verify_jwt = false
+
+[functions.vendor-quote-details]
+verify_jwt = false
