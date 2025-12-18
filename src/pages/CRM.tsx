@@ -544,6 +544,17 @@ export default function CRM() {
               const averageRating = vendorsWithRating.length > 0 
                 ? (vendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / vendorsWithRating.length).toFixed(1)
                 : '—';
+              
+              // Breakdown by vendor type
+              const generalVendorsWithRating = vendorsWithRating.filter(v => v.vendor_type === 'general' || !v.vendor_type);
+              const claimsVendorsWithRating = vendorsWithRating.filter(v => v.vendor_type === 'claims');
+              const avgGeneral = generalVendorsWithRating.length > 0
+                ? (generalVendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / generalVendorsWithRating.length).toFixed(1)
+                : '—';
+              const avgClaims = claimsVendorsWithRating.length > 0
+                ? (claimsVendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / claimsVendorsWithRating.length).toFixed(1)
+                : '—';
+              
               return (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6" dir="rtl">
                   <Card>
@@ -604,12 +615,11 @@ export default function CRM() {
                           <p className="text-sm text-muted-foreground">דירוג ממוצע</p>
                           <p className="text-2xl font-bold text-yellow-600">
                             {averageRating}
-                            {vendorsWithRating.length > 0 && (
-                              <span className="text-sm font-normal text-muted-foreground mr-1">
-                                ({vendorsWithRating.length} ספקים)
-                              </span>
-                            )}
                           </p>
+                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                            <span>משרד: <span className="font-semibold text-foreground">{avgGeneral}</span></span>
+                            <span>תביעות: <span className="font-semibold text-foreground">{avgClaims}</span></span>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
