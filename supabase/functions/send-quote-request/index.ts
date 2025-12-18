@@ -107,7 +107,24 @@ serve(async (req: Request): Promise<Response> => {
       .eq("id", quoteId);
 
     // Build the quote submission link
-    const baseUrl = Deno.env.get("SITE_URL") || "https://ijyqtemnhlbamxmgjuzp.lovableproject.com";
+    // Priority:
+    // 1) SITE_URL secret (for a fixed production/custom domain)
+    // 2) Request origin/referer (so preview vs production links match where the request came from)
+    // 3) Fallback to the same Lovable domain used elsewhere in the system
+    const envSiteUrl = Deno.env.get("SITE_URL")?.trim();
+    const origin = req.headers.get("origin")?.trim();
+    const referer = req.headers.get("referer")?.trim();
+
+    const normalized = (url: string) => url.replace(/\/+$/, "");
+
+    const baseUrl = envSiteUrl
+      ? normalized(envSiteUrl)
+      : origin
+        ? normalized(origin)
+        : referer
+          ? new URL(referer).origin
+          : "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+
     const quoteLink = `${baseUrl}/vendor-quote/${quote.quote_secure_token}`;
 
     const emailHtml = `
