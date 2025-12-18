@@ -357,24 +357,45 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         .eq('setting_key', 'vp_email')
         .single();
 
-      if (settings?.setting_value) {
-        // Send email to VP
-        await supabase.functions.invoke('send-quote-approval-email', {
-          body: {
-            quoteId: quote.id,
-            approverEmail: settings.setting_value,
-            approverName: 'סמנכ"ל',
-            vendorName: quote.vendor_name,
-            amount: quote.amount,
-            description: quote.description,
-            approvalType: 'vp',
-          },
-        });
+      let emailState: 'sent' | 'not_configured' | 'failed' = 'sent';
+      let emailErrorMessage = '';
+
+      const vpEmail = (settings?.setting_value ?? '').trim();
+      if (!vpEmail) {
+        emailState = 'not_configured';
+      } else {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke(
+          'send-quote-approval-email',
+          {
+            body: {
+              quoteId: quote.id,
+              approverEmail: vpEmail,
+              approverName: 'סמנכ"ל',
+              vendorName: quote.vendor_name,
+              amount: quote.amount,
+              description: quote.description,
+              approvalType: 'vp',
+            },
+          }
+        );
+
+        if (emailError || (emailData as any)?.success === false) {
+          emailState = 'failed';
+          emailErrorMessage =
+            (emailData as any)?.error?.message || (emailError as any)?.message || '';
+          console.error('VP approval email send failed:', { emailError, emailData });
+        }
       }
 
       toast({
         title: 'הצעת המחיר אושרה',
-        description: 'נשלח מייל לסמנכ"ל לאישור',
+        description:
+          emailState === 'sent'
+            ? 'נשלח מייל לסמנכ"ל לאישור'
+            : emailState === 'not_configured'
+              ? 'אושר, אבל אין מייל סמנכ"ל מוגדר בהגדרות'
+              : `אושר, אבל המייל לסמנכ"ל לא נשלח${emailErrorMessage ? `: ${emailErrorMessage}` : ''}`,
+        ...(emailState === 'sent' ? {} : { variant: 'destructive' as const }),
       });
 
       fetchQuotes();
@@ -410,7 +431,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       }
 
       // Send email to VP
-      const { error } = await supabase.functions.invoke('send-quote-approval-email', {
+      const { data: emailData, error } = await supabase.functions.invoke('send-quote-approval-email', {
         body: {
           quoteId: quote.id,
           approverEmail: settings.setting_value,
@@ -423,6 +444,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       });
 
       if (error) throw error;
+      if ((emailData as any)?.success === false) {
+        toast({
+          title: 'שגיאה',
+          description: (emailData as any)?.error?.message || 'לא ניתן לשלוח את המייל',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       toast({
         title: 'המייל נשלח',

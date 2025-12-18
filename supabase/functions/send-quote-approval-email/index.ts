@@ -25,31 +25,49 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { quoteId, approverEmail, approverName, vendorName, amount, description, approvalType }: SendApprovalEmailPayload = await req.json();
+    const {
+      quoteId,
+      approverEmail,
+      approverName,
+      vendorName,
+      amount,
+      description,
+      approvalType,
+    }: SendApprovalEmailPayload = await req.json();
 
-    console.log("Sending approval email:", { quoteId, approverEmail, approvalType });
+    const normalizedApproverEmail = (approverEmail ?? '').trim().toLowerCase();
+    if (!normalizedApproverEmail) {
+      throw new Error('Missing approverEmail');
+    }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    console.log('Sending approval email:', {
+      quoteId,
+      approverEmail: normalizedApproverEmail,
+      approvalType,
+    });
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get the quote
     const { data: quote, error: quoteError } = await supabase
-      .from("vendor_quotes")
-      .select("quote_secure_token, file_path")
-      .eq("id", quoteId)
+      .from('vendor_quotes')
+      .select('quote_secure_token, file_path')
+      .eq('id', quoteId)
       .single();
 
     if (quoteError || !quote) {
-      console.error("Quote not found:", quoteError);
-      throw new Error("Quote not found");
+      console.error('Quote not found:', quoteError);
+      throw new Error('Quote not found');
     }
 
     // Build the approval link
-    const baseUrl = Deno.env.get("SITE_URL") || "https://ijyqtemnhlbamxmgjuzp.lovableproject.com";
+    const baseUrl =
+      Deno.env.get('SITE_URL') || 'https://ijyqtemnhlbamxmgjuzp.lovableproject.com';
     const approvalLink = `${baseUrl}/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
 
-    const approvalTypeName = approvalType === "vp" ? "סמנכ\"ל" : "מנהל רכש";
+    const approvalTypeName = approvalType === 'vp' ? 'סמנכ"ל' : 'מנהל רכש';
 
     const emailHtml = `
       <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -69,8 +87,8 @@ serve(async (req: Request): Promise<Response> => {
         
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 5px 0;"><strong>ספק:</strong> ${vendorName}</p>
-          <p style="margin: 5px 0;"><strong>סכום:</strong> ₪${amount?.toLocaleString() || "לא צוין"}</p>
-          <p style="margin: 5px 0;"><strong>תיאור:</strong> ${description || "לא צוין"}</p>
+          <p style="margin: 5px 0;"><strong>סכום:</strong> ₪${amount?.toLocaleString() || 'לא צוין'}</p>
+          <p style="margin: 5px 0;"><strong>תיאור:</strong> ${description || 'לא צוין'}</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -87,19 +105,33 @@ serve(async (req: Request): Promise<Response> => {
       </div>
     `;
 
+    const fromEmail =
+      Deno.env.get('RESEND_FROM_EMAIL') || 'ביטוח ישיר <onboarding@resend.dev>';
+
     const emailResponse = await resend.emails.send({
-      from: "ביטוח ישיר <onboarding@resend.dev>",
-      to: [approverEmail],
+      from: fromEmail,
+      to: [normalizedApproverEmail],
       subject: `בקשה לאישור הצעת מחיר - ${vendorName}`,
       html: emailHtml,
     });
 
-    console.log("Approval email sent successfully:", emailResponse);
+    if ((emailResponse as any)?.error) {
+      console.error('Resend email error:', (emailResponse as any).error);
+      return new Response(
+        JSON.stringify({ success: false, error: (emailResponse as any).error }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
 
-    return new Response(
-      JSON.stringify({ success: true, emailResponse }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    console.log('Approval email sent successfully:', emailResponse);
+
+    return new Response(JSON.stringify({ success: true, data: (emailResponse as any).data }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("Error sending approval email:", error);
     return new Response(
