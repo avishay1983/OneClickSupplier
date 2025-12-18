@@ -159,9 +159,9 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -172,14 +172,15 @@ serve(async (req) => {
 
     const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Lovable AI Gateway (Gemini)
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'google/gemini-2.5-flash',
         temperature: 0.1,
         max_tokens: 2048,
         messages: [
@@ -191,12 +192,19 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      logOCR('error', `[${requestId}] OpenAI API error`, { status: response.status, error: errorText });
+      logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText });
 
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'payment_required', message: 'נדרשת יתרה לשירות ה-AI (Lovable). אנא הוסף קרדיטים ל-Workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
