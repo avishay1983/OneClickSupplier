@@ -159,9 +159,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -172,36 +172,34 @@ serve(async (req) => {
 
     const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
 
-    // Gemini API format
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: SYSTEM_PROMPT + '\n\n' + userPrompt }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2048,
-        }
+        model: 'gpt-4o',
+        temperature: 0.1,
+        max_tokens: 2048,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logOCR('error', `[${requestId}] Gemini API error`, { status: response.status, error: errorText });
-      
+      logOCR('error', `[${requestId}] OpenAI API error`, { status: response.status, error: errorText });
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       return new Response(
         JSON.stringify({ error: 'ai_error', message: 'שגיאה בעיבוד הטקסט' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -209,8 +207,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
+    const content = data.choices?.[0]?.message?.content || '';
+
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`);
       return new Response(

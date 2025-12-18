@@ -30,9 +30,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      console.error('[classify-document] GOOGLE_GEMINI_API_KEY is not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      console.error('[classify-document] OPENAI_API_KEY is not configured');
       return new Response(
         JSON.stringify({ error: 'שגיאת תצורה בשרת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -70,34 +70,36 @@ serve(async (req) => {
       }
     }
 
-    // Gemini API format
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const imageUrl = imageBase64.startsWith('data:')
+      ? imageBase64
+      : `data:${mimeType};base64,${imageData}`;
+
+    // OpenAI API (vision)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: imageData
-              }
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-        }
+        model: 'gpt-4o',
+        temperature: 0.1,
+        max_tokens: 800,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: imageUrl } },
+            ],
+          },
+        ],
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] Gemini API error:', response.status, errorText);
+      console.error('[classify-document] OpenAI API error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,8 +107,8 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
+    const content = aiResponse.choices?.[0]?.message?.content || '';
+
     console.log('[classify-document] AI response:', content);
 
     // Parse JSON from response
