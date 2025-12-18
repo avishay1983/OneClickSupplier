@@ -43,8 +43,10 @@ import {
   AlertCircle,
   Send,
   Mail,
-  User
+  User,
+  Settings
 } from 'lucide-react';
+import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -122,6 +124,8 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [rejectType, setRejectType] = useState<'handler' | 'vp' | 'procurement'>('handler');
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [resendingVPQuoteId, setResendingVPQuoteId] = useState<string | null>(null);
 
   const fetchQuotes = async () => {
     setIsLoading(true);
@@ -375,6 +379,56 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleResendVPEmail = async (quote: VendorQuote) => {
+    setResendingVPQuoteId(quote.id);
+    try {
+      // Get VP email from settings
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'vp_email')
+        .single();
+
+      if (!settings?.setting_value) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא הוגדרה כתובת מייל לסמנכ"ל בהגדרות',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Send email to VP
+      const { error } = await supabase.functions.invoke('send-quote-approval-email', {
+        body: {
+          quoteId: quote.id,
+          approverEmail: settings.setting_value,
+          approverName: 'סמנכ"ל',
+          vendorName: quote.vendor_name,
+          amount: quote.amount,
+          description: quote.description,
+          approvalType: 'vp',
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'המייל נשלח',
+        description: 'נשלח מייל חוזר לסמנכ"ל לאישור',
+      });
+    } catch (error) {
+      console.error('Error resending VP email:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את המייל',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingVPQuoteId(null);
     }
   };
 
@@ -684,6 +738,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                 <SelectItem value="rejected">נדחו</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={() => setSettingsDialogOpen(true)} className="gap-2">
+              <Settings className="h-4 w-4" />
+              הגדרות
+            </Button>
             <Button variant="outline" onClick={fetchQuotes} className="gap-2">
               <RefreshCw className="h-4 w-4" />
               רענן
@@ -845,33 +903,54 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                               </>
                             )}
                             
-                            {/* VP Approval buttons */}
-                            {quoteStatus === 'pending_vp' && isVP && (
+                            {/* VP Approval buttons and resend */}
+                            {quoteStatus === 'pending_vp' && (
                               <>
                                 <Button
-                                  variant="ghost"
+                                  variant="outline"
                                   size="sm"
-                                  onClick={() => handleVPApprove(quote)}
-                                  disabled={isUpdating}
-                                  className="text-success hover:text-success hover:bg-success/10"
-                                  title='אשר (סמנכ"ל)'
+                                  onClick={() => handleResendVPEmail(quote)}
+                                  disabled={resendingVPQuoteId === quote.id}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1"
+                                  title="שלח שוב מייל לסמנכ״ל"
                                 >
-                                  <CheckCircle className="h-4 w-4" />
+                                  {resendingVPQuoteId === quote.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Mail className="h-4 w-4" />
+                                      <span>שלח שוב</span>
+                                    </>
+                                  )}
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedQuote(quote);
-                                    setRejectType('vp');
-                                    setRejectDialogOpen(true);
-                                  }}
-                                  disabled={isUpdating}
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="דחה"
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
+                                {isVP && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleVPApprove(quote)}
+                                      disabled={isUpdating}
+                                      className="text-success hover:text-success hover:bg-success/10"
+                                      title='אשר (סמנכ"ל)'
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedQuote(quote);
+                                        setRejectType('vp');
+                                        setRejectDialogOpen(true);
+                                      }}
+                                      disabled={isUpdating}
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      title="דחה"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
                               </>
                             )}
                             
@@ -987,6 +1066,12 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Settings Dialog */}
+      <SettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
+      />
     </div>
   );
 }
