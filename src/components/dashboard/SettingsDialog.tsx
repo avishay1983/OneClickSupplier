@@ -216,35 +216,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               />
             </div>
 
-            <Separator className="my-4" />
-
-            <h3 className="font-medium">כתובות מייל לאישור הצעות מחיר</h3>
-
-            <div className="space-y-2">
-              <Label htmlFor="procurementManagerName">שם מנהל רכש (הצעות מחיר)</Label>
-              <Input
-                id="procurementManagerName"
-                value={settings.procurement_manager_name}
-                onChange={(e) => updateSetting('procurement_manager_name', e.target.value)}
-                placeholder="הזן שם מנהל רכש"
-                disabled={isLoading}
-                className="text-right"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="procurementManagerEmail">מייל מנהל רכש (הצעות מחיר)</Label>
-              <Input
-                id="procurementManagerEmail"
-                type="email"
-                value={settings.procurement_manager_email}
-                onChange={(e) => updateSetting('procurement_manager_email', e.target.value)}
-                placeholder="הזן כתובת מייל"
-                disabled={isLoading}
-                className="text-right"
-                dir="ltr"
-              />
-            </div>
 
             <p className="text-sm text-muted-foreground">
               כתובות אלו יקבלו מייל עם כל פרטי הספק לאחר שליחת הטופס
