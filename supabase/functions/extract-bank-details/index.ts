@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.0-flash',
-  accurate: 'gemini-2.0-flash',
+  fast: 'gemini-2.5-flash',
+  accurate: 'gemini-2.5-flash',
 };
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
