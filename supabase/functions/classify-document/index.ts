@@ -34,8 +34,8 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) {
       console.error('[classify-document] LOVABLE_API_KEY is not configured');
       return new Response(
-        JSON.stringify({ error: 'שגיאת תצורה בשרת', skip_validation: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'api_key_not_configured', message: 'מפתח ה-AI לא מוגדר בשרת' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -100,9 +100,24 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[classify-document] AI gateway error:', response.status, errorText);
+
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'payment_required', message: 'נדרשת יתרה לשירות ה-AI (Lovable). אנא הוסף קרדיטים ל-Workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'ai_error', message: 'שגיאה בזיהוי המסמך' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -123,8 +138,8 @@ serve(async (req) => {
     } catch (parseError) {
       console.error('[classify-document] Failed to parse AI response:', parseError);
       return new Response(
-        JSON.stringify({ error: 'שגיאה בעיבוד התשובה', skip_validation: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'parse_error', message: 'שגיאה בעיבוד התשובה' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -150,8 +165,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('[classify-document] Error:', error);
     return new Response(
-      JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'server_error', message: 'שגיאה בזיהוי המסמך' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
