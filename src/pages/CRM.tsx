@@ -64,6 +64,7 @@ import {
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
 import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
 import { VendorQuotesView } from '@/components/crm/VendorQuotesView';
+import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -199,6 +200,7 @@ export default function CRM() {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
   const [inBrowserTestOpen, setInBrowserTestOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [history, setHistory] = useState<CRMHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   
@@ -853,8 +855,19 @@ export default function CRM() {
           </TabsContent>
 
           <TabsContent value="quotes">
+            <div className="flex justify-end mb-4" dir="rtl">
+              <Button
+                variant="outline"
+                onClick={() => setSettingsDialogOpen(true)}
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                הגדרות מיילים
+              </Button>
+            </div>
             <VendorQuotesView 
               currentUserName={currentUserName} 
+              currentUserEmail={user?.email}
               isVP={isVP || isAdmin}
               isProcurementManager={isProcurementManager || isAdmin}
             />
@@ -1366,6 +1379,12 @@ export default function CRM() {
       <InBrowserTestRunner
         open={inBrowserTestOpen}
         onOpenChange={setInBrowserTestOpen}
+      />
+      
+      {/* Settings Dialog */}
+      <SettingsDialog
+        open={settingsDialogOpen}
+        onOpenChange={setSettingsDialogOpen}
       />
     </div>
   );
