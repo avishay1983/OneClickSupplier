@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -5,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Google Gemini API endpoint
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+// OpenAI API endpoint
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 // Document type labels in Hebrew for the prompt
 const DOCUMENT_TYPE_DESCRIPTIONS: Record<string, string> = {
@@ -32,9 +33,9 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GOOGLE_GEMINI_API_KEY) {
-      console.error('[classify-document] GOOGLE_GEMINI_API_KEY is not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      console.error('[classify-document] OPENAI_API_KEY is not configured');
       return new Response(
         JSON.stringify({ error: 'שגיאת תצורה בשרת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -72,36 +73,37 @@ serve(async (req) => {
       }
     }
 
-    // Google Gemini API format
-    const response = await fetch(`${GEMINI_API_URL}/gemini-2.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    // OpenAI API format with vision
+    const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [
+        model: 'gpt-4o-mini',
+        messages: [
           {
-            parts: [
-              { text: prompt },
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
               {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: imageData
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${imageData}`
                 }
               }
             ]
           }
         ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-        }
+        max_tokens: 1024,
+        temperature: 0.1,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] Gemini API error:', response.status, errorText);
+      console.error('[classify-document] OpenAI API error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -109,8 +111,8 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    // Google Gemini response format
-    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // OpenAI response format
+    const content = aiResponse.choices?.[0]?.message?.content || '';
     
     console.log('[classify-document] AI response:', content);
 

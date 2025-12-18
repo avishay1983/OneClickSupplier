@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,12 +7,12 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.5-flash',
-  accurate: 'gemini-2.5-pro',
+  fast: 'gpt-4o-mini',
+  accurate: 'gpt-4o',
 };
 
-// Google Gemini API endpoint
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+// OpenAI API endpoint
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -122,30 +123,35 @@ async function extractWithModel(imageBase64: string, mimeType: string, model: st
   
   const userPrompt = 'סרוק בקפידה את התמונה וחלץ את פרטי הבנק. בדוק את כל האזורים, במיוחד את הקו המקווקו התחתון אם זו המחאה, או טבלאות אם זה אישור בנק.';
   
-  // Google Gemini API format
-  const response = await fetch(`${GEMINI_API_URL}/${model}:generateContent?key=${apiKey}`, {
+  // OpenAI API format with vision
+  const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      contents: [
+      model: model,
+      messages: [
         {
-          parts: [
-            { text: SYSTEM_PROMPT + '\n\n' + userPrompt },
+          role: 'system',
+          content: SYSTEM_PROMPT
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userPrompt },
             {
-              inline_data: {
-                mime_type: mimeType || 'image/jpeg',
-                data: imageBase64
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
               }
             }
           ]
         }
       ],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 2048,
-      }
+      max_tokens: 2048,
+      temperature: 0.1,
     }),
   });
 
@@ -194,9 +200,9 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GOOGLE_GEMINI_API_KEY) {
-      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -207,7 +213,7 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, GOOGLE_GEMINI_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, OPENAI_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
@@ -234,8 +240,8 @@ serve(async (req) => {
     }
 
     let data = await response.json();
-    // Google Gemini response format
-    let content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    // OpenAI response format
+    let content = data.choices?.[0]?.message?.content;
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
@@ -291,13 +297,13 @@ serve(async (req) => {
       
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, GOOGLE_GEMINI_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, OPENAI_API_KEY);
         const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
-          // Google Gemini response format
-          const retryContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          // OpenAI response format
+          const retryContent = data.choices?.[0]?.message?.content;
           
           if (retryContent) {
             let retryExtracted = parseResponse(retryContent);
