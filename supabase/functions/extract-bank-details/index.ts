@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.5-pro',
-  accurate: 'gemini-2.5-pro',
+  fast: 'gpt-4o-mini',
+  accurate: 'gpt-4o',
 };
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
@@ -114,34 +114,38 @@ const SYSTEM_PROMPT = `אתה מומחה OCR מקצועי לחילוץ פרטי 
 
 אם התמונה מטושטשת, נסה לפענח. אם אין מסמך בנקאי, החזר error.`;
 
+function toImageDataUrl(imageBase64: string, mimeType?: string) {
+  if (!imageBase64) return '';
+  if (imageBase64.startsWith('data:')) return imageBase64;
+  return `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`;
+}
+
 async function extractWithModel(imageBase64: string, mimeType: string, model: string, apiKey: string) {
-  const startTime = Date.now();
   logOCR('info', `Starting bank OCR extraction`, { model, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
-  
+
   const userPrompt = 'סרוק בקפידה את התמונה וחלץ את פרטי הבנק. בדוק את כל האזורים, במיוחד את הקו המקווקו התחתון אם זו המחאה, או טבלאות אם זה אישור בנק.';
-  
-  // Gemini API format
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+  const imageUrl = toImageDataUrl(imageBase64, mimeType);
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: SYSTEM_PROMPT + '\n\n' + userPrompt },
-          {
-            inline_data: {
-              mime_type: mimeType || 'image/jpeg',
-              data: imageBase64
-            }
-          }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 2048,
-      }
+      model,
+      temperature: 0.1,
+      max_tokens: 2048,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userPrompt },
+            { type: 'image_url', image_url: { url: imageUrl } },
+          ],
+        },
+      ],
     }),
   });
 
@@ -179,9 +183,9 @@ serve(async (req) => {
   try {
     const { imageBase64, mimeType } = await req.json();
     const requestId = crypto.randomUUID().slice(0, 8);
-    
+
     logOCR('info', `[${requestId}] New bank OCR request received`, { mimeType, hasImage: !!imageBase64 });
-    
+
     if (!imageBase64) {
       logOCR('error', `[${requestId}] Missing image data`);
       return new Response(
@@ -190,9 +194,9 @@ serve(async (req) => {
       );
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -203,20 +207,20 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, GEMINI_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, OPENAI_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
       const errorText = await response.text();
       logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText, duration: `${firstAttemptDuration}ms` });
-      
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
+
       return new Response(
         JSON.stringify({ error: 'ai_error', message: 'שגיאה בעיבוד התמונה' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -224,8 +228,8 @@ serve(async (req) => {
     }
 
     let data = await response.json();
-    let content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
+    let content = data.choices?.[0]?.message?.content || '';
+
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
       return new Response(
@@ -255,7 +259,7 @@ serve(async (req) => {
       branch_number: extracted.branch_number || null,
       account_number: extracted.account_number || null
     };
-    
+
     logOCR('info', `[${requestId}] First attempt extraction results`, {
       foundBankDetails,
       bankFieldsCount,
@@ -266,34 +270,34 @@ serve(async (req) => {
     });
 
     // Determine if retry is needed
-    const needsRetry = 
-      !foundBankDetails || 
+    const needsRetry =
+      !foundBankDetails ||
       extracted.confidence === 'low' ||
       (extracted.confidence === 'medium' && bankFieldsCount < 3);
 
     if (needsRetry) {
-      logOCR('warn', `[${requestId}] Triggering retry`, { 
-        reason: !foundBankDetails ? 'no_bank_details' : 
-                extracted.confidence === 'low' ? 'low_confidence' : 
-                'medium_confidence_incomplete'
+      logOCR('warn', `[${requestId}] Triggering retry`, {
+        reason: !foundBankDetails ? 'no_bank_details' :
+          extracted.confidence === 'low' ? 'low_confidence' :
+            'medium_confidence_incomplete'
       });
-      
+
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, GEMINI_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, OPENAI_API_KEY);
         const retryDuration = Date.now() - retryStart;
-        
+
         if (response.ok) {
           data = await response.json();
-          const retryContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          
+          const retryContent = data.choices?.[0]?.message?.content || '';
+
           if (retryContent) {
             let retryExtracted = parseResponse(retryContent);
             retryExtracted = cleanBankData(retryExtracted);
-            
+
             const retryFoundBankDetails = hasBankDetails(retryExtracted);
             const retryBankFieldsCount = countBankFields(retryExtracted);
-            
+
             logOCR('info', `[${requestId}] Retry attempt completed`, {
               duration: `${retryDuration}ms`,
               foundBankDetails: retryFoundBankDetails,
@@ -305,20 +309,21 @@ serve(async (req) => {
               },
               confidence: retryExtracted.confidence
             });
-            
+
             // Use retry result if it found more bank details or has higher confidence
-            const shouldUseRetry = 
+            const shouldUseRetry =
               (retryFoundBankDetails && !foundBankDetails) ||
               retryBankFieldsCount > bankFieldsCount ||
               (retryExtracted.confidence === 'high' && extracted.confidence !== 'high') ||
               (retryExtracted.confidence === 'medium' && extracted.confidence === 'low');
-            
+
             if (shouldUseRetry) {
+              const prevConfidence = extracted.confidence;
               extracted = retryExtracted;
               extracted.model_used = 'accurate';
               logOCR('success', `[${requestId}] Using retry result`, {
                 fieldsImprovement: retryBankFieldsCount - bankFieldsCount,
-                confidenceChange: `${extracted.confidence} -> ${retryExtracted.confidence}`
+                confidenceChange: `${prevConfidence} -> ${retryExtracted.confidence}`
               });
             } else {
               extracted.model_used = 'fast';
@@ -338,7 +343,7 @@ serve(async (req) => {
     }
 
     const totalDuration = Date.now() - firstAttemptStart;
-    
+
     logOCR('success', `[${requestId}] Bank OCR completed`, {
       totalDuration: `${totalDuration}ms`,
       modelUsed: extracted.model_used,
@@ -365,3 +370,4 @@ serve(async (req) => {
     );
   }
 });
+
