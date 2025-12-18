@@ -125,7 +125,7 @@ serve(async (req: Request): Promise<Response> => {
                 <!-- Header with Logo -->
                 <tr>
                   <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 40px; text-align: center;">
-                    <img src="https://ijyqtemnhlbamxmgjuzp.lovableproject.com/images/bituach-yashir-logo-dark.png" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/92/%D7%9C%D7%95%D7%92%D7%95_-_%D7%91%D7%99%D7%98%D7%95%D7%97_%D7%99%D7%A9%D7%99%D7%A8.png" alt="לוגו ביטוח ישיר" style="max-width: 180px; height: auto;" />
                   </td>
                 </tr>
                 
