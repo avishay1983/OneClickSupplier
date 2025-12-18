@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,9 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, CheckCircle, Loader2, FileText } from "lucide-react";
 
+const QUOTE_DETAILS_URL =
+  "https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-quote-details";
+
+
 const VendorQuoteSubmit = () => {
   const { token } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -22,6 +24,10 @@ const VendorQuoteSubmit = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    document.title = "הגשת הצעת מחיר | ספק בקליק";
+  }, []);
+
+  useEffect(() => {
     const checkToken = async () => {
       if (!token) {
         setError("קישור לא תקין");
@@ -30,23 +36,22 @@ const VendorQuoteSubmit = () => {
       }
 
       try {
-        const { data: quote, error: quoteError } = await supabase
-          .from("vendor_quotes")
-          .select("*, vendor_requests(vendor_name)")
-          .eq("quote_secure_token", token)
-          .single();
+        const res = await fetch(QUOTE_DETAILS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
 
-        if (quoteError || !quote) {
-          setError("הקישור לא נמצא או שפג תוקפו");
+        const json = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setError(json.error || "הקישור לא נמצא או שפג תוקפו");
           setLoading(false);
           return;
         }
 
-        if (quote.vendor_submitted) {
-          setSubmitted(true);
-        }
-
-        setVendorName(quote.vendor_requests?.vendor_name || "");
+        setVendorName(json.vendorName || "");
+        if (json.submitted) setSubmitted(true);
         setLoading(false);
       } catch (err) {
         setError("שגיאה בטעינת הנתונים");
