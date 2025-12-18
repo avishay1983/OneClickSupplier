@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gpt-4o-mini',
-  accurate: 'gpt-4o',
+  fast: 'google/gemini-2.5-flash',
+  accurate: 'google/gemini-2.5-pro',
 };
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
@@ -126,7 +126,8 @@ async function extractWithModel(imageBase64: string, mimeType: string, model: st
   const userPrompt = 'סרוק בקפידה את התמונה וחלץ את פרטי הבנק. בדוק את כל האזורים, במיוחד את הקו המקווקו התחתון אם זו המחאה, או טבלאות אם זה אישור בנק.';
   const imageUrl = toImageDataUrl(imageBase64, mimeType);
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  // Lovable AI Gateway (Gemini)
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -194,9 +195,9 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -207,7 +208,7 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, OPENAI_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, MODELS.fast, LOVABLE_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
@@ -218,6 +219,13 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'payment_required', message: 'נדרשת יתרה לשירות ה-AI (Lovable). אנא הוסף קרדיטים ל-Workspace.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -284,7 +292,7 @@ serve(async (req) => {
 
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, OPENAI_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, MODELS.accurate, LOVABLE_API_KEY);
         const retryDuration = Date.now() - retryStart;
 
         if (response.ok) {
@@ -370,4 +378,3 @@ serve(async (req) => {
     );
   }
 });
-
