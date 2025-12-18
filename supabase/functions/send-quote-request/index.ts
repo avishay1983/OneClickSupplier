@@ -125,7 +125,34 @@ serve(async (req: Request): Promise<Response> => {
                 <!-- Header with Logo -->
                 <tr>
                   <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 40px; text-align: center;">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/92/%D7%9C%D7%95%D7%92%D7%95_-_%D7%91%D7%99%D7%98%D7%95%D7%97_%D7%99%D7%A9%D7%99%D7%A8.png" alt="לוגו ביטוח ישיר" style="max-width: 180px; height: auto;" />
+                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                      <tr>
+                        <!-- Red dots -->
+                        <td style="padding-right: 15px;">
+                          <table role="presentation" cellspacing="6" cellpadding="0">
+                            <tr>
+                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                            </tr>
+                            <tr>
+                              <td style="padding-left: 9px;"><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                              <td style="padding-right: 9px;"><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                            </tr>
+                            <tr>
+                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                              <td><div style="width: 18px; height: 18px; background-color: #e91e63; border-radius: 50%;"></div></td>
+                            </tr>
+                          </table>
+                        </td>
+                        <!-- Text -->
+                        <td>
+                          <div style="color: #ffffff; font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; line-height: 1.2; text-align: right;">
+                            <div>ביטוח</div>
+                            <div>ישיר</div>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
                 
