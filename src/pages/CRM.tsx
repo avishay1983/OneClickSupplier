@@ -573,6 +573,14 @@ export default function CRM() {
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
+                onClick={() => setSettingsDialogOpen(true)}
+                className="text-white hover:bg-white/10 gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                הגדרות
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setInBrowserTestOpen(true)}
                 className="text-white hover:bg-white/10 gap-2"
               >
@@ -855,16 +863,6 @@ export default function CRM() {
           </TabsContent>
 
           <TabsContent value="quotes">
-            <div className="flex justify-end mb-4" dir="rtl">
-              <Button
-                variant="outline"
-                onClick={() => setSettingsDialogOpen(true)}
-                className="gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                הגדרות מיילים
-              </Button>
-            </div>
             <VendorQuotesView 
               currentUserName={currentUserName} 
               currentUserEmail={user?.email}
