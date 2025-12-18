@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +16,80 @@ interface SendApprovalEmailPayload {
   approvalType: "vp" | "procurement_manager";
 }
 
+// Encode string to Base64 for proper UTF-8 handling
+function encodeBase64(str: string): string {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return btoa(String.fromCharCode(...data));
+}
+
+// Send email via raw SMTP
+async function sendEmailViaSMTP(
+  gmailUser: string,
+  gmailPassword: string,
+  to: string,
+  subject: string,
+  htmlContent: string
+): Promise<void> {
+  const subjectBase64 = encodeBase64(subject);
+  const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
+
+  const boundary = "----=_Part_" + Date.now();
+  
+  const rawEmail = [
+    `From: ${gmailUser}`,
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: base64`,
+    ``,
+    encodeBase64(htmlContent),
+    ``,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const conn = await Deno.connectTls({
+    hostname: "smtp.gmail.com",
+    port: 465,
+  });
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  async function sendCommand(cmd: string): Promise<string> {
+    await conn.write(encoder.encode(cmd + "\r\n"));
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  async function readResponse(): Promise<string> {
+    const buf = new Uint8Array(4096);
+    const n = await conn.read(buf);
+    return decoder.decode(buf.subarray(0, n || 0));
+  }
+
+  await readResponse();
+  await sendCommand(`EHLO ${gmailUser.split('@')[1]}`);
+  await sendCommand("AUTH LOGIN");
+  await sendCommand(btoa(gmailUser));
+  await sendCommand(btoa(gmailPassword));
+  await sendCommand(`MAIL FROM:<${gmailUser}>`);
+  await sendCommand(`RCPT TO:<${to}>`);
+  await sendCommand("DATA");
+  await conn.write(encoder.encode(rawEmail + "\r\n.\r\n"));
+  await readResponse();
+  await sendCommand("QUIT");
+  conn.close();
+}
+
 serve(async (req: Request): Promise<Response> => {
+  console.log("send-quote-approval-email function called");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -62,80 +132,72 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error('Quote not found');
     }
 
+    // Get Gmail credentials
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailAppPassword) {
+      throw new Error("Gmail credentials not configured");
+    }
+
     // Build the approval link
-    const baseUrl =
-      Deno.env.get('SITE_URL') || 'https://ijyqtemnhlbamxmgjuzp.lovableproject.com';
+    const baseUrl = 'https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com';
     const approvalLink = `${baseUrl}/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
 
     const approvalTypeName = approvalType === 'vp' ? 'סמנכ"ל' : 'מנהל רכש';
 
-    const emailHtml = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <img src="https://ijyqtemnhlbamxmgjuzp.supabase.co/storage/v1/object/public/vendor_documents/bituach-yashir-logo.png" alt="ביטוח ישיר" style="max-width: 200px;" />
-        </div>
-        
-        <h2 style="color: #333; text-align: center;">בקשה לאישור הצעת מחיר</h2>
-        
-        <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          שלום ${approverName},
-        </p>
-        
-        <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          הצעת מחיר חדשה ממתינה לאישורך כ${approvalTypeName}:
-        </p>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 5px 0;"><strong>ספק:</strong> ${vendorName}</p>
-          <p style="margin: 5px 0;"><strong>סכום:</strong> ₪${amount?.toLocaleString() || 'לא צוין'}</p>
-          <p style="margin: 5px 0;"><strong>תיאור:</strong> ${description || 'לא צוין'}</p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${approvalLink}" style="background-color: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-size: 18px; display: inline-block;">
-            צפייה ואישור
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-        
-        <p style="color: #999; font-size: 12px; text-align: center;">
-          הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר
-        </p>
-      </div>
-    `;
+    const emailHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+<h1 style="margin: 0; text-align: center; color: white;">בקשה לאישור הצעת מחיר</h1>
+</div>
+<div style="padding: 30px;">
+<p style="margin: 12px 0;">שלום ${approverName},</p>
+<p style="margin: 12px 0;">הצעת מחיר חדשה ממתינה לאישורך כ${approvalTypeName}:</p>
 
-    const fromEmail =
-      Deno.env.get('RESEND_FROM_EMAIL') || 'ביטוח ישיר <onboarding@resend.dev>';
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי ההצעה:</h3>
+<table style="width: 100%; border-collapse: collapse;">
+<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>ספק:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${vendorName}</td></tr>
+<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>סכום:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">₪${amount?.toLocaleString() || 'לא צוין'}</td></tr>
+<tr><td style="padding: 8px 0;"><strong>תיאור:</strong></td><td style="padding: 8px 0;">${description || 'לא צוין'}</td></tr>
+</table>
+</div>
 
-    const emailResponse = await resend.emails.send({
-      from: fromEmail,
-      to: [normalizedApproverEmail],
-      subject: `בקשה לאישור הצעת מחיר - ${vendorName}`,
-      html: emailHtml,
-    });
+<div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+<a href="${approvalLink}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold;">צפייה ואישור</a>
+</div>
 
-    if ((emailResponse as any)?.error) {
-      console.error('Resend email error:', (emailResponse as any).error);
-      return new Response(
-        JSON.stringify({ success: false, error: (emailResponse as any).error }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
-      );
-    }
+<p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר</p>
+</div>
+</div>
+</body>
+</html>`;
 
-    console.log('Approval email sent successfully:', emailResponse);
+    await sendEmailViaSMTP(
+      gmailUser, 
+      gmailAppPassword, 
+      normalizedApproverEmail, 
+      `בקשה לאישור הצעת מחיר - ${vendorName}`, 
+      emailHtml
+    );
 
-    return new Response(JSON.stringify({ success: true, data: (emailResponse as any).data }), {
+    console.log('Approval email sent successfully via Gmail SMTP');
+
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error sending approval email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
