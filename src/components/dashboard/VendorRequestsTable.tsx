@@ -228,20 +228,21 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
 
   return (
     <>
-      <div className="flex items-center gap-4 mb-4 flex-wrap">
+      <div className="flex items-center gap-4 mb-6 flex-wrap p-4 bg-gradient-to-l from-primary/5 via-background to-primary/10 rounded-xl border border-primary/10 shadow-sm">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
           <Input
             placeholder="חיפוש לפי שם או אימייל..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pr-9"
+            className="pr-9 bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/40 focus:ring-primary/20 transition-all"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">מטפל:</span>
+        <div className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/15">
+          <SlidersHorizontal className="h-4 w-4 text-primary/70" />
+          <span className="text-sm font-medium text-primary/80">מטפל:</span>
           <Select value={handlerFilter} onValueChange={setHandlerFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[130px] border-0 bg-transparent shadow-none focus:ring-0 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -252,10 +253,10 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">סטטוס:</span>
+        <div className="flex items-center gap-2 bg-background/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/15">
+          <span className="text-sm font-medium text-primary/80">סטטוס:</span>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[130px] border-0 bg-transparent shadow-none focus:ring-0 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -270,12 +271,15 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="rounded-xl border border-primary/15 bg-card overflow-hidden shadow-lg shadow-primary/5">
         {filteredAndSortedRequests.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {requests.length === 0 ? (
               <>
-                <p>אין בקשות ספקים עדיין</p>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-primary/50" />
+                </div>
+                <p className="font-medium">אין בקשות ספקים עדיין</p>
                 <p className="text-sm mt-1">לחץ על "בקשה חדשה" כדי להתחיל</p>
               </>
             ) : (
@@ -285,64 +289,64 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">
+              <TableRow className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent border-b border-primary/10 hover:bg-transparent">
+                <TableHead className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    className="h-auto p-1.5 font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     onClick={() => handleSort('handler_name')}
                   >
                     {getSortIcon('handler_name')}
                     מזמין הספק
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    className="h-auto p-1.5 font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     onClick={() => handleSort('vendor_name')}
                   >
                     {getSortIcon('vendor_name')}
                     שם הספק
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    className="h-auto p-1.5 font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     onClick={() => handleSort('vendor_type')}
                   >
                     {getSortIcon('vendor_type')}
                     סוג ספק
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    className="h-auto p-1.5 font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     {getSortIcon('status')}
                     סטטוס
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">חתימות הצעת מחיר</TableHead>
-                <TableHead className="text-right font-semibold">
+                <TableHead className="text-right font-semibold text-primary/80">חתימות הצעת מחיר</TableHead>
+                <TableHead className="text-right">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    className="h-auto p-1.5 font-semibold text-primary hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     onClick={() => handleSort('created_at')}
                   >
                     {getSortIcon('created_at')}
                     תאריך יצירה
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">פעולות</TableHead>
+                <TableHead className="text-right font-semibold text-primary/80">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
