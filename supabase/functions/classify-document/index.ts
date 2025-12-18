@@ -30,11 +30,11 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('[classify-document] LOVABLE_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      console.error('[classify-document] GOOGLE_GEMINI_API_KEY is not configured');
       return new Response(
-        JSON.stringify({ error: 'api_key_not_configured', message: 'מפתח ה-AI לא מוגדר בשרת' }),
+        JSON.stringify({ error: 'api_key_not_configured', message: 'מפתח Gemini לא מוגדר בשרת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -59,7 +59,7 @@ serve(async (req) => {
   "reason": "הסבר קצר למה זה הסוג הזה"
 }`;
 
-    // Normalize to data URL
+    // Extract base64 and mime type
     let imageData = imageBase64;
     let mimeType = 'image/jpeg';
     if (imageBase64.startsWith('data:')) {
@@ -70,48 +70,39 @@ serve(async (req) => {
       }
     }
 
-    const imageUrl = imageBase64.startsWith('data:')
-      ? imageBase64
-      : `data:${mimeType};base64,${imageData}`;
-
-    // Lovable AI Gateway (Gemini)
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Direct Gemini API call
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        temperature: 0.1,
-        max_tokens: 800,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: imageUrl } },
-            ],
-          },
-        ],
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: imageData
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 800,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] AI gateway error:', response.status, errorText);
+      console.error('[classify-document] Gemini API error:', response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'rate_limit', message: 'יותר מדי בקשות, נסה שוב בעוד מספר שניות' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'payment_required', message: 'נדרשת יתרה לשירות ה-AI (Lovable). אנא הוסף קרדיטים ל-Workspace.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -122,9 +113,9 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content || '';
+    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    console.log('[classify-document] AI response:', content);
+    console.log('[classify-document] Gemini response:', content);
 
     // Parse JSON from response
     let result;
