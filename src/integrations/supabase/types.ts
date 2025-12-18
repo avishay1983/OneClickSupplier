@@ -201,6 +201,80 @@ export type Database = {
           },
         ]
       }
+      vendor_quotes: {
+        Row: {
+          amount: number | null
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          id: string
+          procurement_manager_approved: boolean | null
+          procurement_manager_approved_at: string | null
+          procurement_manager_approved_by: string | null
+          procurement_manager_rejection_reason: string | null
+          quote_date: string
+          status: string
+          submitted_by: string | null
+          updated_at: string
+          vendor_request_id: string
+          vp_approved: boolean | null
+          vp_approved_at: string | null
+          vp_approved_by: string | null
+          vp_rejection_reason: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          procurement_manager_approved?: boolean | null
+          procurement_manager_approved_at?: string | null
+          procurement_manager_approved_by?: string | null
+          procurement_manager_rejection_reason?: string | null
+          quote_date?: string
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          vendor_request_id: string
+          vp_approved?: boolean | null
+          vp_approved_at?: string | null
+          vp_approved_by?: string | null
+          vp_rejection_reason?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          procurement_manager_approved?: boolean | null
+          procurement_manager_approved_at?: string | null
+          procurement_manager_approved_by?: string | null
+          procurement_manager_rejection_reason?: string | null
+          quote_date?: string
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          vendor_request_id?: string
+          vp_approved?: boolean | null
+          vp_approved_at?: string | null
+          vp_approved_by?: string | null
+          vp_rejection_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_quotes_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_ratings: {
         Row: {
           created_at: string
