@@ -6,9 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// OpenAI API endpoint
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-
 // Document type labels in Hebrew for the prompt
 const DOCUMENT_TYPE_DESCRIPTIONS: Record<string, string> = {
   'bookkeeping_cert': 'אישור ניהול ספרים - מסמך רשמי מרשויות המס המאשר כי העסק מנהל ספרים כחוק',
@@ -33,9 +30,9 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('[classify-document] OPENAI_API_KEY is not configured');
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      console.error('[classify-document] GOOGLE_GEMINI_API_KEY is not configured');
       return new Response(
         JSON.stringify({ error: 'שגיאת תצורה בשרת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -73,37 +70,34 @@ serve(async (req) => {
       }
     }
 
-    // OpenAI API format with vision
-    const response = await fetch(OPENAI_API_URL, {
+    // Gemini API format
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${imageData}`
-                }
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: imageData
               }
-            ]
-          }
-        ],
-        max_tokens: 1024,
-        temperature: 0.1,
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] OpenAI API error:', response.status, errorText);
+      console.error('[classify-document] Gemini API error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -111,8 +105,7 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    // OpenAI response format
-    const content = aiResponse.choices?.[0]?.message?.content || '';
+    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     console.log('[classify-document] AI response:', content);
 

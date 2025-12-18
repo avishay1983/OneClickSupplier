@@ -7,15 +7,12 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gpt-4o',
-  accurate: 'gpt-4o',
+  fast: 'gemini-2.0-flash',
+  accurate: 'gemini-2.0-flash',
 };
 
 // Minimum fields threshold for retry
 const MIN_FIELDS_THRESHOLD = 3;
-
-// OpenAI API endpoint
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -219,35 +216,28 @@ async function extractWithModel(imageBase64: string, mimeType: string, documentT
   const systemPrompt = getSystemPrompt(documentType);
   const userPrompt = `סרוק בזהירות את התמונה הבאה (סוג מסמך: ${documentType}) וחלץ את כל הנתונים העסקיים. בדוק כל פינה ואזור בתמונה. אם חלק מהטקסט מטושטש, נסה לפענח לפי הקשר.`;
   
-  // OpenAI API format with vision
-  const response = await fetch(OPENAI_API_URL, {
+  // Gemini API format
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: userPrompt },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
-              }
+      contents: [{
+        parts: [
+          { text: systemPrompt + '\n\n' + userPrompt },
+          {
+            inline_data: {
+              mime_type: mimeType || 'image/jpeg',
+              data: imageBase64
             }
-          ]
-        }
-      ],
-      max_tokens: 2048,
-      temperature: 0.1,
+          }
+        ]
+      }],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2048,
+      }
     }),
   });
 
@@ -312,9 +302,9 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
+    const GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -325,7 +315,7 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, OPENAI_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, GEMINI_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
@@ -338,12 +328,6 @@ serve(async (req) => {
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'payment_required', message: 'שגיאת שירות OCR' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       
       return new Response(
         JSON.stringify({ error: 'ai_error', message: 'שגיאה בעיבוד התמונה' }),
@@ -352,8 +336,7 @@ serve(async (req) => {
     }
 
     let data = await response.json();
-    // OpenAI response format
-    let content = data.choices?.[0]?.message?.content;
+    let content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
@@ -396,13 +379,12 @@ serve(async (req) => {
       
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, OPENAI_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, GEMINI_API_KEY);
         const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
-          // OpenAI response format
-          const retryContent = data.choices?.[0]?.message?.content;
+          const retryContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
           
           if (retryContent) {
             let retryExtracted = parseResponse(retryContent);
@@ -455,8 +437,7 @@ serve(async (req) => {
       totalDuration: `${totalDuration}ms`,
       modelUsed: extracted.model_used,
       fieldsFound: countExtractedFields(extracted),
-      confidence: extracted.confidence,
-      documentType
+      confidence: extracted.confidence
     });
 
     return new Response(
