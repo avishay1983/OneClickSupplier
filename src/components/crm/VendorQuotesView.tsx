@@ -658,7 +658,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       {/* Filters and Actions */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row gap-4" dir="rtl">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -708,8 +708,8 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
               <p>{quotes.length === 0 ? 'אין הצעות מחיר במערכת' : 'לא נמצאו הצעות התואמות לחיפוש'}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto" dir="rtl">
+              <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">ספק</TableHead>
@@ -783,7 +783,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center justify-end gap-1">
                             {/* Resend button for pending_vendor status */}
                             {quoteStatus === 'pending_vendor' && (
                               <Button
