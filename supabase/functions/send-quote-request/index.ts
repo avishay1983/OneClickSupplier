@@ -125,7 +125,7 @@ serve(async (req: Request): Promise<Response> => {
                 <!-- Header with Logo -->
                 <tr>
                   <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 40px; text-align: center;">
-                    <img src="https://www.bituach-yashir.co.il/wp-content/uploads/2023/05/logo.svg" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
+                    <img src="https://ijyqtemnhlbamxmgjuzp.lovableproject.com/images/bituach-yashir-logo-dark.png" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
                   </td>
                 </tr>
                 
