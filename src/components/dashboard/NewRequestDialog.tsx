@@ -481,7 +481,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
                 <div className="space-y-2">
                   <Label className="block text-right">פרטי הספק *</Label>
-                  <div className="flex gap-3">
+                  <div className="flex flex-row gap-3">
                     <div className="flex-1 space-y-1">
                       <Input
                         id="vendor_email"
