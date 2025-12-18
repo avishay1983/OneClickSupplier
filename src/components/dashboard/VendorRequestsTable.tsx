@@ -308,7 +308,6 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                     שם הספק
                   </Button>
                 </TableHead>
-                <TableHead className="text-right font-semibold">אימייל</TableHead>
                 <TableHead className="text-right font-semibold">
                   <Button
                     variant="ghost"
@@ -350,8 +349,12 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
               {filteredAndSortedRequests.map((request) => (
               <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
                 <TableCell>{request.handler_name || '-'}</TableCell>
-                <TableCell className="font-medium">{request.vendor_name}</TableCell>
-                <TableCell className="ltr text-right">{request.vendor_email}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{request.vendor_name}</span>
+                    <span className="text-sm text-muted-foreground ltr text-right">{request.vendor_email}</span>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <Badge variant="outline">
