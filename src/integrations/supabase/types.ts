@@ -201,6 +201,44 @@ export type Database = {
           },
         ]
       }
+      vendor_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+          user_email: string
+          user_id: string
+          vendor_request_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_email: string
+          user_id: string
+          vendor_request_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_email?: string
+          user_id?: string
+          vendor_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_ratings_vendor_request_id_fkey"
+            columns: ["vendor_request_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_receipts: {
         Row: {
           amount: number
