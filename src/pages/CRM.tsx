@@ -119,6 +119,20 @@ interface CRMHistoryItem {
   changed_at: string;
 }
 
+interface VendorRating {
+  id: string;
+  vendor_request_id: string;
+  user_id: string;
+  user_email: string;
+  rating: number;
+}
+
+interface VendorRatingSummary {
+  average: number | null;
+  userRating: number | null;
+  totalRatings: number;
+}
+
 const CRM_STATUS_LABELS: Record<string, string> = {
   active: 'פעיל',
   suspended: 'מושהה',
@@ -167,6 +181,7 @@ export default function CRM() {
   const navigate = useNavigate();
   
   const [vendors, setVendors] = useState<CRMVendor[]>([]);
+  const [vendorRatings, setVendorRatings] = useState<Map<string, VendorRatingSummary>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -236,6 +251,7 @@ export default function CRM() {
 
     setIsLoading(true);
     try {
+      // Fetch vendors
       const { data, error } = await supabase
         .from('vendor_requests')
         .select('*')
@@ -246,6 +262,30 @@ export default function CRM() {
 
       if (error) throw error;
       setVendors((data as CRMVendor[]) || []);
+
+      // Fetch all ratings
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('vendor_ratings')
+        .select('*');
+
+      if (ratingsError) throw ratingsError;
+
+      // Calculate summaries per vendor
+      const ratingsMap = new Map<string, VendorRatingSummary>();
+      const vendorIds = (data as CRMVendor[])?.map(v => v.id) || [];
+      
+      for (const vendorId of vendorIds) {
+        const vendorRatings = (ratingsData as VendorRating[] || []).filter(r => r.vendor_request_id === vendorId);
+        const userRating = vendorRatings.find(r => r.user_id === user?.id)?.rating || null;
+        const totalRatings = vendorRatings.length;
+        const average = totalRatings > 0 
+          ? vendorRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
+          : null;
+        
+        ratingsMap.set(vendorId, { average, userRating, totalRatings });
+      }
+      
+      setVendorRatings(ratingsMap);
     } catch (error) {
       console.error('Error fetching vendors:', error);
       toast({
@@ -331,15 +371,26 @@ export default function CRM() {
   };
 
   const handleRatingChange = async (vendor: CRMVendor, newRating: number) => {
+    if (!user) return;
+    
     try {
-      const oldRating = vendor.rating;
+      const currentSummary = vendorRatings.get(vendor.id);
+      const oldRating = currentSummary?.userRating;
       
-      const { error: updateError } = await supabase
-        .from('vendor_requests')
-        .update({ rating: newRating })
-        .eq('id', vendor.id);
+      // Upsert user's rating in the new table
+      const { error: upsertError } = await supabase
+        .from('vendor_ratings')
+        .upsert({
+          vendor_request_id: vendor.id,
+          user_id: user.id,
+          user_email: user.email || '',
+          rating: newRating,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'vendor_request_id,user_id'
+        });
 
-      if (updateError) throw updateError;
+      if (upsertError) throw upsertError;
 
       // Log the change
       await supabase.from('crm_history').insert({
@@ -353,7 +404,7 @@ export default function CRM() {
 
       toast({
         title: 'הדירוג עודכן',
-        description: `הספק קיבל דירוג של ${newRating} כוכבים`,
+        description: `נתת לספק דירוג של ${newRating} כוכבים`,
       });
 
       fetchVendors();
@@ -540,20 +591,48 @@ export default function CRM() {
             {/* Stats Cards */}
             {(() => {
               const realVendors = vendors.filter(v => !isTestVendor(v));
-              const vendorsWithRating = realVendors.filter(v => v.rating !== null && v.rating !== undefined);
-              const averageRating = vendorsWithRating.length > 0 
-                ? (vendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / vendorsWithRating.length).toFixed(1)
-                : '—';
+              
+              // Calculate average from all ratings in vendorRatings Map
+              const vendorsWithRatingData = realVendors.filter(v => {
+                const summary = vendorRatings.get(v.id);
+                return summary && summary.totalRatings > 0;
+              });
+              
+              // Calculate overall average from all individual ratings
+              let totalRatingsSum = 0;
+              let totalRatingsCount = 0;
+              vendorsWithRatingData.forEach(v => {
+                const summary = vendorRatings.get(v.id);
+                if (summary && summary.average !== null) {
+                  totalRatingsSum += summary.average * summary.totalRatings;
+                  totalRatingsCount += summary.totalRatings;
+                }
+              });
+              const averageRating = totalRatingsCount > 0 ? (totalRatingsSum / totalRatingsCount).toFixed(1) : '—';
               
               // Breakdown by vendor type
-              const generalVendorsWithRating = vendorsWithRating.filter(v => v.vendor_type === 'general' || !v.vendor_type);
-              const claimsVendorsWithRating = vendorsWithRating.filter(v => v.vendor_type === 'claims');
-              const avgGeneral = generalVendorsWithRating.length > 0
-                ? (generalVendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / generalVendorsWithRating.length).toFixed(1)
-                : '—';
-              const avgClaims = claimsVendorsWithRating.length > 0
-                ? (claimsVendorsWithRating.reduce((sum, v) => sum + (v.rating || 0), 0) / claimsVendorsWithRating.length).toFixed(1)
-                : '—';
+              const generalVendors = vendorsWithRatingData.filter(v => v.vendor_type === 'general' || !v.vendor_type);
+              const claimsVendors = vendorsWithRatingData.filter(v => v.vendor_type === 'claims');
+              
+              let generalSum = 0, generalCount = 0;
+              generalVendors.forEach(v => {
+                const summary = vendorRatings.get(v.id);
+                if (summary && summary.average !== null) {
+                  generalSum += summary.average * summary.totalRatings;
+                  generalCount += summary.totalRatings;
+                }
+              });
+              const avgGeneral = generalCount > 0 ? (generalSum / generalCount).toFixed(1) : '—';
+              
+              let claimsSum = 0, claimsCount = 0;
+              claimsVendors.forEach(v => {
+                const summary = vendorRatings.get(v.id);
+                if (summary && summary.average !== null) {
+                  claimsSum += summary.average * summary.totalRatings;
+                  claimsCount += summary.totalRatings;
+                }
+              });
+              const avgClaims = claimsCount > 0 ? (claimsSum / claimsCount).toFixed(1) : '—';
               
               return (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6" dir="rtl">
@@ -764,10 +843,17 @@ export default function CRM() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              <StarRating
-                                rating={vendor.rating}
-                                onRatingChange={(newRating) => handleRatingChange(vendor, newRating)}
-                              />
+                              {(() => {
+                                const summary = vendorRatings.get(vendor.id) || { average: null, userRating: null, totalRatings: 0 };
+                                return (
+                                  <StarRating
+                                    averageRating={summary.average}
+                                    userRating={summary.userRating}
+                                    totalRatings={summary.totalRatings}
+                                    onRatingChange={(newRating) => handleRatingChange(vendor, newRating)}
+                                  />
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="text-right">{vendor.handler_name || '-'}</TableCell>
                             <TableCell className="text-right">{vendor.city || '-'}</TableCell>
