@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.5-flash',
-  accurate: 'gemini-2.5-flash',
+  fast: 'gemini-2.5-pro',
+  accurate: 'gemini-2.5-pro',
 };
 
 // Minimum fields threshold for retry
