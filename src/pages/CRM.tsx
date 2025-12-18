@@ -57,11 +57,13 @@ import {
   Play,
   Receipt,
   SlidersHorizontal,
-  ShieldCheck
+  ShieldCheck,
+  FileCheck
 } from 'lucide-react';
 
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
 import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
+import { VendorQuotesView } from '@/components/crm/VendorQuotesView';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -189,6 +191,8 @@ export default function CRM() {
   const [activeTab, setActiveTab] = useState<string>('vendors');
   const [showTestVendors, setShowTestVendors] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVP, setIsVP] = useState(false);
+  const [isProcurementManager, setIsProcurementManager] = useState(false);
   
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -235,6 +239,27 @@ export default function CRM() {
       }
     };
     checkAdminStatus();
+  }, [user]);
+
+  // Check if current user is VP or Procurement Manager based on app_settings
+  useEffect(() => {
+    const checkManagerRoles = async () => {
+      if (user?.email) {
+        const { data: settings } = await supabase
+          .from('app_settings')
+          .select('setting_key, setting_value')
+          .in('setting_key', ['vp_email', 'procurement_manager_email']);
+
+        if (settings) {
+          const vpEmail = settings.find(s => s.setting_key === 'vp_email')?.setting_value;
+          const pmEmail = settings.find(s => s.setting_key === 'procurement_manager_email')?.setting_value;
+          
+          setIsVP(user.email.toLowerCase() === vpEmail?.toLowerCase());
+          setIsProcurementManager(user.email.toLowerCase() === pmEmail?.toLowerCase());
+        }
+      }
+    };
+    checkManagerRoles();
   }, [user]);
 
   useEffect(() => {
@@ -581,6 +606,10 @@ export default function CRM() {
               <Building2 className="h-4 w-4" />
               ספקים
             </TabsTrigger>
+            <TabsTrigger value="quotes" className="gap-2">
+              <FileCheck className="h-4 w-4" />
+              הצעות מחיר
+            </TabsTrigger>
             <TabsTrigger value="receipts" className="gap-2">
               <Receipt className="h-4 w-4" />
               קבלות ספקים
@@ -821,6 +850,14 @@ export default function CRM() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="quotes">
+            <VendorQuotesView 
+              currentUserName={currentUserName} 
+              isVP={isVP || isAdmin}
+              isProcurementManager={isProcurementManager || isAdmin}
+            />
           </TabsContent>
 
           <TabsContent value="receipts">
