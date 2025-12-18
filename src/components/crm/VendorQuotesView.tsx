@@ -38,10 +38,12 @@ import {
   Clock, 
   RefreshCw,
   Search,
-  Upload,
   Plus,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  Send,
+  Mail,
+  User
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -55,6 +57,10 @@ interface VendorQuote {
   amount: number | null;
   quote_date: string;
   status: string;
+  handler_approved: boolean | null;
+  handler_approved_at: string | null;
+  handler_approved_by: string | null;
+  handler_rejection_reason: string | null;
   vp_approved: boolean | null;
   vp_approved_at: string | null;
   vp_approved_by: string | null;
@@ -63,50 +69,58 @@ interface VendorQuote {
   procurement_manager_approved_at: string | null;
   procurement_manager_approved_by: string | null;
   procurement_manager_rejection_reason: string | null;
+  vendor_submitted: boolean;
+  vendor_submitted_at: string | null;
+  quote_link_sent_at: string | null;
+  quote_secure_token: string;
   created_at: string;
   submitted_by: string | null;
   vendor_name?: string;
   vendor_email?: string;
+  handler_name?: string;
+  handler_email?: string;
 }
 
 interface VendorOption {
   id: string;
   vendor_name: string;
   vendor_email: string;
+  handler_name: string | null;
+  handler_email: string | null;
 }
 
 interface VendorQuotesViewProps {
   currentUserName: string;
+  currentUserEmail?: string;
   isVP: boolean;
   isProcurementManager: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof Clock; color: string }> = {
-  pending: { label: 'ממתין לאישור סמנכ"ל', icon: Clock, color: 'bg-warning text-warning-foreground' },
-  vp_approved: { label: 'אושר סמנכ"ל - ממתין למנהל רכש', icon: AlertCircle, color: 'bg-blue-100 text-blue-800' },
+  pending_vendor: { label: 'ממתין לספק', icon: Mail, color: 'bg-gray-100 text-gray-800' },
+  pending_handler: { label: 'ממתין למגיש הבקשה', icon: User, color: 'bg-orange-100 text-orange-800' },
+  pending_vp: { label: 'ממתין לסמנכ"ל', icon: Clock, color: 'bg-warning text-warning-foreground' },
+  pending_procurement: { label: 'ממתין למנהל רכש', icon: AlertCircle, color: 'bg-blue-100 text-blue-800' },
   approved: { label: 'אושר', icon: CheckCircle, color: 'bg-success text-success-foreground' },
   rejected: { label: 'נדחה', icon: XCircle, color: 'bg-destructive text-destructive-foreground' },
 };
 
-export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }: VendorQuotesViewProps) {
+export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isProcurementManager }: VendorQuotesViewProps) {
   const [quotes, setQuotes] = useState<VendorQuote[]>([]);
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [sendQuoteDialogOpen, setSendQuoteDialogOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
-  const [quoteFile, setQuoteFile] = useState<File | null>(null);
-  const [quoteDescription, setQuoteDescription] = useState('');
-  const [quoteAmount, setQuoteAmount] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<VendorQuote | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [rejectType, setRejectType] = useState<'vp' | 'procurement'>('vp');
+  const [rejectType, setRejectType] = useState<'handler' | 'vp' | 'procurement'>('handler');
 
   const fetchQuotes = async () => {
     setIsLoading(true);
@@ -115,7 +129,7 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
         .from('vendor_quotes')
         .select(`
           *,
-          vendor_requests!inner(vendor_name, vendor_email)
+          vendor_requests!inner(vendor_name, vendor_email, handler_name, handler_email)
         `)
         .order('created_at', { ascending: false });
 
@@ -125,6 +139,8 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
         ...q,
         vendor_name: q.vendor_requests.vendor_name,
         vendor_email: q.vendor_requests.vendor_email,
+        handler_name: q.vendor_requests.handler_name,
+        handler_email: q.vendor_requests.handler_email,
       }));
       
       setQuotes(formattedQuotes);
@@ -144,7 +160,7 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
     try {
       const { data, error } = await supabase
         .from('vendor_requests')
-        .select('id, vendor_name, vendor_email')
+        .select('id, vendor_name, vendor_email, handler_name, handler_email')
         .eq('status', 'approved')
         .order('vendor_name');
 
@@ -160,65 +176,82 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
     fetchVendors();
   }, []);
 
-  const handleUpload = async () => {
-    if (!selectedVendorId || !quoteFile) {
+  const handleSendQuoteRequest = async () => {
+    if (!selectedVendorId) {
       toast({
         title: 'שגיאה',
-        description: 'יש לבחור ספק ולהעלות קובץ',
+        description: 'יש לבחור ספק',
         variant: 'destructive',
       });
       return;
     }
 
-    setIsUploading(true);
+    setIsSending(true);
     try {
-      const fileExt = quoteFile.name.split('.').pop();
-      const fileName = `quotes/${selectedVendorId}/${Date.now()}.${fileExt}`;
+      const selectedVendor = vendors.find(v => v.id === selectedVendorId);
+      if (!selectedVendor) throw new Error('Vendor not found');
 
-      const { error: uploadError } = await supabase.storage
-        .from('vendor_documents')
-        .upload(fileName, quoteFile);
-
-      if (uploadError) throw uploadError;
-
-      const { error: insertError } = await supabase
+      // Create a quote record first
+      const { data: quoteData, error: insertError } = await supabase
         .from('vendor_quotes')
         .insert({
           vendor_request_id: selectedVendorId,
-          file_path: fileName,
-          file_name: quoteFile.name,
-          description: quoteDescription || null,
-          amount: quoteAmount ? parseFloat(quoteAmount) : null,
+          file_path: '',
+          file_name: '',
           submitted_by: currentUserName,
-          status: 'pending',
-        });
+          status: 'pending_vendor',
+          vendor_submitted: false,
+        })
+        .select('id, quote_secure_token')
+        .single();
 
       if (insertError) throw insertError;
 
-      toast({
-        title: 'הצעת המחיר הועלתה',
-        description: 'הצעת המחיר נשלחה לאישור סמנכ"ל',
+      // Send email to vendor
+      const { error: emailError } = await supabase.functions.invoke('send-quote-request', {
+        body: {
+          quoteId: quoteData.id,
+          vendorEmail: selectedVendor.vendor_email,
+          vendorName: selectedVendor.vendor_name,
+          handlerName: currentUserName,
+        },
       });
 
-      setUploadDialogOpen(false);
+      if (emailError) {
+        console.error('Email error:', emailError);
+        // Don't throw - the record was created successfully
+      }
+
+      toast({
+        title: 'הבקשה נשלחה',
+        description: `נשלח מייל לספק ${selectedVendor.vendor_name}`,
+      });
+
+      setSendQuoteDialogOpen(false);
       setSelectedVendorId('');
-      setQuoteFile(null);
-      setQuoteDescription('');
-      setQuoteAmount('');
       fetchQuotes();
     } catch (error) {
-      console.error('Error uploading quote:', error);
+      console.error('Error sending quote request:', error);
       toast({
         title: 'שגיאה',
-        description: 'לא ניתן להעלות את הצעת המחיר',
+        description: 'לא ניתן לשלוח את הבקשה',
         variant: 'destructive',
       });
     } finally {
-      setIsUploading(false);
+      setIsSending(false);
     }
   };
 
   const handleDownload = async (quote: VendorQuote) => {
+    if (!quote.file_path) {
+      toast({
+        title: 'שגיאה',
+        description: 'אין קובץ להורדה',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.storage
         .from('vendor_documents')
@@ -244,6 +277,61 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
     }
   };
 
+  const handleHandlerApprove = async (quote: VendorQuote) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('vendor_quotes')
+        .update({
+          handler_approved: true,
+          handler_approved_at: new Date().toISOString(),
+          handler_approved_by: currentUserName,
+          status: 'pending_vp',
+        })
+        .eq('id', quote.id);
+
+      if (error) throw error;
+
+      // Get VP email from settings
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'vp_email')
+        .single();
+
+      if (settings?.setting_value) {
+        // Send email to VP
+        await supabase.functions.invoke('send-quote-approval-email', {
+          body: {
+            quoteId: quote.id,
+            approverEmail: settings.setting_value,
+            approverName: 'סמנכ"ל',
+            vendorName: quote.vendor_name,
+            amount: quote.amount,
+            description: quote.description,
+            approvalType: 'vp',
+          },
+        });
+      }
+
+      toast({
+        title: 'הצעת המחיר אושרה',
+        description: 'נשלח מייל לסמנכ"ל לאישור',
+      });
+
+      fetchQuotes();
+    } catch (error) {
+      console.error('Error approving quote:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לאשר את ההצעה',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleVPApprove = async (quote: VendorQuote) => {
     setIsUpdating(true);
     try {
@@ -253,15 +341,37 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
           vp_approved: true,
           vp_approved_at: new Date().toISOString(),
           vp_approved_by: currentUserName,
-          status: 'vp_approved',
+          status: 'pending_procurement',
         })
         .eq('id', quote.id);
 
       if (error) throw error;
 
+      // Get procurement manager email from settings
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'procurement_manager_email')
+        .single();
+
+      if (settings?.setting_value) {
+        // Send email to procurement manager
+        await supabase.functions.invoke('send-quote-approval-email', {
+          body: {
+            quoteId: quote.id,
+            approverEmail: settings.setting_value,
+            approverName: 'מנהל רכש',
+            vendorName: quote.vendor_name,
+            amount: quote.amount,
+            description: quote.description,
+            approvalType: 'procurement_manager',
+          },
+        });
+      }
+
       toast({
         title: 'הצעת המחיר אושרה',
-        description: 'ההצעה ממתינה כעת לאישור מנהל רכש',
+        description: 'נשלח מייל למנהל רכש לאישור סופי',
       });
 
       fetchQuotes();
@@ -322,21 +432,33 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
 
     setIsUpdating(true);
     try {
-      const updateData = rejectType === 'vp' 
-        ? {
-            vp_approved: false,
-            vp_approved_at: new Date().toISOString(),
-            vp_approved_by: currentUserName,
-            vp_rejection_reason: rejectionReason,
-            status: 'rejected',
-          }
-        : {
-            procurement_manager_approved: false,
-            procurement_manager_approved_at: new Date().toISOString(),
-            procurement_manager_approved_by: currentUserName,
-            procurement_manager_rejection_reason: rejectionReason,
-            status: 'rejected',
-          };
+      let updateData: any = { status: 'rejected' };
+      
+      if (rejectType === 'handler') {
+        updateData = {
+          ...updateData,
+          handler_approved: false,
+          handler_approved_at: new Date().toISOString(),
+          handler_approved_by: currentUserName,
+          handler_rejection_reason: rejectionReason,
+        };
+      } else if (rejectType === 'vp') {
+        updateData = {
+          ...updateData,
+          vp_approved: false,
+          vp_approved_at: new Date().toISOString(),
+          vp_approved_by: currentUserName,
+          vp_rejection_reason: rejectionReason,
+        };
+      } else {
+        updateData = {
+          ...updateData,
+          procurement_manager_approved: false,
+          procurement_manager_approved_at: new Date().toISOString(),
+          procurement_manager_approved_by: currentUserName,
+          procurement_manager_rejection_reason: rejectionReason,
+        };
+      }
 
       const { error } = await supabase
         .from('vendor_quotes')
@@ -367,16 +489,20 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
   };
 
   const getQuoteStatus = (quote: VendorQuote): string => {
-    if (quote.status === 'rejected') return 'rejected';
-    if (quote.procurement_manager_approved) return 'approved';
-    if (quote.vp_approved) return 'vp_approved';
-    return 'pending';
+    return quote.status || 'pending_vendor';
+  };
+
+  // Check if current user is the handler for this quote
+  const isHandler = (quote: VendorQuote): boolean => {
+    return currentUserEmail === quote.handler_email || 
+           currentUserName === quote.handler_name ||
+           currentUserName === quote.submitted_by;
   };
 
   const filteredQuotes = quotes.filter((quote) => {
     const matchesSearch =
       (quote.vendor_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      quote.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.file_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (quote.description && quote.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const quoteStatus = getQuoteStatus(quote);
@@ -385,8 +511,10 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = quotes.filter(q => getQuoteStatus(q) === 'pending').length;
-  const vpApprovedCount = quotes.filter(q => getQuoteStatus(q) === 'vp_approved').length;
+  const pendingVendorCount = quotes.filter(q => getQuoteStatus(q) === 'pending_vendor').length;
+  const pendingHandlerCount = quotes.filter(q => getQuoteStatus(q) === 'pending_handler').length;
+  const pendingVPCount = quotes.filter(q => getQuoteStatus(q) === 'pending_vp').length;
+  const pendingProcurementCount = quotes.filter(q => getQuoteStatus(q) === 'pending_procurement').length;
   const approvedCount = quotes.filter(q => getQuoteStatus(q) === 'approved').length;
   const rejectedCount = quotes.filter(q => getQuoteStatus(q) === 'rejected').length;
 
@@ -401,46 +529,59 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         <Card 
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
           onClick={() => setStatusFilter('all')}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">סה"כ הצעות</p>
-                <p className="text-2xl font-bold">{quotes.length}</p>
-              </div>
-              <FileCheck className="h-8 w-8 text-primary opacity-50" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">סה"כ</p>
+              <p className="text-2xl font-bold">{quotes.length}</p>
             </div>
           </CardContent>
         </Card>
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending' ? 'ring-2 ring-warning' : ''}`}
-          onClick={() => setStatusFilter('pending')}
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_vendor' ? 'ring-2 ring-gray-500' : ''}`}
+          onClick={() => setStatusFilter('pending_vendor')}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">ממתין לסמנכ"ל</p>
-                <p className="text-2xl font-bold text-warning">{pendingCount}</p>
-              </div>
-              <Clock className="h-8 w-8 text-warning opacity-50" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">ממתין לספק</p>
+              <p className="text-2xl font-bold text-gray-600">{pendingVendorCount}</p>
             </div>
           </CardContent>
         </Card>
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'vp_approved' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => setStatusFilter('vp_approved')}
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_handler' ? 'ring-2 ring-orange-500' : ''}`}
+          onClick={() => setStatusFilter('pending_handler')}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">ממתין למנהל רכש</p>
-                <p className="text-2xl font-bold text-blue-600">{vpApprovedCount}</p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-blue-500 opacity-50" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">ממתין למגיש</p>
+              <p className="text-2xl font-bold text-orange-600">{pendingHandlerCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_vp' ? 'ring-2 ring-warning' : ''}`}
+          onClick={() => setStatusFilter('pending_vp')}
+        >
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">ממתין לסמנכ"ל</p>
+              <p className="text-2xl font-bold text-warning">{pendingVPCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_procurement' ? 'ring-2 ring-blue-500' : ''}`}
+          onClick={() => setStatusFilter('pending_procurement')}
+        >
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">ממתין לרכש</p>
+              <p className="text-2xl font-bold text-blue-600">{pendingProcurementCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -449,12 +590,9 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
           onClick={() => setStatusFilter('approved')}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">אושרו</p>
-                <p className="text-2xl font-bold text-success">{approvedCount}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-success opacity-50" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">אושרו</p>
+              <p className="text-2xl font-bold text-success">{approvedCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -463,18 +601,15 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
           onClick={() => setStatusFilter('rejected')}
         >
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">נדחו</p>
-                <p className="text-2xl font-bold text-destructive">{rejectedCount}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-destructive opacity-50" />
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">נדחו</p>
+              <p className="text-2xl font-bold text-destructive">{rejectedCount}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Upload Button */}
+      {/* Filters and Actions */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
@@ -495,8 +630,10 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">כל ההצעות</SelectItem>
-                <SelectItem value="pending">ממתין לסמנכ"ל</SelectItem>
-                <SelectItem value="vp_approved">ממתין למנהל רכש</SelectItem>
+                <SelectItem value="pending_vendor">ממתין לספק</SelectItem>
+                <SelectItem value="pending_handler">ממתין למגיש</SelectItem>
+                <SelectItem value="pending_vp">ממתין לסמנכ"ל</SelectItem>
+                <SelectItem value="pending_procurement">ממתין למנהל רכש</SelectItem>
                 <SelectItem value="approved">אושרו</SelectItem>
                 <SelectItem value="rejected">נדחו</SelectItem>
               </SelectContent>
@@ -505,9 +642,9 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
               <RefreshCw className="h-4 w-4" />
               רענן
             </Button>
-            <Button onClick={() => setUploadDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              העלאת הצעת מחיר
+            <Button onClick={() => setSendQuoteDialogOpen(true)} className="gap-2">
+              <Send className="h-4 w-4" />
+              שלח בקשה להצעת מחיר
             </Button>
           </div>
         </CardContent>
@@ -530,10 +667,10 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">ספק</TableHead>
+                    <TableHead className="text-right">מגיש הבקשה</TableHead>
                     <TableHead className="text-right">קובץ</TableHead>
                     <TableHead className="text-right">סכום</TableHead>
                     <TableHead className="text-right">תאריך</TableHead>
-                    <TableHead className="text-right">תיאור</TableHead>
                     <TableHead className="text-right">סטטוס</TableHead>
                     <TableHead className="text-right">פעולות</TableHead>
                   </TableRow>
@@ -541,7 +678,7 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                 <TableBody>
                   {filteredQuotes.map((quote) => {
                     const quoteStatus = getQuoteStatus(quote);
-                    const statusConfig = STATUS_CONFIG[quoteStatus] || STATUS_CONFIG.pending;
+                    const statusConfig = STATUS_CONFIG[quoteStatus] || STATUS_CONFIG.pending_vendor;
                     const StatusIcon = statusConfig.icon;
                     
                     return (
@@ -553,10 +690,19 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm max-w-[150px] truncate">{quote.file_name}</span>
+                          <div className="text-sm">
+                            {quote.submitted_by || quote.handler_name || '-'}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {quote.file_path ? (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm max-w-[150px] truncate">{quote.file_name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="font-bold">
                           {quote.amount ? `₪${quote.amount.toLocaleString()}` : '-'}
@@ -564,16 +710,18 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                         <TableCell>
                           {format(new Date(quote.quote_date), 'dd/MM/yyyy', { locale: he })}
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate">
-                          {quote.description || '-'}
-                        </TableCell>
                         <TableCell>
                           <Badge className={statusConfig.color}>
                             <StatusIcon className="h-3 w-3 ml-1" />
                             {statusConfig.label}
                           </Badge>
-                          {quote.vp_approved && quote.vp_approved_by && (
+                          {quote.handler_approved && quote.handler_approved_by && (
                             <p className="text-xs text-muted-foreground mt-1">
+                              מגיש: {quote.handler_approved_by}
+                            </p>
+                          )}
+                          {quote.vp_approved && quote.vp_approved_by && (
+                            <p className="text-xs text-muted-foreground">
                               סמנכ"ל: {quote.vp_approved_by}
                             </p>
                           )}
@@ -584,23 +732,55 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                           )}
                           {quoteStatus === 'rejected' && (
                             <p className="text-xs text-destructive mt-1">
-                              {quote.vp_rejection_reason || quote.procurement_manager_rejection_reason}
+                              {quote.handler_rejection_reason || quote.vp_rejection_reason || quote.procurement_manager_rejection_reason}
                             </p>
                           )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownload(quote)}
-                              title="הורדה"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            {quote.file_path && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownload(quote)}
+                                title="הורדה"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            {/* Handler Approval buttons - for pending_handler status */}
+                            {quoteStatus === 'pending_handler' && isHandler(quote) && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleHandlerApprove(quote)}
+                                  disabled={isUpdating}
+                                  className="text-success hover:text-success hover:bg-success/10"
+                                  title="אשר ושלח לסמנכל"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedQuote(quote);
+                                    setRejectType('handler');
+                                    setRejectDialogOpen(true);
+                                  }}
+                                  disabled={isUpdating}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="דחה"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                             
                             {/* VP Approval buttons */}
-                            {quoteStatus === 'pending' && isVP && (
+                            {quoteStatus === 'pending_vp' && isVP && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -608,7 +788,7 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                                   onClick={() => handleVPApprove(quote)}
                                   disabled={isUpdating}
                                   className="text-success hover:text-success hover:bg-success/10"
-                                  title="אשר (סמנכל)"
+                                  title='אשר (סמנכ"ל)'
                                 >
                                   <CheckCircle className="h-4 w-4" />
                                 </Button>
@@ -630,7 +810,7 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                             )}
                             
                             {/* Procurement Manager Approval buttons */}
-                            {quoteStatus === 'vp_approved' && isProcurementManager && (
+                            {quoteStatus === 'pending_procurement' && isProcurementManager && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -670,13 +850,16 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
         </CardContent>
       </Card>
 
-      {/* Upload Quote Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+      {/* Send Quote Request Dialog */}
+      <Dialog open={sendQuoteDialogOpen} onOpenChange={setSendQuoteDialogOpen}>
         <DialogContent className="sm:max-w-[500px]" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">העלאת הצעת מחיר חדשה</DialogTitle>
+            <DialogTitle className="text-right">שליחת בקשה להצעת מחיר</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              בחר ספק לשליחת בקשה להצעת מחיר. הספק יקבל מייל עם לינק להגשת הצעה.
+            </p>
             <div className="space-y-2">
               <Label>בחר ספק *</Label>
               <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
@@ -692,38 +875,13 @@ export function VendorQuotesView({ currentUserName, isVP, isProcurementManager }
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>קובץ הצעת מחיר *</Label>
-              <Input
-                type="file"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                onChange={(e) => setQuoteFile(e.target.files?.[0] || null)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>סכום (אופציונלי)</Label>
-              <Input
-                type="number"
-                placeholder="הזן סכום..."
-                value={quoteAmount}
-                onChange={(e) => setQuoteAmount(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>תיאור (אופציונלי)</Label>
-              <Textarea
-                placeholder="הזן תיאור להצעה..."
-                value={quoteDescription}
-                onChange={(e) => setQuoteDescription(e.target.value)}
-              />
-            </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
-            <Button onClick={handleUpload} disabled={isUploading || !selectedVendorId || !quoteFile}>
-              {isUploading ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Upload className="h-4 w-4 ml-2" />}
-              העלה הצעה
+            <Button onClick={handleSendQuoteRequest} disabled={isSending || !selectedVendorId}>
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Send className="h-4 w-4 ml-2" />}
+              שלח בקשה
             </Button>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setSendQuoteDialogOpen(false)}>
               ביטול
             </Button>
           </DialogFooter>

@@ -208,16 +208,24 @@ export type Database = {
           description: string | null
           file_name: string
           file_path: string
+          handler_approved: boolean | null
+          handler_approved_at: string | null
+          handler_approved_by: string | null
+          handler_rejection_reason: string | null
           id: string
           procurement_manager_approved: boolean | null
           procurement_manager_approved_at: string | null
           procurement_manager_approved_by: string | null
           procurement_manager_rejection_reason: string | null
           quote_date: string
+          quote_link_sent_at: string | null
+          quote_secure_token: string | null
           status: string
           submitted_by: string | null
           updated_at: string
           vendor_request_id: string
+          vendor_submitted: boolean | null
+          vendor_submitted_at: string | null
           vp_approved: boolean | null
           vp_approved_at: string | null
           vp_approved_by: string | null
@@ -229,16 +237,24 @@ export type Database = {
           description?: string | null
           file_name: string
           file_path: string
+          handler_approved?: boolean | null
+          handler_approved_at?: string | null
+          handler_approved_by?: string | null
+          handler_rejection_reason?: string | null
           id?: string
           procurement_manager_approved?: boolean | null
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
           procurement_manager_rejection_reason?: string | null
           quote_date?: string
+          quote_link_sent_at?: string | null
+          quote_secure_token?: string | null
           status?: string
           submitted_by?: string | null
           updated_at?: string
           vendor_request_id: string
+          vendor_submitted?: boolean | null
+          vendor_submitted_at?: string | null
           vp_approved?: boolean | null
           vp_approved_at?: string | null
           vp_approved_by?: string | null
@@ -250,16 +266,24 @@ export type Database = {
           description?: string | null
           file_name?: string
           file_path?: string
+          handler_approved?: boolean | null
+          handler_approved_at?: string | null
+          handler_approved_by?: string | null
+          handler_rejection_reason?: string | null
           id?: string
           procurement_manager_approved?: boolean | null
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
           procurement_manager_rejection_reason?: string | null
           quote_date?: string
+          quote_link_sent_at?: string | null
+          quote_secure_token?: string | null
           status?: string
           submitted_by?: string | null
           updated_at?: string
           vendor_request_id?: string
+          vendor_submitted?: boolean | null
+          vendor_submitted_at?: string | null
           vp_approved?: boolean | null
           vp_approved_at?: string | null
           vp_approved_by?: string | null
