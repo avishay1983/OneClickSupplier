@@ -6,8 +6,8 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gemini-2.0-flash',
-  accurate: 'gemini-2.5-pro-preview-05-06'
+  fast: 'gemini-1.5-flash',
+  accurate: 'gemini-1.5-pro',
 };
 
 // Google Gemini API endpoint
