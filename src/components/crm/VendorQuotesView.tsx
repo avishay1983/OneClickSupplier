@@ -712,13 +712,13 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
               <Table dir="rtl">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">ספק</TableHead>
-                    <TableHead className="text-right">מגיש הבקשה</TableHead>
-                    <TableHead className="text-right">קובץ</TableHead>
-                    <TableHead className="text-right">סכום</TableHead>
-                    <TableHead className="text-right">תאריך</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
-                    <TableHead className="text-right">פעולות</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>ספק</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>מגיש הבקשה</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>קובץ</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סכום</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>תאריך</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סטטוס</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
