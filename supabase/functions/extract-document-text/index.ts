@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Google Gemini API endpoint
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
   const prefix = {
@@ -91,47 +94,7 @@ function cleanExtractedData(extracted: any): any {
   return cleaned;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { textContent, documentType } = await req.json();
-    const requestId = crypto.randomUUID().slice(0, 8);
-    
-    logOCR('info', `[${requestId}] New text extraction request`, { documentType, textLength: textContent?.length });
-    
-    if (!textContent) {
-      return new Response(
-        JSON.stringify({ error: 'Missing text content' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
-      return new Response(
-        JSON.stringify({ error: 'API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    logOCR('info', `[${requestId}] Processing text extraction...`);
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `אתה מומחה לחילוץ נתונים ממסמכים עסקיים ישראליים.
+const SYSTEM_PROMPT = `אתה מומחה לחילוץ נתונים ממסמכים עסקיים ישראליים.
 חלץ את כל הנתונים שתמצא בטקסט מבין הרשימה הבאה:
 
 1. company_id - ח.פ / עוסק מורשה (9 ספרות)
@@ -178,19 +141,63 @@ serve(async (req) => {
   "account_number": "value או null",
   "confidence": "high" | "medium" | "low",
   "notes": "הערות אם יש"
-}`
-          },
+}`;
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { textContent, documentType } = await req.json();
+    const requestId = crypto.randomUUID().slice(0, 8);
+    
+    logOCR('info', `[${requestId}] New text extraction request`, { documentType, textLength: textContent?.length });
+    
+    if (!textContent) {
+      return new Response(
+        JSON.stringify({ error: 'Missing text content' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+      return new Response(
+        JSON.stringify({ error: 'API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    logOCR('info', `[${requestId}] Processing text extraction...`);
+
+    const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
+
+    // Google Gemini API format
+    const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
           {
-            role: 'user',
-            content: `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`
+            parts: [
+              { text: SYSTEM_PROMPT + '\n\n' + userPrompt }
+            ]
           }
         ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logOCR('error', `[${requestId}] AI gateway error`, { status: response.status, error: errorText });
+      logOCR('error', `[${requestId}] Gemini API error`, { status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -212,7 +219,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    // Google Gemini response format
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`);

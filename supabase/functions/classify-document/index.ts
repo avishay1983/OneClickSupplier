@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Google Gemini API endpoint
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
 // Document type labels in Hebrew for the prompt
 const DOCUMENT_TYPE_DESCRIPTIONS: Record<string, string> = {
   'bookkeeping_cert': 'אישור ניהול ספרים - מסמך רשמי מרשויות המס המאשר כי העסק מנהל ספרים כחוק',
@@ -29,9 +32,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('[classify-document] LOVABLE_API_KEY is not configured');
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      console.error('[classify-document] GOOGLE_GEMINI_API_KEY is not configured');
       return new Response(
         JSON.stringify({ error: 'שגיאת תצורה בשרת' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,33 +61,47 @@ serve(async (req) => {
   "reason": "הסבר קצר למה זה הסוג הזה"
 }`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Extract base64 data from data URL if present
+    let imageData = imageBase64;
+    let mimeType = 'image/jpeg';
+    if (imageBase64.startsWith('data:')) {
+      const matches = imageBase64.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        mimeType = matches[1];
+        imageData = matches[2];
+      }
+    }
+
+    // Google Gemini API format
+    const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
+            parts: [
+              { text: prompt },
               {
-                type: 'image_url',
-                image_url: { url: imageBase64 }
+                inline_data: {
+                  mime_type: mimeType,
+                  data: imageData
+                }
               }
             ]
           }
         ],
-        temperature: 0.1,
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[classify-document] AI Gateway error:', response.status, errorText);
+      console.error('[classify-document] Gemini API error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'שגיאה בזיהוי המסמך', skip_validation: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -92,7 +109,8 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content || '';
+    // Google Gemini response format
+    const content = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     console.log('[classify-document] AI response:', content);
 
