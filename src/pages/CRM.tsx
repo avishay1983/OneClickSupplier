@@ -592,50 +592,8 @@ export default function CRM() {
             {(() => {
               const realVendors = vendors.filter(v => !isTestVendor(v));
               
-              // Calculate average from all ratings in vendorRatings Map
-              const vendorsWithRatingData = realVendors.filter(v => {
-                const summary = vendorRatings.get(v.id);
-                return summary && summary.totalRatings > 0;
-              });
-              
-              // Calculate overall average from all individual ratings
-              let totalRatingsSum = 0;
-              let totalRatingsCount = 0;
-              vendorsWithRatingData.forEach(v => {
-                const summary = vendorRatings.get(v.id);
-                if (summary && summary.average !== null) {
-                  totalRatingsSum += summary.average * summary.totalRatings;
-                  totalRatingsCount += summary.totalRatings;
-                }
-              });
-              const averageRating = totalRatingsCount > 0 ? (totalRatingsSum / totalRatingsCount).toFixed(1) : '—';
-              
-              // Breakdown by vendor type
-              const generalVendors = vendorsWithRatingData.filter(v => v.vendor_type === 'general' || !v.vendor_type);
-              const claimsVendors = vendorsWithRatingData.filter(v => v.vendor_type === 'claims');
-              
-              let generalSum = 0, generalCount = 0;
-              generalVendors.forEach(v => {
-                const summary = vendorRatings.get(v.id);
-                if (summary && summary.average !== null) {
-                  generalSum += summary.average * summary.totalRatings;
-                  generalCount += summary.totalRatings;
-                }
-              });
-              const avgGeneral = generalCount > 0 ? (generalSum / generalCount).toFixed(1) : '—';
-              
-              let claimsSum = 0, claimsCount = 0;
-              claimsVendors.forEach(v => {
-                const summary = vendorRatings.get(v.id);
-                if (summary && summary.average !== null) {
-                  claimsSum += summary.average * summary.totalRatings;
-                  claimsCount += summary.totalRatings;
-                }
-              });
-              const avgClaims = claimsCount > 0 ? (claimsSum / claimsCount).toFixed(1) : '—';
-              
               return (
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6" dir="rtl">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" dir="rtl">
                   <Card>
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
@@ -682,23 +640,6 @@ export default function CRM() {
                           <p className="text-2xl font-bold text-yellow-600">
                             {realVendors.filter(v => v.crm_status === 'suspended').length}
                           </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <Star className="h-8 w-8 text-yellow-500 opacity-50 fill-yellow-500" />
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">דירוג ממוצע</p>
-                          <p className="text-2xl font-bold text-yellow-600">
-                            {averageRating}
-                          </p>
-                          <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>משרד: <span className="font-semibold text-foreground">{avgGeneral}</span></span>
-                            <span>תביעות: <span className="font-semibold text-foreground">{avgClaims}</span></span>
-                          </div>
                         </div>
                       </div>
                     </CardContent>
