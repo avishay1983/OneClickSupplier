@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -5,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Google Gemini API endpoint
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+// OpenAI API endpoint
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -161,9 +162,9 @@ serve(async (req) => {
       );
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (!GOOGLE_GEMINI_API_KEY) {
-      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      logOCR('error', `[${requestId}] OPENAI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -174,30 +175,33 @@ serve(async (req) => {
 
     const userPrompt = `חלץ את כל הנתונים העסקיים שתמצא בטקסט הבא (סוג מסמך: ${documentType}):\n\n${textContent}`;
 
-    // Google Gemini API format
-    const response = await fetch(`${GEMINI_API_URL}/gemini-2.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`, {
+    // OpenAI API format
+    const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [
+        model: 'gpt-4o-mini',
+        messages: [
           {
-            parts: [
-              { text: SYSTEM_PROMPT + '\n\n' + userPrompt }
-            ]
+            role: 'system',
+            content: SYSTEM_PROMPT
+          },
+          {
+            role: 'user',
+            content: userPrompt
           }
         ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 2048,
-        }
+        max_tokens: 2048,
+        temperature: 0.1,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logOCR('error', `[${requestId}] Gemini API error`, { status: response.status, error: errorText });
+      logOCR('error', `[${requestId}] OpenAI API error`, { status: response.status, error: errorText });
       
       if (response.status === 429) {
         return new Response(
@@ -219,8 +223,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    // Google Gemini response format
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    // OpenAI response format
+    const content = data.choices?.[0]?.message?.content;
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`);
