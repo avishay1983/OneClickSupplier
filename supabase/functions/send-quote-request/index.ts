@@ -111,41 +111,77 @@ serve(async (req: Request): Promise<Response> => {
     const quoteLink = `${baseUrl}/vendor-quote/${quote.quote_secure_token}`;
 
     const emailHtml = `
-      <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <img src="https://ijyqtemnhlbamxmgjuzp.supabase.co/storage/v1/object/public/vendor_documents/bituach-yashir-logo.png" alt="ביטוח ישיר" style="max-width: 200px;" />
-        </div>
-        
-        <h2 style="color: #333; text-align: center;">בקשה להצעת מחיר</h2>
-        
-        <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          שלום ${vendorName},
-        </p>
-        
-        <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          ${handlerName} מבקש/ת ממך להגיש הצעת מחיר.
-        </p>
-        
-        <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          לחץ על הכפתור למטה כדי להגיש את הצעת המחיר שלך:
-        </p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${quoteLink}" style="background-color: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-size: 18px; display: inline-block;">
-            הגש הצעת מחיר
-          </a>
-        </div>
-        
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          לינק זה תקף לשבוע אחד.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-        
-        <p style="color: #999; font-size: 12px; text-align: center;">
-          הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר
-        </p>
-      </div>
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden;">
+                <!-- Header with Logo -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px 40px; text-align: center;">
+                    <img src="https://www.bituach-yashir.co.il/wp-content/uploads/2023/05/logo.svg" alt="ביטוח ישיר" style="max-width: 180px; height: auto;" />
+                  </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 40px;">
+                    <h1 style="color: #1e3a8a; font-size: 24px; font-weight: bold; margin: 0 0 25px 0; text-align: center;">
+                      בקשה להצעת מחיר
+                    </h1>
+                    
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0;">
+                      שלום <strong>${vendorName}</strong>,
+                    </p>
+                    
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0;">
+                      <strong>${handlerName}</strong> מבקש/ת ממך להגיש הצעת מחיר.
+                    </p>
+                    
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 30px 0;">
+                      לחץ על הכפתור למטה כדי להגיש את הצעת המחיר שלך:
+                    </p>
+                    
+                    <!-- CTA Button -->
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${quoteLink}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%); color: #ffffff; font-size: 18px; font-weight: bold; text-decoration: none; padding: 16px 48px; border-radius: 8px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
+                            הגש הצעת מחיר
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 25px 0 0 0;">
+                      ⏰ לינק זה תקף לשבוע אחד
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8fafc; padding: 25px 40px; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+                      הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר
+                    </p>
+                    <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 10px 0 0 0;">
+                      © ${new Date().getFullYear()} ביטוח ישיר - כל הזכויות שמורות
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     // Get Gmail credentials
