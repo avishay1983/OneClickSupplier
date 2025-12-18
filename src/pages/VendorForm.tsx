@@ -167,11 +167,37 @@ export default function VendorForm() {
   // OCR extraction function - accepts base64 image data directly
   const extractBankDetailsFromBase64 = useCallback(async (base64: string, mimeType: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('extract-bank-details', {
+      const { data, error, response } = await supabase.functions.invoke('extract-bank-details', {
         body: { imageBase64: base64, mimeType },
       });
 
-      if (error) throw error;
+      if (error) {
+        const status = response?.status;
+        let message = 'לא ניתן לחלץ פרטי בנק כרגע.';
+        try {
+          const body = response ? await response.clone().json() : null;
+          message = body?.message || message;
+        } catch {
+          // ignore
+        }
+
+        if (status === 402) {
+          toast({
+            title: 'אין קרדיטים לשירות ה‑AI',
+            description: message,
+            variant: 'destructive',
+          });
+        } else if (status === 429) {
+          toast({
+            title: 'יותר מדי בקשות',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+
+        console.error('OCR extraction error:', error);
+        return null;
+      }
 
       if (data?.error) {
         console.log('OCR error:', data.error);
@@ -193,11 +219,37 @@ export default function VendorForm() {
   // OCR extraction function for all document data
   const extractDocumentDataFromBase64 = useCallback(async (base64: string, mimeType: string, documentType: string): Promise<ExtractedDocumentData | null> => {
     try {
-      const { data, error } = await supabase.functions.invoke('extract-document-data', {
+      const { data, error, response } = await supabase.functions.invoke('extract-document-data', {
         body: { imageBase64: base64, mimeType, documentType },
       });
 
-      if (error) throw error;
+      if (error) {
+        const status = response?.status;
+        let message = 'לא ניתן לחלץ נתונים מהמסמך כרגע.';
+        try {
+          const body = response ? await response.clone().json() : null;
+          message = body?.message || message;
+        } catch {
+          // ignore
+        }
+
+        if (status === 402) {
+          toast({
+            title: 'אין קרדיטים לשירות ה‑AI',
+            description: message,
+            variant: 'destructive',
+          });
+        } else if (status === 429) {
+          toast({
+            title: 'יותר מדי בקשות',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+
+        console.error('OCR extraction error:', error);
+        return null;
+      }
 
       if (data?.error) {
         console.log('OCR error:', data.error);
@@ -268,19 +320,42 @@ export default function VendorForm() {
       }
 
       console.log('[classifyDocument] Calling classify-document edge function...');
-      const { data, error } = await supabase.functions.invoke('classify-document', {
+      const { data, error, response } = await supabase.functions.invoke('classify-document', {
         body: { imageBase64: base64Data, expectedType },
       });
 
       console.log('[classifyDocument] Response:', { data, error });
 
       if (error) {
+        const status = response?.status;
+        let message = 'לא ניתן לאמת את סוג המסמך כרגע.';
+        try {
+          const body = response ? await response.clone().json() : null;
+          message = body?.message || message;
+        } catch {
+          // ignore
+        }
+
+        if (status === 402) {
+          toast({
+            title: 'אין קרדיטים לשירות ה‑AI',
+            description: message,
+            variant: 'destructive',
+          });
+        } else if (status === 429) {
+          toast({
+            title: 'יותר מדי בקשות',
+            description: message,
+            variant: 'destructive',
+          });
+        }
+
         console.error('[classifyDocument] Classification error:', error);
         return null;
       }
 
-      if (data?.skip_validation || data?.error) {
-        console.log('[classifyDocument] Skipping validation due to:', data?.error || 'skip_validation flag');
+      if (data?.error) {
+        console.log('[classifyDocument] Server returned error:', data.error);
         return null;
       }
 
