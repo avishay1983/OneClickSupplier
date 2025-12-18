@@ -6,12 +6,15 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'google/gemini-2.5-flash',
-  accurate: 'google/gemini-2.5-pro'
+  fast: 'gemini-2.0-flash',
+  accurate: 'gemini-2.5-pro-preview-05-06'
 };
 
 // Minimum fields threshold for retry
 const MIN_FIELDS_THRESHOLD = 3;
+
+// Google Gemini API endpoint
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 function logOCR(level: 'info' | 'warn' | 'error' | 'success', message: string, data?: any) {
   const timestamp = new Date().toISOString();
@@ -213,36 +216,32 @@ async function extractWithModel(imageBase64: string, mimeType: string, documentT
   logOCR('info', `Starting OCR extraction`, { model, documentType, imageSize: `${Math.round(imageBase64.length / 1024)}KB` });
   
   const systemPrompt = getSystemPrompt(documentType);
+  const userPrompt = `סרוק בזהירות את התמונה הבאה (סוג מסמך: ${documentType}) וחלץ את כל הנתונים העסקיים. בדוק כל פינה ואזור בתמונה. אם חלק מהטקסט מטושטש, נסה לפענח לפי הקשר.`;
   
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  // Google Gemini API format
+  const response = await fetch(`${GEMINI_API_URL}/${model}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model,
-      messages: [
+      contents: [
         {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: [
+          parts: [
+            { text: systemPrompt + '\n\n' + userPrompt },
             {
-              type: 'text',
-              text: `סרוק בזהירות את התמונה הבאה (סוג מסמך: ${documentType}) וחלץ את כל הנתונים העסקיים. בדוק כל פינה ואזור בתמונה. אם חלק מהטקסט מטושטש, נסה לפענח לפי הקשר.`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
+              inline_data: {
+                mime_type: mimeType || 'image/jpeg',
+                data: imageBase64
               }
             }
           ]
         }
       ],
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 2048,
+      }
     }),
   });
 
@@ -307,9 +306,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      logOCR('error', `[${requestId}] LOVABLE_API_KEY is not configured`);
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      logOCR('error', `[${requestId}] GOOGLE_GEMINI_API_KEY is not configured`);
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -320,7 +319,7 @@ serve(async (req) => {
     const firstAttemptStart = Date.now();
 
     // First attempt with fast model
-    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, LOVABLE_API_KEY);
+    let response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.fast, GOOGLE_GEMINI_API_KEY);
     const firstAttemptDuration = Date.now() - firstAttemptStart;
 
     if (!response.ok) {
@@ -347,7 +346,8 @@ serve(async (req) => {
     }
 
     let data = await response.json();
-    let content = data.choices?.[0]?.message?.content;
+    // Google Gemini response format
+    let content = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!content) {
       logOCR('error', `[${requestId}] No content in AI response`, { duration: `${firstAttemptDuration}ms` });
@@ -390,12 +390,13 @@ serve(async (req) => {
       
       try {
         const retryStart = Date.now();
-        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, LOVABLE_API_KEY);
+        response = await extractWithModel(imageBase64, mimeType, documentType, MODELS.accurate, GOOGLE_GEMINI_API_KEY);
         const retryDuration = Date.now() - retryStart;
         
         if (response.ok) {
           data = await response.json();
-          const retryContent = data.choices?.[0]?.message?.content;
+          // Google Gemini response format
+          const retryContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
           
           if (retryContent) {
             let retryExtracted = parseResponse(retryContent);
