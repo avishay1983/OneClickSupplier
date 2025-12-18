@@ -480,33 +480,35 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="vendor_name" className="block text-right">שם הספק *</Label>
-                  <Input
-                    id="vendor_name"
-                    className="text-right"
-                    value={formData.vendor_name}
-                    onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
-                    placeholder="הכנס שם ספק"
-                  />
-                  {errors.vendor_name && (
-                    <p className="text-sm text-destructive text-right">{errors.vendor_name}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="vendor_email" className="block text-right">אימייל הספק *</Label>
-                  <Input
-                    id="vendor_email"
-                    type="email"
-                    className="text-right"
-                    dir="ltr"
-                    value={formData.vendor_email}
-                    onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })}
-                    placeholder="vendor@example.com"
-                  />
-                  {errors.vendor_email && (
-                    <p className="text-sm text-destructive text-right">{errors.vendor_email}</p>
-                  )}
+                  <Label className="block text-right">פרטי הספק *</Label>
+                  <div className="flex gap-3">
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        id="vendor_email"
+                        type="email"
+                        className="text-right"
+                        dir="ltr"
+                        value={formData.vendor_email}
+                        onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })}
+                        placeholder="vendor@example.com"
+                      />
+                      {errors.vendor_email && (
+                        <p className="text-sm text-destructive text-right">{errors.vendor_email}</p>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Input
+                        id="vendor_name"
+                        className="text-right"
+                        value={formData.vendor_name}
+                        onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
+                        placeholder="שם הספק"
+                      />
+                      {errors.vendor_name && (
+                        <p className="text-sm text-destructive text-right">{errors.vendor_name}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
