@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const MODELS = {
-  fast: 'gpt-4o-mini',
+  fast: 'gpt-4o',
   accurate: 'gpt-4o',
 };
 
