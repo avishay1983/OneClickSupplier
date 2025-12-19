@@ -370,15 +370,15 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-0 shadow-2xl" dir="rtl">
         {/* Header with gradient background */}
-        <div className="bg-gradient-to-l from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
+        <div className="bg-gradient-to-r from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
           <DialogHeader>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-row-reverse">
               <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <DialogTitle className="text-2xl text-white font-bold">בקשה חדשה להקמת ספק</DialogTitle>
-                <p className="text-white/80 text-sm mt-1">מלא את הפרטים ונשלח קישור לספק</p>
+              <div className="text-right">
+                <DialogTitle className="text-2xl text-white font-bold text-right">בקשה חדשה להקמת ספק</DialogTitle>
+                <p className="text-white/80 text-sm mt-1 text-right">מלא את הפרטים ונשלח קישור לספק</p>
               </div>
             </div>
           </DialogHeader>
@@ -389,14 +389,14 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
             <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl h-12">
               <TabsTrigger 
                 value="bulk" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 transition-all"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 flex-row-reverse transition-all"
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 העלאה מאקסל
               </TabsTrigger>
               <TabsTrigger 
                 value="single" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 transition-all"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 flex-row-reverse transition-all"
               >
                 <User className="h-4 w-4" />
                 ספק בודד
@@ -406,8 +406,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
             <TabsContent value="single" className="mt-6 animate-fade-in">
               <form onSubmit={handleSubmit} className="space-y-5 text-right">
                 {/* Handler Section */}
-                <div className="bg-gradient-to-l from-accent/5 to-accent/10 rounded-xl p-4 border border-accent/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-xl p-4 border border-accent/20">
+                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                     <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
                       <User className="h-4 w-4 text-accent" />
                     </div>
@@ -423,8 +423,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 {/* Vendor Type Section */}
-                <div className="bg-gradient-to-l from-brand-purple/5 to-brand-purple/10 rounded-xl p-4 border border-brand-purple/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="bg-gradient-to-r from-brand-purple/5 to-brand-purple/10 rounded-xl p-4 border border-brand-purple/20">
+                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                     <div className="w-8 h-8 rounded-lg bg-brand-purple/20 flex items-center justify-center">
                       <Building2 className="h-4 w-4 text-brand-purple" />
                     </div>
@@ -519,8 +519,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 {/* Vendor Details Section */}
-                <div className="bg-gradient-to-l from-success/5 to-success/10 rounded-xl p-4 border border-success/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="bg-gradient-to-r from-success/5 to-success/10 rounded-xl p-4 border border-success/20">
+                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                     <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
                       <Mail className="h-4 w-4 text-success" />
                     </div>
@@ -557,8 +557,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 {/* Link Expiry Section */}
-                <div className="bg-gradient-to-l from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="bg-gradient-to-r from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
+                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                     <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
                       <Clock className="h-4 w-4 text-warning" />
                     </div>
@@ -582,8 +582,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
 
                 {/* Approval Type Section */}
-                <div className="bg-gradient-to-l from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-4">
+                <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-4 flex-row-reverse justify-end">
                     <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                       <Shield className="h-4 w-4 text-primary" />
                     </div>
@@ -592,7 +592,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   
                   <div className="space-y-3">
                     <label 
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border flex-row-reverse ${
                         formData.skip_manager_approval 
                           ? 'bg-primary/10 border-primary/30 shadow-sm' 
                           : 'bg-white/50 border-transparent hover:bg-white/80'
@@ -609,14 +609,14 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                           })
                         }
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 text-right">
                         <span className="font-medium">ללא צורך באישור מנהל</span>
                         <p className="text-xs text-muted-foreground">הספק יאושר אוטומטית</p>
                       </div>
                     </label>
 
-                    <label 
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                    <label
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border flex-row-reverse ${
                         !formData.requires_vp_approval && !formData.skip_manager_approval 
                           ? 'bg-primary/10 border-primary/30 shadow-sm' 
                           : 'bg-white/50 border-transparent hover:bg-white/80'
@@ -633,14 +633,14 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                           })
                         }
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 text-right">
                         <span className="font-medium">אישור מנהל רכש בלבד</span>
                         <p className="text-xs text-muted-foreground">חתימה אחת נדרשת</p>
                       </div>
                     </label>
 
-                    <label 
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                    <label
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border flex-row-reverse ${
                         formData.requires_vp_approval && !formData.skip_manager_approval 
                           ? 'bg-primary/10 border-primary/30 shadow-sm' 
                           : 'bg-white/50 border-transparent hover:bg-white/80'
@@ -657,7 +657,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                           })
                         }
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 text-right">
                         <span className="font-medium">אישור מנהל רכש + סמנכ"ל</span>
                         <p className="text-xs text-muted-foreground">שתי חתימות נדרשות</p>
                       </div>
@@ -708,8 +708,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               </Button>
 
               {/* Expiry selection */}
-              <div className="bg-gradient-to-l from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="bg-gradient-to-r from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
+                <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                   <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
                     <Clock className="h-4 w-4 text-warning" />
                   </div>
@@ -733,8 +733,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               </div>
 
               {/* Approval type selection */}
-              <div className="bg-gradient-to-l from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
                   <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
@@ -742,7 +742,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                 </div>
                 <div className="space-y-2">
                   <label 
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border flex-row-reverse ${
                       !bulkRequiresVpApproval 
                         ? 'bg-primary/10 border-primary/30 shadow-sm' 
                         : 'bg-white/50 border-transparent hover:bg-white/80'
@@ -755,10 +755,10 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(false);
                       }}
                     />
-                    <span className="font-medium">אישור מנהל רכש בלבד</span>
+                    <span className="font-medium text-right flex-1">אישור מנהל רכש בלבד</span>
                   </label>
                   <label 
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border flex-row-reverse ${
                       bulkRequiresVpApproval 
                         ? 'bg-primary/10 border-primary/30 shadow-sm' 
                         : 'bg-white/50 border-transparent hover:bg-white/80'
@@ -771,7 +771,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(true);
                       }}
                     />
-                    <span className="font-medium">אישור מנהל רכש + סמנכ"ל</span>
+                    <span className="font-medium text-right flex-1">אישור מנהל רכש + סמנכ"ל</span>
                   </label>
                 </div>
               </div>
