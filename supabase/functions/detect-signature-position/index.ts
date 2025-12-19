@@ -42,9 +42,9 @@ serve(async (req) => {
               {
                 type: "text",
                 text: `Analyze this document image and find the signature area for "${signerLabel}".
-                
+
 The document has signature lines at the bottom with labels in Hebrew:
-- "סמנכ"ל" (VP) - usually on the LEFT side
+- "סמנכ\"ל" (VP) - usually on the LEFT side
 - "מנהל רכש" (Procurement Manager) - usually in the CENTER
 - "הספק" (Vendor) - usually on the RIGHT side
 
@@ -53,10 +53,11 @@ I need to place a signature for "${signerLabel}".
 Return ONLY a JSON object with the signature position as percentages of the page dimensions:
 {
   "x_percent": <number between 0-100 representing horizontal position from left>,
-  "y_percent": <number between 0-100 representing vertical position from top>,
+  "y_percent": <number between 0-100 representing vertical position from bottom>,
   "found": <boolean>
 }
 
+x_percent/y_percent should represent the BOTTOM-LEFT placement point of the signature image (not the center).
 The signature should be placed ABOVE the signature line, not on top of the label text.
 If you can identify the signature area, set found=true. If not visible, estimate based on typical positions.`
               },
@@ -84,7 +85,7 @@ If you can identify the signature area, set found=true. If not visible, estimate
                   },
                   y_percent: { 
                     type: "number", 
-                    description: "Vertical position as percentage from top (0-100)" 
+                    description: "Vertical position as percentage from bottom (0-100)" 
                   },
                   found: { 
                     type: "boolean", 

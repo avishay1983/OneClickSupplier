@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, Loader2, Download, Trash2 } from "lucide-react";
 import SignaturePad from "signature_pad";
 import { PDFDocument, rgb } from "pdf-lib";
+import { pdfToImage } from "@/utils/pdfToImage";
 
 const QuoteApproval = () => {
   const { token } = useParams();
@@ -120,21 +121,6 @@ const QuoteApproval = () => {
     setShowSignature(true);
   };
 
-  // Convert PDF page to image for AI analysis
-  const pdfPageToImage = async (pdfBytes: ArrayBuffer, pageIndex: number): Promise<string> => {
-    // Load PDF and get page dimensions
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const pages = pdfDoc.getPages();
-    const page = pages[pageIndex];
-    const { width, height } = page.getSize();
-    
-    // Create a canvas to render placeholder (we'll use the PDF directly)
-    // For now, return a placeholder - the AI will use default positions
-    console.log('PDF page size:', width, height);
-    
-    // Return empty - AI will fall back to defaults
-    return '';
-  };
 
   const handleApprove = async () => {
     if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
@@ -163,29 +149,39 @@ const QuoteApproval = () => {
 
       const pdfBytes = await pdfData.arrayBuffer();
       
-      // Try to detect signature position using AI
+      // Detect signature position using AI (based on PDF image)
       setStatusMessage("מזהה מיקום חתימה...");
-      let signaturePosition = { x_percent: 0, y_percent: 62, found: false };
-      
+
+      let signaturePosition: { x_percent: number; y_percent: number; found?: boolean } =
+        approvalType === "vp"
+          ? { x_percent: 10, y_percent: 62, found: false }
+          : { x_percent: 40, y_percent: 62, found: false };
+
       try {
-        // Default positions based on signer type
-        if (approvalType === 'vp') {
-          signaturePosition = { x_percent: 8, y_percent: 60, found: true };
-        } else {
-          signaturePosition = { x_percent: 38, y_percent: 60, found: true };
+        const pdfFile = new File([pdfData], quote?.file_name || "quote.pdf", {
+          type: "application/pdf",
+        });
+
+        const img = await pdfToImage(pdfFile);
+        if (img?.base64) {
+          const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
+
+          const { data: positionData, error: positionError } =
+            await supabase.functions.invoke("detect-signature-position", {
+              body: {
+                imageBase64: imageDataUrl,
+                signerType: approvalType,
+              },
+            });
+
+          if (!positionError && positionData?.x_percent != null && positionData?.y_percent != null) {
+            signaturePosition = positionData;
+          }
         }
-        
-        // Try AI detection
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const pages = pdfDoc.getPages();
-        const lastPage = pages[pages.length - 1];
-        
-        // For now, use calculated positions based on typical Hebrew document layout
-        // VP (סמנכ"ל) is on the left, Procurement (מנהל רכש) is in center
-        console.log('Using position for', approvalType, ':', signaturePosition);
-        
+
+        console.log("Signature position:", { approvalType, signaturePosition });
       } catch (aiError) {
-        console.error('AI detection failed, using defaults:', aiError);
+        console.error("AI detection failed, using defaults:", aiError);
       }
 
       // Load PDF and add signature
@@ -202,10 +198,11 @@ const QuoteApproval = () => {
       const sigHeight = 40;
       
       // Convert percentages to actual coordinates
-      const xPosition = (signaturePosition.x_percent / 100) * pageWidth;
-      const yPosition = pageHeight - ((signaturePosition.y_percent / 100) * pageHeight);
-      
-      console.log('Placing signature at:', { 
+      const rawX = (signaturePosition.x_percent / 100) * pageWidth;
+      const rawY = (signaturePosition.y_percent / 100) * pageHeight; // y is from bottom
+
+      const xPosition = Math.max(10, Math.min(rawX, pageWidth - sigWidth - 10));
+      const yPosition = Math.max(10, Math.min(rawY, pageHeight - sigHeight - 10));
         xPosition, 
         yPosition, 
         pageWidth, 
@@ -252,12 +249,10 @@ const QuoteApproval = () => {
       if (approvalType === "vp") {
         updateData.vp_approved = true;
         updateData.vp_approved_at = now;
-        updateData.vp_signature_data = signatureDataUrl;
         updateData.status = "pending_procurement";
       } else if (approvalType === "procurement_manager") {
         updateData.procurement_manager_approved = true;
         updateData.procurement_manager_approved_at = now;
-        updateData.procurement_manager_signature_data = signatureDataUrl;
         updateData.status = "approved";
       }
 
@@ -346,11 +341,9 @@ const QuoteApproval = () => {
   const downloadQuote = async () => {
     if (!quote?.file_path) return;
 
-    const { data } = supabase.storage
-      .from("vendor_documents")
-      .getPublicUrl(quote.file_path);
+    const { data } = supabase.storage.from("vendor_documents").getPublicUrl(quote.file_path);
 
-    window.open(data.publicUrl, "_blank");
+    window.open(`${data.publicUrl}?t=${Date.now()}`, "_blank");
   };
 
   if (loading) {
