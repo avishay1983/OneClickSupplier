@@ -101,8 +101,8 @@ serve(async (req) => {
   }
 
   try {
-    const { vendorRequestId } = await req.json();
-    console.log(`[send-receipts-link] Processing request for vendor: ${vendorRequestId}`);
+    const { vendorRequestId, forceResend } = await req.json();
+    console.log(`[send-receipts-link] Processing request for vendor: ${vendorRequestId}, forceResend: ${forceResend}`);
 
     if (!vendorRequestId) {
       throw new Error("vendorRequestId is required");
@@ -126,11 +126,11 @@ serve(async (req) => {
 
     console.log(`[send-receipts-link] Found vendor: ${vendor.vendor_name}, status: ${vendor.status}`);
 
-    // Check if already sent
-    if (vendor.receipts_link_sent_at) {
+    // Check if already sent (unless force resend)
+    if (vendor.receipts_link_sent_at && !forceResend) {
       console.log("[send-receipts-link] Link already sent, skipping");
       return new Response(
-        JSON.stringify({ success: true, message: "Link already sent" }),
+        JSON.stringify({ success: true, message: "Link already sent", alreadySent: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

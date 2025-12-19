@@ -58,7 +58,8 @@ import {
   Receipt,
   SlidersHorizontal,
   ShieldCheck,
-  FileCheck
+  FileCheck,
+  Send
 } from 'lucide-react';
 
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
@@ -108,6 +109,8 @@ interface CRMVendor {
   approver_name: string | null;
   crm_status: 'active' | 'suspended' | 'closed' | 'vip' | null;
   rating: number | null;
+  receipts_link_sent_at: string | null;
+  secure_token: string;
   created_at: string;
   updated_at: string;
 }
@@ -392,6 +395,40 @@ export default function CRM() {
       toast({
         title: 'שגיאה',
         description: 'לא ניתן לעדכן את הסטטוס',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSendReceiptsLink = async (vendor: CRMVendor) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-receipts-link', {
+        body: { vendorRequestId: vendor.id, forceResend: !!vendor.receipts_link_sent_at }
+      });
+
+      if (error) throw error;
+
+      // Log the action
+      await supabase.from('crm_history').insert({
+        vendor_request_id: vendor.id,
+        action: 'receipts_link_sent',
+        field_name: 'receipts_link_sent_at',
+        old_value: vendor.receipts_link_sent_at || null,
+        new_value: new Date().toISOString(),
+        changed_by: currentUserName,
+      });
+
+      toast({
+        title: 'הקישור נשלח בהצלחה',
+        description: `נשלח קישור להעלאת קבלות ל-${vendor.vendor_email}`,
+      });
+
+      fetchVendors();
+    } catch (error) {
+      console.error('Error sending receipts link:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את הקישור',
         variant: 'destructive',
       });
     }
@@ -813,6 +850,10 @@ export default function CRM() {
                                   <DropdownMenuItem onClick={() => handleStatusChange(vendor, 'security_approved')}>
                                     <ShieldCheck className="h-4 w-4 ml-2 text-blue-500" />
                                     אושר ביטחון
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleSendReceiptsLink(vendor)}>
+                                    <Send className="h-4 w-4 ml-2 text-primary" />
+                                    {vendor.receipts_link_sent_at ? 'שלח שוב קישור קבלות' : 'שלח קישור להעלאת קבלות'}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
