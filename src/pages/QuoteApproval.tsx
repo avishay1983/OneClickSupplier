@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2, Download, Trash2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Download, Trash2, Eye, EyeOff } from "lucide-react";
 import SignaturePad from "signature_pad";
 import { PDFDocument, rgb } from "pdf-lib";
 import { pdfToImage } from "@/utils/pdfToImage";
@@ -26,6 +26,12 @@ const QuoteApproval = () => {
   const [error, setError] = useState("");
   const [showSignature, setShowSignature] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  
+  // Debug mode state
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugPreviewUrl, setDebugPreviewUrl] = useState<string | null>(null);
+  const [debugPosition, setDebugPosition] = useState<{ x: number; y: number } | null>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
@@ -119,6 +125,81 @@ const QuoteApproval = () => {
 
   const handleApproveClick = () => {
     setShowSignature(true);
+  };
+
+  // Debug: load preview and detect position without embedding
+  const handleDebugPreview = async () => {
+    if (!quote?.file_path) {
+      toast.error("לא נמצא קובץ הצעת מחיר");
+      return;
+    }
+
+    setDebugLoading(true);
+    setDebugPreviewUrl(null);
+    setDebugPosition(null);
+
+    try {
+      // Download PDF
+      const { data: pdfData, error: downloadError } = await supabase.storage
+        .from("vendor_documents")
+        .download(quote.file_path);
+
+      if (downloadError) throw downloadError;
+
+      // Convert last page to image
+      const pdfFile = new File([pdfData], quote?.file_name || "quote.pdf", {
+        type: "application/pdf",
+      });
+      const img = await pdfToImage(pdfFile, { page: "last", scale: 2 });
+      if (!img?.base64) throw new Error("Failed to convert PDF to image");
+
+      const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
+      setDebugPreviewUrl(imageDataUrl);
+
+      // Detect position (AI or fallback)
+      let signaturePosition: { x_percent: number; y_percent: number } =
+        approvalType === "vp"
+          ? { x_percent: 12, y_percent: 18 }
+          : { x_percent: 44, y_percent: 18 };
+
+      try {
+        const { data: positionData, error: positionError } =
+          await supabase.functions.invoke("detect-signature-position", {
+            body: {
+              imageBase64: imageDataUrl,
+              signerType: approvalType,
+            },
+          });
+
+        if (!positionError && positionData?.x_percent != null && positionData?.y_percent != null) {
+          signaturePosition = positionData;
+        }
+      } catch {
+        // Use defaults
+      }
+
+      // Sanity guard
+      if (signaturePosition.y_percent < 0 || signaturePosition.y_percent > 100) {
+        signaturePosition.y_percent = 18;
+      }
+      if (signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
+        signaturePosition.x_percent = approvalType === "vp" ? 12 : 44;
+      }
+
+      // Convert to CSS position (image Y is from top, pdf-lib Y is from bottom)
+      // So y_percent=18 means 18% from bottom => 82% from top
+      setDebugPosition({
+        x: signaturePosition.x_percent,
+        y: 100 - signaturePosition.y_percent,
+      });
+
+      setDebugMode(true);
+    } catch (err: any) {
+      console.error("Debug preview error:", err);
+      toast.error(err.message || "שגיאה בטעינת Preview");
+    } finally {
+      setDebugLoading(false);
+    }
   };
 
 
@@ -438,13 +519,71 @@ const QuoteApproval = () => {
             </div>
 
             {quote?.file_path && (
-              <Button variant="outline" onClick={downloadQuote} className="w-full">
-                <Download className="h-4 w-4 ml-2" />
-                הורד קובץ הצעת מחיר
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={downloadQuote} className="flex-1">
+                  <Download className="h-4 w-4 ml-2" />
+                  הורד קובץ
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDebugPreview}
+                  disabled={debugLoading}
+                  className="flex-1"
+                >
+                  {debugLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  ) : (
+                    <Eye className="h-4 w-4 ml-2" />
+                  )}
+                  תצוגת מיקום
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Debug Preview Overlay */}
+        {debugMode && debugPreviewUrl && (
+          <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>תצוגת מיקום חתימה (Debug)</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setDebugMode(false)}>
+                <EyeOff className="h-4 w-4 ml-1" />
+                סגור
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                הריבוע הכחול מציין את מיקום החתימה של <strong>{approvalTypeName}</strong>.
+              </p>
+              <div className="relative border rounded-lg overflow-hidden bg-white">
+                <img
+                  src={debugPreviewUrl}
+                  alt="PDF Preview"
+                  className="w-full h-auto"
+                />
+                {debugPosition && (
+                  <div
+                    className="absolute border-2 border-blue-600 bg-blue-400/30 pointer-events-none"
+                    style={{
+                      left: `${debugPosition.x}%`,
+                      top: `${debugPosition.y}%`,
+                      width: '15%',
+                      height: '6%',
+                    }}
+                  >
+                    <span className="absolute -top-5 left-0 text-xs bg-blue-600 text-white px-1 rounded">
+                      {approvalTypeName}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                X: {debugPosition?.x?.toFixed(1)}% | Y (מלמעלה): {debugPosition?.y?.toFixed(1)}%
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {showSignature ? (
           <Card className="mb-6">
