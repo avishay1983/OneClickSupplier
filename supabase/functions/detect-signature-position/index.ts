@@ -16,8 +16,8 @@ function normalizePosition(
 ): { x_percent: number; y_percent: number; found: boolean } {
   const fallback =
     signerType === "vp"
-      ? { x_percent: 12, y_percent: 62, found: false }
-      : { x_percent: 44, y_percent: 62, found: false };
+      ? { x_percent: 12, y_percent: 18, found: false }
+      : { x_percent: 44, y_percent: 18, found: false };
 
   const rawX = Number(input?.x_percent);
   const rawY = Number(input?.y_percent);
@@ -135,12 +135,12 @@ If you find the printed line, set found=true; otherwise set found=false and esti
       console.error("AI gateway error:", response.status, errorText);
       // Return default positions if AI fails
       const defaultPositions = {
-        vp: { x_percent: 12, y_percent: 62, found: false },
-        procurement_manager: { x_percent: 44, y_percent: 62, found: false }
+        vp: { x_percent: 12, y_percent: 18, found: false },
+        procurement_manager: { x_percent: 44, y_percent: 18, found: false }
       };
       
       return new Response(
-        JSON.stringify(defaultPositions[signerType]),
+        JSON.stringify(normalizePosition(defaultPositions[signerType], signerType)),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -179,8 +179,8 @@ If you find the printed line, set found=true; otherwise set found=false and esti
 
     // Default fallback positions
     const defaultPositions = {
-      vp: { x_percent: 12, y_percent: 62, found: false },
-      procurement_manager: { x_percent: 44, y_percent: 62, found: false }
+      vp: { x_percent: 12, y_percent: 18, found: false },
+      procurement_manager: { x_percent: 44, y_percent: 18, found: false }
     };
 
     console.log('Using default position for:', signerType);
