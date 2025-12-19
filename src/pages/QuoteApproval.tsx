@@ -558,7 +558,7 @@ const QuoteApproval = () => {
                   ) : (
                     <Eye className="h-4 w-4 ml-2" />
                   )}
-                  תצוגת מיקום
+                  קביעת מיקום חתימה
                 </Button>
               </div>
             )}
@@ -569,7 +569,7 @@ const QuoteApproval = () => {
         {debugMode && debugPreviewUrl && (
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>תצוגת מיקום חתימה (Debug)</CardTitle>
+              <CardTitle>קביעת מיקום חתימה</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setDebugMode(false)}>
                 <EyeOff className="h-4 w-4 ml-1" />
                 סגור
