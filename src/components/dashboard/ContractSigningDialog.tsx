@@ -7,7 +7,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, Download, FileText, Pen, Trash2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Loader2, CheckCircle, Download, FileText, Pen, Trash2, Eye, EyeOff, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SignaturePad from 'signature_pad';
@@ -32,6 +33,12 @@ interface SignatureStatus {
   requiresVpApproval: boolean;
 }
 
+interface SignaturePosition {
+  x: number;
+  y: number;
+  page: number;
+}
+
 export function ContractSigningDialog({
   open,
   onOpenChange,
@@ -47,6 +54,13 @@ export function ContractSigningDialog({
   const [userRole, setUserRole] = useState<'ceo' | 'procurement' | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
+  
+  // Signature position states
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugPreviewUrl, setDebugPreviewUrl] = useState<string | null>(null);
+  const [customSignaturePosition, setCustomSignaturePosition] = useState<SignaturePosition | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const debugImageRef = useRef<HTMLImageElement>(null);
 
   // Reset signerRole when dialog opens/closes
   useEffect(() => {
@@ -267,27 +281,29 @@ export function ContractSigningDialog({
       const pages = pdfDoc.getPages();
       const lastPage = pages[pages.length - 1];
       
-      // Calculate signature position based on role
-      // There are 3 signature areas: VP (left), Procurement (center), Vendor (right)
+      // Calculate signature position based on role or custom position
       const sigWidth = 100;
       const sigHeight = 40;
       const pageHeight = lastPage.getHeight();
       const pageWidth = lastPage.getWidth();
       
-      // Position signature ABOVE the signature line (not covering the title text)
-      // Use fixed Y position from bottom for consistency across both signers
-      // The signature line is typically around 520-530 pixels from bottom of an A4 page
-      const yPosition = 520; // Fixed position - approximately 62% of A4 height (841.89)
-      
-      console.log('Page dimensions:', { pageWidth, pageHeight });
-      
       let xPosition: number;
-      if (signerRole === 'ceo') {
-        // VP signature on the LEFT side (under "סמנכ"ל")
-        xPosition = 50;
+      let yPosition: number;
+      
+      // Check if custom position is set
+      const actualPdfPos = getActualPdfPosition();
+      if (actualPdfPos) {
+        xPosition = actualPdfPos.x;
+        yPosition = actualPdfPos.y;
+        console.log('Using custom signature position:', { xPosition, yPosition });
       } else {
-        // Procurement signature in the CENTER (under "מנהל רכש")
-        xPosition = (pageWidth - sigWidth) / 2;
+        // Default position based on role
+        yPosition = 520;
+        if (signerRole === 'ceo') {
+          xPosition = 50;
+        } else {
+          xPosition = (pageWidth - sigWidth) / 2;
+        }
       }
       
       console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight, signerRole });
@@ -485,6 +501,123 @@ export function ContractSigningDialog({
     });
   };
 
+  // Toggle debug mode to show signature position picker
+  const toggleDebugMode = async () => {
+    if (debugMode) {
+      setDebugMode(false);
+      setDebugPreviewUrl(null);
+      return;
+    }
+
+    if (!signatureStatus?.contractFilePath) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא נמצא קובץ הצעת מחיר',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Get signed URL for the PDF
+      const { data: signedUrlData } = await supabase.storage
+        .from('vendor_documents')
+        .createSignedUrl(signatureStatus.contractFilePath, 3600);
+      
+      if (signedUrlData?.signedUrl) {
+        // Convert PDF first page to image
+        const pdfUrl = signedUrlData.signedUrl;
+        const response = await fetch(pdfUrl);
+        const pdfBytes = await response.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pages = pdfDoc.getPages();
+        const lastPage = pages[pages.length - 1];
+        
+        // Create a preview URL directly from the PDF
+        setDebugPreviewUrl(pdfUrl);
+        setDebugMode(true);
+        
+        // Set initial signature position if not set
+        if (!customSignaturePosition) {
+          setCustomSignaturePosition({
+            x: 50,
+            y: lastPage.getHeight() - 520 - 40, // Convert from PDF coords (bottom-up) to image coords (top-down)
+            page: pages.length - 1
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading PDF preview:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לטעון תצוגה מקדימה',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle drag start
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!debugImageRef.current) return;
+    setIsDragging(true);
+    e.preventDefault();
+  };
+
+  // Handle drag move
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !debugImageRef.current) return;
+    
+    const rect = debugImageRef.current.getBoundingClientRect();
+    let clientX: number, clientY: number;
+    
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    // Keep within bounds
+    const boundedX = Math.max(0, Math.min(x, rect.width - 100));
+    const boundedY = Math.max(0, Math.min(y, rect.height - 40));
+    
+    setCustomSignaturePosition({
+      x: boundedX,
+      y: boundedY,
+      page: customSignaturePosition?.page || 0
+    });
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Convert screen position to PDF position
+  const getActualPdfPosition = () => {
+    if (!customSignaturePosition || !debugImageRef.current) return null;
+    
+    const imageRect = debugImageRef.current.getBoundingClientRect();
+    
+    // Standard A4 PDF dimensions
+    const pdfWidth = 595.276;
+    const pdfHeight = 841.89;
+    
+    // Calculate scale factors
+    const scaleX = pdfWidth / imageRect.width;
+    const scaleY = pdfHeight / imageRect.height;
+    
+    // Convert position - PDF uses bottom-left origin
+    const pdfX = customSignaturePosition.x * scaleX;
+    const pdfY = pdfHeight - (customSignaturePosition.y * scaleY) - 40; // 40 is sig height
+    
+    return { x: pdfX, y: pdfY };
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]" dir="rtl">
@@ -583,12 +716,81 @@ export function ContractSigningDialog({
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  הורדה
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleDownloadContract} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    הורדה
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={toggleDebugMode}
+                    className="gap-2"
+                  >
+                    {debugMode ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <MapPin className="h-4 w-4" />
+                    )}
+                    קביעת מיקום חתימה
+                  </Button>
+                </div>
               </div>
             </div>
+
+            {/* Signature position picker */}
+            {debugMode && debugPreviewUrl && (
+              <Card className="mb-4">
+                <CardHeader className="flex flex-row items-center justify-between py-3">
+                  <CardTitle className="text-sm">קביעת מיקום חתימה</CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setDebugMode(false)}>
+                    <EyeOff className="h-4 w-4 ml-1" />
+                    סגור
+                  </Button>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    גרור את התיבה הירוקה למיקום הרצוי של החתימה
+                  </p>
+                  <div 
+                    className="relative border rounded-lg overflow-hidden bg-gray-100 cursor-crosshair"
+                    style={{ maxHeight: '300px', overflowY: 'auto' }}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                  >
+                    <iframe
+                      ref={debugImageRef as any}
+                      src={debugPreviewUrl + '#page=last'}
+                      className="w-full"
+                      style={{ height: '400px', border: 'none' }}
+                      title="PDF Preview"
+                    />
+                    {customSignaturePosition && (
+                      <div
+                        className="absolute border-2 border-green-500 bg-green-200/50 cursor-move"
+                        style={{
+                          left: customSignaturePosition.x,
+                          top: customSignaturePosition.y,
+                          width: '100px',
+                          height: '40px',
+                        }}
+                        onMouseDown={handleDragStart}
+                        onTouchStart={handleDragStart}
+                      >
+                        <span className="text-xs text-green-700 p-1">חתימה</span>
+                      </div>
+                    )}
+                  </div>
+                  {customSignaturePosition && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      מיקום: X={Math.round(customSignaturePosition.x)}, Y={Math.round(customSignaturePosition.y)}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* VP Signature - show only to VP AND only if VP approval is required */}
             {signatureStatus.requiresVpApproval && userRole === 'ceo' && (
