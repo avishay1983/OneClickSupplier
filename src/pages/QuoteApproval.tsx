@@ -34,6 +34,8 @@ const QuoteApproval = () => {
   const [debugPreviewUrl, setDebugPreviewUrl] = useState<string | null>(null);
   const [debugPosition, setDebugPosition] = useState<{ x: number; y: number } | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
@@ -210,6 +212,41 @@ const QuoteApproval = () => {
     }
   };
 
+  // Handle mouse/touch drag for signature position
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !previewContainerRef.current) return;
+    
+    const container = previewContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    
+    let clientX: number, clientY: number;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    
+    // Keep within bounds (accounting for box size)
+    const clampedX = Math.max(0, Math.min(x, 85));
+    const clampedY = Math.max(0, Math.min(y, 94));
+    
+    setDebugPosition({ x: clampedX, y: clampedY });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
 
   const handleApprove = async () => {
     if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
@@ -247,22 +284,29 @@ const QuoteApproval = () => {
       const lastPage = pages[pages.length - 1];
       const { width: pageWidth, height: pageHeight } = lastPage.getSize();
       
-      // Calculate signature position based on role (same approach as ContractSigningDialog)
-      // Fixed Y position for consistency - signature line is typically around 520 pixels from bottom of A4
+      // Calculate signature position
       const sigWidth = 100;
       const sigHeight = 40;
-      const yPosition = 520; // Fixed position from bottom
       
       let xPosition: number;
-      if (approvalType === 'vp') {
-        // VP signature on the LEFT side
-        xPosition = 50;
+      let yPosition: number;
+      
+      // If user has set a custom position via debug mode, use it
+      if (debugPosition) {
+        // Convert from percentage (top-left origin for preview) to PDF coordinates (bottom-left origin)
+        xPosition = (debugPosition.x / 100) * pageWidth;
+        yPosition = pageHeight - ((debugPosition.y / 100) * pageHeight) - sigHeight;
       } else {
-        // Procurement manager signature in the CENTER
-        xPosition = (pageWidth - sigWidth) / 2;
+        // Default positions based on role
+        yPosition = 520; // Fixed position from bottom
+        if (approvalType === 'vp') {
+          xPosition = 50;
+        } else {
+          xPosition = (pageWidth - sigWidth) / 2;
+        }
       }
       
-      console.log('Placing signature at:', { xPosition, yPosition, pageWidth, pageHeight, approvalType });
+      console.log('Placing signature at:', { xPosition, yPosition, pageWidth, pageHeight, approvalType, debugPosition });
 
       console.log('Placing signature at:', {
         xPosition,
@@ -533,33 +577,58 @@ const QuoteApproval = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-3">
-                הריבוע הכחול מציין את מיקום החתימה של <strong>{approvalTypeName}</strong>.
+                גרור את הריבוע הכחול למיקום הרצוי לחתימת <strong>{approvalTypeName}</strong>.
               </p>
-              <div className="relative border rounded-lg overflow-hidden bg-white">
+              <div 
+                ref={previewContainerRef}
+                className="relative border rounded-lg overflow-hidden bg-white cursor-crosshair select-none"
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+              >
                 <img
                   src={debugPreviewUrl}
                   alt="PDF Preview"
-                  className="w-full h-auto"
+                  className="w-full h-auto pointer-events-none"
+                  draggable={false}
                 />
                 {debugPosition && (
                   <div
-                    className="absolute border-2 border-blue-600 bg-blue-400/30 pointer-events-none"
+                    className={`absolute border-2 border-blue-600 bg-blue-400/30 cursor-move ${isDragging ? 'opacity-70' : ''}`}
                     style={{
                       left: `${debugPosition.x}%`,
                       top: `${debugPosition.y}%`,
                       width: '15%',
                       height: '6%',
                     }}
+                    onMouseDown={handleDragStart}
+                    onTouchStart={handleDragStart}
                   >
-                    <span className="absolute -top-5 left-0 text-xs bg-blue-600 text-white px-1 rounded">
+                    <span className="absolute -top-5 left-0 text-xs bg-blue-600 text-white px-1 rounded pointer-events-none">
                       {approvalTypeName}
                     </span>
                   </div>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                X: {debugPosition?.x?.toFixed(1)}% | Y (מלמעלה): {debugPosition?.y?.toFixed(1)}%
-              </p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-muted-foreground">
+                  X: {debugPosition?.x?.toFixed(1)}% | Y: {debugPosition?.y?.toFixed(1)}%
+                </p>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    // Reset to default position
+                    const yFromTop = 38;
+                    const xPercent = approvalType === "vp" ? 8 : 35;
+                    setDebugPosition({ x: xPercent, y: yFromTop });
+                  }}
+                  variant="outline"
+                >
+                  איפוס מיקום
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
