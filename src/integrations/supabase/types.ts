@@ -217,6 +217,7 @@ export type Database = {
           procurement_manager_approved_at: string | null
           procurement_manager_approved_by: string | null
           procurement_manager_rejection_reason: string | null
+          procurement_manager_signature_data: string | null
           quote_date: string
           quote_link_sent_at: string | null
           quote_secure_token: string | null
@@ -230,6 +231,7 @@ export type Database = {
           vp_approved_at: string | null
           vp_approved_by: string | null
           vp_rejection_reason: string | null
+          vp_signature_data: string | null
         }
         Insert: {
           amount?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
           procurement_manager_rejection_reason?: string | null
+          procurement_manager_signature_data?: string | null
           quote_date?: string
           quote_link_sent_at?: string | null
           quote_secure_token?: string | null
@@ -259,6 +262,7 @@ export type Database = {
           vp_approved_at?: string | null
           vp_approved_by?: string | null
           vp_rejection_reason?: string | null
+          vp_signature_data?: string | null
         }
         Update: {
           amount?: number | null
@@ -275,6 +279,7 @@ export type Database = {
           procurement_manager_approved_at?: string | null
           procurement_manager_approved_by?: string | null
           procurement_manager_rejection_reason?: string | null
+          procurement_manager_signature_data?: string | null
           quote_date?: string
           quote_link_sent_at?: string | null
           quote_secure_token?: string | null
@@ -288,6 +293,7 @@ export type Database = {
           vp_approved_at?: string | null
           vp_approved_by?: string | null
           vp_rejection_reason?: string | null
+          vp_signature_data?: string | null
         }
         Relationships: [
           {
