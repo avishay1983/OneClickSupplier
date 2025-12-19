@@ -20,12 +20,14 @@ const QuoteApproval = () => {
   const [processing, setProcessing] = useState(false);
   const [quote, setQuote] = useState<any>(null);
   const [vendorName, setVendorName] = useState("");
+  const [vendorEmail, setVendorEmail] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [alreadyProcessed, setAlreadyProcessed] = useState(false);
   const [error, setError] = useState("");
   const [showSignature, setShowSignature] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [approverName, setApproverName] = useState("");
   
   // Debug mode state
   const [debugMode, setDebugMode] = useState(false);
@@ -45,9 +47,10 @@ const QuoteApproval = () => {
       }
 
       try {
+        // Fetch quote with vendor details
         const { data, error: quoteError } = await supabase
           .from("vendor_quotes")
-          .select("*, vendor_requests(vendor_name, vendor_email)")
+          .select("*, vendor_requests(vendor_name, vendor_email, company_id)")
           .eq("quote_secure_token", token)
           .maybeSingle();
 
@@ -67,6 +70,20 @@ const QuoteApproval = () => {
 
         setQuote(data);
         setVendorName(data.vendor_requests?.vendor_name || "");
+        setVendorEmail(data.vendor_requests?.vendor_email || "");
+
+        // Fetch approver name from settings
+        const settingKey = approvalType === "vp" ? "vp_name" : "procurement_manager_name";
+        const { data: settingData } = await supabase
+          .from("app_settings")
+          .select("setting_value")
+          .eq("setting_key", settingKey)
+          .maybeSingle();
+        
+        if (settingData?.setting_value) {
+          setApproverName(settingData.setting_value);
+        }
+
         setLoading(false);
       } catch (err) {
         setError("שגיאה בטעינת הנתונים");
@@ -410,6 +427,7 @@ const QuoteApproval = () => {
   }
 
   const approvalTypeName = approvalType === "vp" ? "סמנכ\"ל" : "מנהל רכש";
+  const displayName = approverName || approvalTypeName;
 
   return (
     <div className="min-h-screen bg-background p-4" dir="rtl">
@@ -420,7 +438,7 @@ const QuoteApproval = () => {
             alt="ביטוח ישיר"
             className="h-16 mx-auto mb-4"
           />
-          <h1 className="text-2xl font-bold">אישור הצעת מחיר - {approvalTypeName}</h1>
+          <h1 className="text-2xl font-bold">אישור הצעת מחיר - {displayName}</h1>
         </div>
 
         <Card className="mb-6">
@@ -430,14 +448,22 @@ const QuoteApproval = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-muted-foreground">ספק</Label>
-                <p className="font-medium">{vendorName}</p>
+                <Label className="text-muted-foreground">שם הספק</Label>
+                <p className="font-medium">{vendorName || "-"}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">אימייל ספק</Label>
+                <p className="font-medium">{vendorEmail || "-"}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground">סכום</Label>
                 <p className="font-medium">
                   {quote?.amount ? `₪${quote.amount.toLocaleString()}` : "לא צוין"}
                 </p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">ח.פ</Label>
+                <p className="font-medium">{quote?.vendor_requests?.company_id || "-"}</p>
               </div>
               <div className="col-span-2">
                 <Label className="text-muted-foreground">תיאור</Label>
