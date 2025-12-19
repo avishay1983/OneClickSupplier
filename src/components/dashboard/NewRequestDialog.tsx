@@ -372,16 +372,16 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
         {/* Header with gradient background */}
         <div className="bg-gradient-to-l from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
           <DialogHeader>
-            <div className="flex items-center gap-4 justify-end">
+            <div className="w-full flex items-center gap-4 justify-start">
+              <img
+                src="/images/bituach-yashir-logo.png"
+                alt="ביטוח ישיר"
+                className="h-10 w-auto"
+              />
               <div className="text-right">
                 <DialogTitle className="text-2xl text-white font-bold">בקשה חדשה להקמת ספק</DialogTitle>
                 <p className="text-white/80 text-sm mt-1">מלא את הפרטים ונשלח קישור לספק</p>
               </div>
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
-                className="h-10 w-auto"
-              />
             </div>
           </DialogHeader>
         </div>
