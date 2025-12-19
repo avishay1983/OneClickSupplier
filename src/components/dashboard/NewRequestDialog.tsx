@@ -370,15 +370,20 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-0 shadow-2xl" dir="rtl">
         {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
+        <div className="bg-gradient-to-l from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
           <DialogHeader>
-            <div className="flex items-center gap-3 flex-row-reverse">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1">
-                <img src="/images/bituach-yashir-logo-clean.png" alt="ביטוח ישיר" className="h-8 w-auto" />
-              </div>
-              <div className="text-right">
-                <DialogTitle className="text-2xl text-white font-bold text-right">בקשה חדשה להקמת ספק</DialogTitle>
-                <p className="text-white/80 text-sm mt-1 text-right">מלא את הפרטים ונשלח קישור לספק</p>
+            <div className="flex items-center justify-between">
+              <div></div>
+              <div className="flex items-center gap-4 flex-row-reverse">
+                <img 
+                  src="/images/bituach-yashir-logo.png" 
+                  alt="ביטוח ישיר" 
+                  className="h-10 w-auto"
+                />
+                <div className="text-right">
+                  <DialogTitle className="text-2xl text-white font-bold text-right">בקשה חדשה להקמת ספק</DialogTitle>
+                  <p className="text-white/80 text-sm mt-1 text-right">מלא את הפרטים ונשלח קישור לספק</p>
+                </div>
               </div>
             </div>
           </DialogHeader>
