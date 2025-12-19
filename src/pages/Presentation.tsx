@@ -35,7 +35,10 @@ import {
   Workflow,
   Database,
   Bell,
-  Camera
+  Camera,
+  BookOpen,
+  Target,
+  Zap
 } from 'lucide-react';
 
 // Import screenshots
@@ -919,6 +922,101 @@ const slides = [
   },
   {
     id: 16,
+    title: 'מסמך דרישות מוצר (PRD)',
+    subtitle: 'סקירה עסקית',
+    content: (
+      <div className="flex flex-col items-center justify-center h-full space-y-6" dir="rtl">
+        <div className="flex items-center gap-3 mb-2">
+          <BookOpen className="h-12 w-12 text-primary" />
+          <h3 className="text-3xl font-bold text-primary">מסמך דרישות מוצר</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-6 w-full max-w-5xl">
+          <Card className="p-5 border-primary/20 hover:border-primary/40 transition-colors">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-3 mb-3">
+                <Target className="h-8 w-8 text-accent" />
+                <h4 className="font-bold text-lg">מטרת המערכת</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                פלטפורמה דיגיטלית מקיפה לניהול תהליך הקמת ספקים חדשים - מרגע יצירת הבקשה ועד לאישור הסופי וניהול שוטף.
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-5 border-accent/20 hover:border-accent/40 transition-colors">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-3 mb-3">
+                <Users className="h-8 w-8 text-accent" />
+                <h4 className="font-bold text-lg">קהל יעד</h4>
+              </div>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• מנהלי רכש - יצירה ואישור בקשות</li>
+                <li>• סמנכ"ל - אישור וחתימה (כשנדרש)</li>
+                <li>• מטפלים - ניהול יומיומי</li>
+                <li>• ספקים - מילוי טפסים והגשת מסמכים</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 w-full max-w-5xl">
+          <Card className="p-4 border-success/20 hover:border-success/40 transition-colors">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Workflow className="h-6 w-6 text-success" />
+                <h4 className="font-bold text-sm">תהליכים עסקיים</h4>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• הקמת ספק חדש</li>
+                <li>• הגשת הצעות מחיר</li>
+                <li>• ניהול קבלות</li>
+                <li>• אישור משתמשים</li>
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-warning/20 hover:border-warning/40 transition-colors">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-6 w-6 text-warning" />
+                <h4 className="font-bold text-sm">יכולות חכמות</h4>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• זיהוי אוטומטי של מסמכים</li>
+                <li>• חילוץ פרטי בנק מ-OCR</li>
+                <li>• מילוי אוטומטי של שדות</li>
+                <li>• התראות על אי-התאמות</li>
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-brand-purple/20 hover:border-brand-purple/40 transition-colors">
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-6 w-6 text-brand-purple" />
+                <h4 className="font-bold text-sm">אבטחה</h4>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• קישורים מאובטחים עם תוקף</li>
+                <li>• אימות OTP</li>
+                <li>• הרשאות לפי תפקיד</li>
+                <li>• תיעוד כל הפעולות</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 max-w-3xl">
+          <p className="text-center text-sm text-muted-foreground">
+            <strong className="text-primary">רמות אישור:</strong> המערכת תומכת באישור מנהל רכש בלבד או אישור מנהל רכש + סמנכ"ל, בהתאם לדרישות העסקה
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 17,
     title: 'סיכום',
     subtitle: 'יתרונות המערכת',
     content: (
