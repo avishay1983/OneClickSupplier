@@ -297,13 +297,13 @@ Response: { success: boolean }
 
 ## 4. שירותי AI
 
-| שירות | Gateway | מודל | שימוש |
-|-------|---------|------|-------|
-| OCR מסמכים | Lovable AI Gateway | google/gemini-2.5-flash | חילוץ נתונים מתמונות |
-| חילוץ טקסט | Lovable AI Gateway | google/gemini-2.5-flash | חילוץ מ-Word/PDF |
+| שירות | API | מודל | שימוש |
+|-------|-----|------|-------|
+| OCR מסמכים | Google Gemini API | gemini-2.5-flash | חילוץ נתונים מתמונות |
+| חילוץ טקסט | Google Gemini API | gemini-2.5-flash | חילוץ מ-Word/PDF |
 
-**Endpoint:** https://ai.gateway.lovable.dev/v1/chat/completions
-**Token:** LOVABLE_API_KEY (מוגדר אוטומטית)
+**Endpoint:** https://generativelanguage.googleapis.com/v1beta/models
+**Token:** GOOGLE_GEMINI_API_KEY
 **עלות משוערת:** $0.001-0.005 לבקשה
 
 ---
@@ -354,7 +354,7 @@ Response: { success: boolean }
 | SUPABASE_SERVICE_ROLE_KEY | מפתח שרת | כן |
 | GMAIL_USER | כתובת Gmail | כן |
 | GMAIL_APP_PASSWORD | App Password | כן |
-| LOVABLE_API_KEY | מפתח AI | כן |
+| GOOGLE_GEMINI_API_KEY | מפתח Google Gemini | כן |
 | ADMIN_EMAIL | מיילים לאישור | כן |
 | RESEND_API_KEY | (לא בשימוש) | לא |
 
@@ -367,7 +367,7 @@ Response: { success: boolean }
 |------------|-------------|
 | Edge Functions (Deno) | Spring Boot Microservices |
 | Supabase DB | PostgreSQL + JPA/Hibernate |
-| Lovable AI Gateway | Google Gemini API ישירות |
+| Google Gemini API | Google Gemini API (ללא שינוי) |
 | Gmail SMTP | Spring Mail / JavaMail |
 | Storage | MinIO / S3 / Azure Blob |
 
@@ -574,12 +574,12 @@ Response: { success: boolean }</pre>
 <div class="section">
 <h2>4. שירותי AI</h2>
 <table>
-<tr><th>שירות</th><th>Gateway</th><th>מודל</th><th>שימוש</th></tr>
-<tr><td>OCR מסמכים</td><td>Lovable AI Gateway</td><td>google/gemini-2.5-flash</td><td>חילוץ נתונים מתמונות</td></tr>
-<tr><td>חילוץ טקסט</td><td>Lovable AI Gateway</td><td>google/gemini-2.5-flash</td><td>חילוץ מ-Word/PDF</td></tr>
+<tr><th>שירות</th><th>API</th><th>מודל</th><th>שימוש</th></tr>
+<tr><td>OCR מסמכים</td><td>Google Gemini API</td><td>gemini-2.5-flash</td><td>חילוץ נתונים מתמונות</td></tr>
+<tr><td>חילוץ טקסט</td><td>Google Gemini API</td><td>gemini-2.5-flash</td><td>חילוץ מ-Word/PDF</td></tr>
 </table>
-<p><strong>Endpoint:</strong> https://ai.gateway.lovable.dev/v1/chat/completions</p>
-<p><strong>Token:</strong> LOVABLE_API_KEY (מוגדר אוטומטית)</p>
+<p><strong>Endpoint:</strong> https://generativelanguage.googleapis.com/v1beta/models</p>
+<p><strong>Token:</strong> GOOGLE_GEMINI_API_KEY</p>
 <p><strong>עלות משוערת:</strong> $0.001-0.005 לבקשה</p>
 </div>
 
@@ -629,7 +629,7 @@ Response: { success: boolean }</pre>
 <tr><td>SUPABASE_SERVICE_ROLE_KEY</td><td>מפתח שרת</td><td>כן</td></tr>
 <tr><td>GMAIL_USER</td><td>כתובת Gmail</td><td>כן</td></tr>
 <tr><td>GMAIL_APP_PASSWORD</td><td>App Password</td><td>כן</td></tr>
-<tr><td>LOVABLE_API_KEY</td><td>מפתח AI</td><td>כן</td></tr>
+<tr><td>GOOGLE_GEMINI_API_KEY</td><td>מפתח Google Gemini</td><td>כן</td></tr>
 <tr><td>ADMIN_EMAIL</td><td>מיילים לאישור</td><td>כן</td></tr>
 </table>
 </div>
@@ -641,7 +641,7 @@ Response: { success: boolean }</pre>
 <tr><th>רכיב נוכחי</th><th>המרה מומלצת</th></tr>
 <tr><td>Edge Functions (Deno)</td><td>Spring Boot Microservices</td></tr>
 <tr><td>Supabase DB</td><td>PostgreSQL + JPA/Hibernate</td></tr>
-<tr><td>Lovable AI Gateway</td><td>Google Gemini API ישירות</td></tr>
+<tr><td>Google Gemini API</td><td>Google Gemini API (ללא שינוי)</td></tr>
 <tr><td>Gmail SMTP</td><td>Spring Mail / JavaMail</td></tr>
 <tr><td>Storage</td><td>MinIO / S3 / Azure Blob</td></tr>
 </table>
@@ -753,12 +753,12 @@ Response: { success: boolean }</pre>
             │                    │                    │
             ▼                    ▼                    ▼
 ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────────────────┐
-│   Gmail SMTP      │  │ Lovable AI Gateway│  │     SUPABASE SERVICES         │
-│   smtp.gmail.com  │  │ ai.gateway.lovable│  │  ┌─────────────────────────┐  │
-│                   │  │ .dev              │  │  │     PostgreSQL DB       │  │
+│   Gmail SMTP      │  │ Google Gemini API │  │     SUPABASE SERVICES         │
+│   smtp.gmail.com  │  │ generativelanguage│  │  ┌─────────────────────────┐  │
+│                   │  │ .googleapis.com   │  │  │     PostgreSQL DB       │  │
 │  GMAIL_USER       │  │                   │  │  │  • vendor_requests      │  │
-│  GMAIL_APP_PASS   │  │  LOVABLE_API_KEY  │  │  │  • vendor_documents     │  │
-│                   │  │                   │  │  │  • vendor_receipts      │  │
+│  GMAIL_APP_PASS   │  │ GOOGLE_GEMINI_    │  │  │  • vendor_documents     │  │
+│                   │  │ API_KEY           │  │  │  • vendor_receipts      │  │
 │  Cost: FREE       │  │  Model:           │  │  │  • profiles             │  │
 │  Limit: 500/day   │  │  gemini-2.5-flash │  │  │  • user_roles           │  │
 │                   │  │                   │  │  │  • app_settings         │  │
@@ -1748,14 +1748,14 @@ GET /functions/v1/handle-manager-approval?id=uuid&action=approve&manager=vp`
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Brain className="h-5 w-5" />
-                    Lovable AI Gateway
+                    Google Gemini API
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Endpoint:</strong> ai.gateway.lovable.dev</p>
-                    <p><strong>Model:</strong> google/gemini-2.5-flash</p>
-                    <p><strong>Token:</strong> LOVABLE_API_KEY</p>
+                    <p><strong>Endpoint:</strong> generativelanguage.googleapis.com</p>
+                    <p><strong>Model:</strong> gemini-2.5-flash</p>
+                    <p><strong>Token:</strong> GOOGLE_GEMINI_API_KEY</p>
                     <p><strong>עלות:</strong> ~$0.001-0.005/בקשה</p>
                     <p><strong>שימוש:</strong> OCR, חילוץ נתונים</p>
                   </div>
