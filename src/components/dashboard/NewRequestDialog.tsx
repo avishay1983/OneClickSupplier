@@ -412,7 +412,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               <form onSubmit={handleSubmit} className="space-y-5 text-right">
                 {/* Handler Section */}
                 <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-xl p-4 border border-accent/20">
-                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                  <div className="flex items-center gap-2 mb-3 justify-end">
                     <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
                       <User className="h-4 w-4 text-accent" />
                     </div>
@@ -429,7 +429,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
                 {/* Vendor Type Section */}
                 <div className="bg-gradient-to-r from-brand-purple/5 to-brand-purple/10 rounded-xl p-4 border border-brand-purple/20">
-                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                  <div className="flex items-center gap-2 mb-3 justify-end">
                     <div className="w-8 h-8 rounded-lg bg-brand-purple/20 flex items-center justify-center">
                       <Building2 className="h-4 w-4 text-brand-purple" />
                     </div>
@@ -525,7 +525,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
                 {/* Vendor Details Section */}
                 <div className="bg-gradient-to-r from-success/5 to-success/10 rounded-xl p-4 border border-success/20">
-                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                  <div className="flex items-center gap-2 mb-3 justify-end">
                     <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
                       <Mail className="h-4 w-4 text-success" />
                     </div>
@@ -563,7 +563,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
                 {/* Link Expiry Section */}
                 <div className="bg-gradient-to-r from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
-                  <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                  <div className="flex items-center gap-2 mb-3 justify-end">
                     <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
                       <Clock className="h-4 w-4 text-warning" />
                     </div>
@@ -588,7 +588,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
                 {/* Approval Type Section */}
                 <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-4 flex-row-reverse justify-end">
+                  <div className="flex items-center gap-2 mb-4 justify-end">
                     <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                       <Shield className="h-4 w-4 text-primary" />
                     </div>
@@ -714,7 +714,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
               {/* Expiry selection */}
               <div className="bg-gradient-to-r from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
-                <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                <div className="flex items-center gap-2 mb-3 justify-end">
                   <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
                     <Clock className="h-4 w-4 text-warning" />
                   </div>
@@ -739,7 +739,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
 
               {/* Approval type selection */}
               <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
-                <div className="flex items-center gap-2 mb-3 flex-row-reverse justify-end">
+                <div className="flex items-center gap-2 mb-3 justify-end">
                   <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
