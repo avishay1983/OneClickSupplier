@@ -134,6 +134,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   const [rejectType, setRejectType] = useState<'handler' | 'vp' | 'procurement'>('handler');
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [resendingVPQuoteId, setResendingVPQuoteId] = useState<string | null>(null);
+  const [resendingProcurementQuoteId, setResendingProcurementQuoteId] = useState<string | null>(null);
 
   const fetchQuotes = async () => {
     setIsLoading(true);
@@ -486,6 +487,64 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       });
     } finally {
       setResendingVPQuoteId(null);
+    }
+  };
+
+  const handleResendProcurementEmail = async (quote: VendorQuote) => {
+    setResendingProcurementQuoteId(quote.id);
+    try {
+      // Get procurement manager email from settings
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('setting_value')
+        .eq('setting_key', 'procurement_manager_email')
+        .single();
+
+      if (!settings?.setting_value) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא הוגדרה כתובת מייל למנהל רכש בהגדרות',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Send email to procurement manager
+      const { data: emailData, error } = await supabase.functions.invoke('send-quote-approval-email', {
+        body: {
+          quoteId: quote.id,
+          approverEmail: settings.setting_value,
+          approverName: 'מנהל רכש',
+          vendorName: quote.vendor_name,
+          amount: quote.amount,
+          description: quote.description,
+          approvalType: 'procurement_manager',
+        },
+      });
+
+      if (error) throw error;
+      if ((emailData as any)?.success === false) {
+        toast({
+          title: 'שגיאה',
+          description: (emailData as any)?.error?.message || 'לא ניתן לשלוח את המייל',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'המייל נשלח',
+        description: 'נשלח מייל חוזר למנהל רכש לחתימה',
+      });
+    } catch (error) {
+      console.error('Error resending procurement email:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לשלוח את המייל',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendingProcurementQuoteId(null);
     }
   };
 
@@ -990,27 +1049,38 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                               )}
 
                               {/* Procurement Manager actions - for pending_procurement status */}
-                              {quoteStatus === 'pending_procurement' && isProcurementManager && (
+                              {quoteStatus === 'pending_procurement' && (
                                 <>
-                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem 
-                                    onClick={() => handleProcurementApprove(quote)}
-                                    disabled={isUpdating}
+                                    onClick={() => handleResendProcurementEmail(quote)}
+                                    disabled={resendingProcurementQuoteId === quote.id}
                                   >
-                                    <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
-                                    אשר (מנהל רכש)
+                                    <Mail className="h-4 w-4 ml-2 text-blue-500" />
+                                    שלח שוב למנהל רכש
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => {
-                                      setSelectedQuote(quote);
-                                      setRejectType('procurement');
-                                      setRejectDialogOpen(true);
-                                    }}
-                                    disabled={isUpdating}
-                                  >
-                                    <XCircle className="h-4 w-4 ml-2 text-red-500" />
-                                    דחה הצעה
-                                  </DropdownMenuItem>
+                                  {isProcurementManager && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => handleProcurementApprove(quote)}
+                                        disabled={isUpdating}
+                                      >
+                                        <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                        אשר (מנהל רכש)
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        onClick={() => {
+                                          setSelectedQuote(quote);
+                                          setRejectType('procurement');
+                                          setRejectDialogOpen(true);
+                                        }}
+                                        disabled={isUpdating}
+                                      >
+                                        <XCircle className="h-4 w-4 ml-2 text-red-500" />
+                                        דחה הצעה
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </>
                               )}
                             </DropdownMenuContent>
