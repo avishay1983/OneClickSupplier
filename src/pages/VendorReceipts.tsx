@@ -63,18 +63,34 @@ export default function VendorReceipts() {
       }
 
       try {
-        // Fetch vendor request by token
-        const { data: vendorData, error: vendorError } = await supabase
-          .from('vendor_requests')
-          .select('id, vendor_name, status')
-          .eq('secure_token', token)
-          .maybeSingle();
+        // Use edge function to fetch vendor data (bypasses RLS for public access)
+        const response = await fetch(
+          'https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-receipts-data',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+          }
+        );
 
-        if (vendorError || !vendorData) {
+        const result = await response.json();
+
+        if (!response.ok || result.error === 'not_found') {
           setNotFound(true);
           setIsLoading(false);
           return;
         }
+
+        if (result.error) {
+          console.error('Error fetching vendor data:', result.error);
+          setNotFound(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const vendorData = result.vendor;
 
         // Check if vendor is approved
         if (vendorData.status !== 'approved') {
@@ -85,17 +101,7 @@ export default function VendorReceipts() {
         }
 
         setVendor(vendorData);
-
-        // Fetch receipts
-        const { data: receiptsData, error: receiptsError } = await supabase
-          .from('vendor_receipts')
-          .select('*')
-          .eq('vendor_request_id', vendorData.id)
-          .order('created_at', { ascending: false });
-
-        if (!receiptsError && receiptsData) {
-          setReceipts(receiptsData as Receipt[]);
-        }
+        setReceipts((result.receipts || []) as Receipt[]);
       } catch (error) {
         console.error('Error fetching data:', error);
         setNotFound(true);
