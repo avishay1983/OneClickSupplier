@@ -156,41 +156,14 @@ const QuoteApproval = () => {
       const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
       setDebugPreviewUrl(imageDataUrl);
 
-      // Detect position (AI or fallback)
-      let signaturePosition: { x_percent: number; y_percent: number } =
-        approvalType === "vp"
-          ? { x_percent: 12, y_percent: 18 }
-          : { x_percent: 44, y_percent: 18 };
+      // Use fixed positions (same as actual signature placement)
+      // yPosition = 520 on A4 (841.89 height) = ~62% from bottom = ~38% from top
+      const yFromTop = 38; // percent from top
+      const xPercent = approvalType === "vp" ? 8 : 35; // VP left, Procurement center
 
-      try {
-        const { data: positionData, error: positionError } =
-          await supabase.functions.invoke("detect-signature-position", {
-            body: {
-              imageBase64: imageDataUrl,
-              signerType: approvalType,
-            },
-          });
-
-        if (!positionError && positionData?.x_percent != null && positionData?.y_percent != null) {
-          signaturePosition = positionData;
-        }
-      } catch {
-        // Use defaults
-      }
-
-      // Sanity guard
-      if (signaturePosition.y_percent < 0 || signaturePosition.y_percent > 100) {
-        signaturePosition.y_percent = 18;
-      }
-      if (signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
-        signaturePosition.x_percent = approvalType === "vp" ? 12 : 44;
-      }
-
-      // Convert to CSS position (image Y is from top, pdf-lib Y is from bottom)
-      // So y_percent=18 means 18% from bottom => 82% from top
       setDebugPosition({
-        x: signaturePosition.x_percent,
-        y: 100 - signaturePosition.y_percent,
+        x: xPercent,
+        y: yFromTop,
       });
 
       setDebugMode(true);
@@ -230,50 +203,6 @@ const QuoteApproval = () => {
 
       const pdfBytes = await pdfData.arrayBuffer();
       
-      // Detect signature position using AI (based on PDF image)
-      setStatusMessage("מזהה מיקום חתימה...");
-
-      let signaturePosition: { x_percent: number; y_percent: number; found?: boolean } =
-        approvalType === "vp"
-          ? { x_percent: 12, y_percent: 18, found: false }
-          : { x_percent: 44, y_percent: 18, found: false };
-
-      try {
-        const pdfFile = new File([pdfData], quote?.file_name || "quote.pdf", {
-          type: "application/pdf",
-        });
-
-        // Use the LAST page for signature detection (signatures are typically on the last page)
-        const img = await pdfToImage(pdfFile, { page: "last", scale: 3 });
-        if (img?.base64) {
-          const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
-
-          const { data: positionData, error: positionError } =
-            await supabase.functions.invoke("detect-signature-position", {
-              body: {
-                imageBase64: imageDataUrl,
-                signerType: approvalType,
-              },
-            });
-
-          if (!positionError && positionData?.x_percent != null && positionData?.y_percent != null) {
-            signaturePosition = positionData;
-          }
-        }
-
-        // Sanity guard: keep values within bounds; pdf-lib Y is from bottom
-        if (signaturePosition.y_percent == null || signaturePosition.y_percent < 0 || signaturePosition.y_percent > 100) {
-          signaturePosition.y_percent = 18;
-        }
-        if (signaturePosition.x_percent == null || signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
-          signaturePosition.x_percent = approvalType === "vp" ? 12 : 44;
-        }
-
-        console.log("Signature position:", { approvalType, signaturePosition });
-      } catch (aiError) {
-        console.error("AI detection failed, using defaults:", aiError);
-      }
-
       // Load PDF and add signature
       setStatusMessage("מוסיף חתימה למסמך...");
       const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -283,16 +212,22 @@ const QuoteApproval = () => {
       const lastPage = pages[pages.length - 1];
       const { width: pageWidth, height: pageHeight } = lastPage.getSize();
       
-      // Calculate signature position
+      // Calculate signature position based on role (same approach as ContractSigningDialog)
+      // Fixed Y position for consistency - signature line is typically around 520 pixels from bottom of A4
       const sigWidth = 100;
       const sigHeight = 40;
+      const yPosition = 520; // Fixed position from bottom
       
-      // Convert percentages to actual coordinates
-      const rawX = (signaturePosition.x_percent / 100) * pageWidth;
-      const rawY = (signaturePosition.y_percent / 100) * pageHeight; // y is from bottom
-
-      const xPosition = Math.max(10, Math.min(rawX, pageWidth - sigWidth - 10));
-      const yPosition = Math.max(10, Math.min(rawY, pageHeight - sigHeight - 10));
+      let xPosition: number;
+      if (approvalType === 'vp') {
+        // VP signature on the LEFT side
+        xPosition = 50;
+      } else {
+        // Procurement manager signature in the CENTER
+        xPosition = (pageWidth - sigWidth) / 2;
+      }
+      
+      console.log('Placing signature at:', { xPosition, yPosition, pageWidth, pageHeight, approvalType });
 
       console.log('Placing signature at:', {
         xPosition,
