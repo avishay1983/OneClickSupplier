@@ -10,6 +10,32 @@ interface DetectSignatureRequest {
   signerType: 'vp' | 'procurement_manager';
 }
 
+function normalizePosition(
+  input: any,
+  signerType: DetectSignatureRequest["signerType"],
+): { x_percent: number; y_percent: number; found: boolean } {
+  const fallback =
+    signerType === "vp"
+      ? { x_percent: 12, y_percent: 62, found: false }
+      : { x_percent: 44, y_percent: 62, found: false };
+
+  const rawX = Number(input?.x_percent);
+  const rawY = Number(input?.y_percent);
+  const found = Boolean(input?.found);
+
+  let x = Number.isFinite(rawX) ? rawX : fallback.x_percent;
+  let y = Number.isFinite(rawY) ? rawY : fallback.y_percent;
+
+  x = Math.max(0, Math.min(100, x));
+  y = Math.max(0, Math.min(100, y));
+
+  // Prevent common RTL confusion: ensure VP is left third and Procurement Manager is middle.
+  if (signerType === "vp" && x > 30) x = fallback.x_percent;
+  if (signerType === "procurement_manager" && (x < 30 || x > 70)) x = fallback.x_percent;
+
+  return { x_percent: x, y_percent: y, found };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,7 +60,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-pro-preview",
         messages: [
           {
             role: "user",
@@ -43,10 +69,10 @@ serve(async (req) => {
                 type: "text",
                 text: `Analyze this document image and find the signature area for "${signerLabel}".
 
-The document has signature lines at the bottom with labels in Hebrew:
-- "סמנכ\"ל" (VP) - usually on the LEFT side
-- "מנהל רכש" (Procurement Manager) - usually in the CENTER
-- "הספק" (Vendor) - usually on the RIGHT side
+The document has signature lines with labels in Hebrew. IMPORTANT: x_percent is measured from the LEFT edge of the image (even though Hebrew is RTL):
+- "סמנכ\"ל" (VP) - leftmost line
+- "מנהל רכש" (Procurement Manager) - middle line
+- "הספק" (Vendor) - rightmost line
 
 I need to place a signature for "${signerLabel}".
 
@@ -107,8 +133,8 @@ If you can identify the signature area, set found=true. If not visible, estimate
       console.error("AI gateway error:", response.status, errorText);
       // Return default positions if AI fails
       const defaultPositions = {
-        vp: { x_percent: 12, y_percent: 12, found: false },
-        procurement_manager: { x_percent: 44, y_percent: 12, found: false }
+        vp: { x_percent: 12, y_percent: 62, found: false },
+        procurement_manager: { x_percent: 44, y_percent: 62, found: false }
       };
       
       return new Response(
@@ -124,10 +150,12 @@ If you can identify the signature area, set found=true. If not visible, estimate
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall && toolCall.function?.arguments) {
       const position = JSON.parse(toolCall.function.arguments);
-      console.log('Detected position:', position);
-      
+      const normalized = normalizePosition(position, signerType);
+      console.log('Detected position (raw):', position);
+      console.log('Detected position (normalized):', normalized);
+
       return new Response(
-        JSON.stringify(position),
+        JSON.stringify(normalized),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -137,23 +165,25 @@ If you can identify the signature area, set found=true. If not visible, estimate
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const position = JSON.parse(jsonMatch[0]);
-      console.log('Parsed position from content:', position);
-      
+      const normalized = normalizePosition(position, signerType);
+      console.log('Parsed position from content (raw):', position);
+      console.log('Parsed position from content (normalized):', normalized);
+
       return new Response(
-        JSON.stringify(position),
+        JSON.stringify(normalized),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Default fallback positions
     const defaultPositions = {
-      vp: { x_percent: 12, y_percent: 12, found: false },
-      procurement_manager: { x_percent: 44, y_percent: 12, found: false }
+      vp: { x_percent: 12, y_percent: 62, found: false },
+      procurement_manager: { x_percent: 44, y_percent: 62, found: false }
     };
 
     console.log('Using default position for:', signerType);
     return new Response(
-      JSON.stringify(defaultPositions[signerType]),
+      JSON.stringify(normalizePosition(defaultPositions[signerType], signerType)),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

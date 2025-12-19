@@ -154,8 +154,8 @@ const QuoteApproval = () => {
 
       let signaturePosition: { x_percent: number; y_percent: number; found?: boolean } =
         approvalType === "vp"
-          ? { x_percent: 12, y_percent: 12, found: false }
-          : { x_percent: 44, y_percent: 12, found: false };
+          ? { x_percent: 12, y_percent: 62, found: false }
+          : { x_percent: 44, y_percent: 62, found: false };
 
       try {
         const pdfFile = new File([pdfData], quote?.file_name || "quote.pdf", {
@@ -180,11 +180,11 @@ const QuoteApproval = () => {
           }
         }
 
-        // Sanity guard: signatures are at the bottom of the page (pdf-lib Y is from bottom)
-        if (signaturePosition.y_percent > 30 || signaturePosition.y_percent < 0) {
-          signaturePosition.y_percent = 12;
+        // Sanity guard: keep values within bounds; pdf-lib Y is from bottom
+        if (signaturePosition.y_percent == null || signaturePosition.y_percent < 0 || signaturePosition.y_percent > 100) {
+          signaturePosition.y_percent = 62;
         }
-        if (signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
+        if (signaturePosition.x_percent == null || signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
           signaturePosition.x_percent = approvalType === "vp" ? 12 : 44;
         }
 
