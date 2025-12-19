@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Loader2, Download, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Download, Trash2 } from "lucide-react";
+import SignaturePad from "signature_pad";
 
 const QuoteApproval = () => {
   const { token } = useParams();
@@ -21,6 +22,10 @@ const QuoteApproval = () => {
   const [showRejectionForm, setShowRejectionForm] = useState(false);
   const [alreadyProcessed, setAlreadyProcessed] = useState(false);
   const [error, setError] = useState("");
+  const [showSignature, setShowSignature] = useState(false);
+  
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const signaturePadRef = useRef<SignaturePad | null>(null);
 
   useEffect(() => {
     const loadQuote = async () => {
@@ -35,7 +40,7 @@ const QuoteApproval = () => {
           .from("vendor_quotes")
           .select("*, vendor_requests(vendor_name, vendor_email)")
           .eq("quote_secure_token", token)
-          .single();
+          .maybeSingle();
 
         if (quoteError || !data) {
           setError("הקישור לא נמצא או שפג תוקפו");
@@ -63,19 +68,78 @@ const QuoteApproval = () => {
     loadQuote();
   }, [token, approvalType]);
 
+  // Initialize signature pad when showing signature
+  useEffect(() => {
+    if (!showSignature || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const container = canvas.parentElement;
+    
+    if (!container) return;
+    
+    // Get container dimensions
+    const rect = container.getBoundingClientRect();
+    
+    // Set canvas dimensions
+    canvas.width = Math.min(rect.width, 400);
+    canvas.height = 200;
+    
+    // Destroy previous instance if exists
+    if (signaturePadRef.current) {
+      signaturePadRef.current.off();
+    }
+    
+    // Initialize SignaturePad
+    signaturePadRef.current = new SignaturePad(canvas, {
+      backgroundColor: 'rgb(255, 255, 255)',
+      penColor: 'rgb(0, 0, 100)',
+      minWidth: 0.5,
+      maxWidth: 2.5,
+      throttle: 16,
+    });
+    
+    // Clear to set background
+    signaturePadRef.current.clear();
+    
+    return () => {
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+      }
+    };
+  }, [showSignature]);
+
+  const clearSignature = () => {
+    if (signaturePadRef.current) {
+      signaturePadRef.current.clear();
+    }
+  };
+
+  const handleApproveClick = () => {
+    setShowSignature(true);
+  };
+
   const handleApprove = async () => {
+    if (!signaturePadRef.current || signaturePadRef.current.isEmpty()) {
+      toast.error("יש לחתום לפני האישור");
+      return;
+    }
+
     setProcessing(true);
     try {
+      const signatureDataUrl = signaturePadRef.current.toDataURL('image/png');
+      
       const updateData: any = {};
       const now = new Date().toISOString();
 
       if (approvalType === "vp") {
         updateData.vp_approved = true;
         updateData.vp_approved_at = now;
+        updateData.vp_signature_data = signatureDataUrl;
         updateData.status = "pending_procurement";
       } else if (approvalType === "procurement_manager") {
         updateData.procurement_manager_approved = true;
         updateData.procurement_manager_approved_at = now;
+        updateData.procurement_manager_signature_data = signatureDataUrl;
         updateData.status = "approved";
       }
 
@@ -92,15 +156,21 @@ const QuoteApproval = () => {
         const { data: settings } = await supabase
           .from("app_settings")
           .select("setting_value")
-          .eq("setting_key", "procurement_manager_email")
-          .single();
+          .eq("setting_key", "car_manager_email")
+          .maybeSingle();
+
+        const { data: nameSettings } = await supabase
+          .from("app_settings")
+          .select("setting_value")
+          .eq("setting_key", "car_manager_name")
+          .maybeSingle();
 
         if (settings?.setting_value) {
           await supabase.functions.invoke("send-quote-approval-email", {
             body: {
               quoteId: quote.id,
               approverEmail: settings.setting_value,
-              approverName: "מנהל רכש",
+              approverName: nameSettings?.setting_value || "מנהל רכש",
               vendorName: vendorName,
               amount: quote.amount,
               description: quote.description,
@@ -252,10 +322,63 @@ const QuoteApproval = () => {
           </CardContent>
         </Card>
 
-        {!showRejectionForm ? (
+        {showSignature ? (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>חתימה דיגיטלית</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                נא לחתום במסגרת להלן לאישור הצעת המחיר
+              </p>
+              
+              <div className="border-2 border-dashed border-border rounded-lg p-2 bg-white">
+                <canvas
+                  ref={canvasRef}
+                  className="w-full touch-none"
+                  style={{ maxWidth: '400px', margin: '0 auto', display: 'block' }}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={clearSignature}
+                  className="flex-1"
+                >
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  נקה חתימה
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSignature(false)}
+                  className="flex-1"
+                >
+                  ביטול
+                </Button>
+              </div>
+              
+              <Button
+                onClick={handleApprove}
+                disabled={processing}
+                className="w-full"
+                size="lg"
+              >
+                {processing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                    אישור עם חתימה
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : !showRejectionForm ? (
           <div className="flex gap-4">
             <Button
-              onClick={handleApprove}
+              onClick={handleApproveClick}
               disabled={processing}
               className="flex-1"
               size="lg"
