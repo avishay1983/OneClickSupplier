@@ -187,6 +187,26 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   useEffect(() => {
     fetchQuotes();
     fetchVendors();
+
+    // Subscribe to realtime changes for automatic refresh
+    const channel = supabase
+      .channel('vendor_quotes_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendor_quotes',
+        },
+        () => {
+          fetchQuotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSendQuoteRequest = async () => {
