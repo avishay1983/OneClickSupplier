@@ -286,8 +286,8 @@ export default function CRM() {
         .from('vendor_requests')
         .select('*')
         .eq('status', 'approved')
-        .eq('vp_approved', true)
-        .eq('procurement_manager_approved', true)
+        .eq('ceo_signed', true)
+        .eq('procurement_manager_signed', true)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
