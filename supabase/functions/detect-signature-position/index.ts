@@ -67,25 +67,27 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `Analyze this document image and find the signature area for "${signerLabel}".
+                text: `Analyze this document image and find the EMPTY signature line for "${signerLabel}".
 
-The document has signature lines with labels in Hebrew. IMPORTANT: x_percent is measured from the LEFT edge of the image (even though Hebrew is RTL):
+IMPORTANT:
+- The signature block may appear near the TOP or the BOTTOM of the page. Search the entire image.
+- Ignore any existing handwritten signature / scribbles / dates already present in the image. Do NOT anchor to them.
+- We want the printed horizontal signature LINE under the label, even if the line is blank.
+
+The document has three printed signature labels (Hebrew). x_percent is measured from the LEFT edge of the image (even though Hebrew is RTL):
 - "סמנכ\"ל" (VP) - leftmost line
 - "מנהל רכש" (Procurement Manager) - middle line
 - "הספק" (Vendor) - rightmost line
 
-I need to place a signature for "${signerLabel}".
-
-Return ONLY a JSON object with the signature position as percentages of the page dimensions:
+Return ONLY a JSON object with the placement point as percentages of the FULL page dimensions:
 {
-  "x_percent": <number between 0-100 representing horizontal position from left>,
-  "y_percent": <number between 0-100 representing vertical position from bottom>,
+  "x_percent": <0-100, from left>,
+  "y_percent": <0-100, from bottom>,
   "found": <boolean>
 }
 
-x_percent/y_percent should represent the BOTTOM-LEFT placement point of the signature image (not the center).
-The signature should be placed ABOVE the signature line, not on top of the label text.
-If you can identify the signature area, set found=true. If not visible, estimate based on typical positions.`
+x_percent/y_percent must represent the BOTTOM-LEFT corner where we should place the signature image so it sits ABOVE the printed line (not on top of the label text).
+If you find the printed line, set found=true; otherwise set found=false and estimate based on the label positions.`
               },
               {
                 type: "image_url",
