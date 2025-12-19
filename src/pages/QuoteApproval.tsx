@@ -47,32 +47,50 @@ const QuoteApproval = () => {
       }
 
       try {
-        // Fetch quote with vendor details
-        const { data, error: quoteError } = await supabase
-          .from("vendor_quotes")
-          .select("*, vendor_requests(vendor_name, vendor_email, company_id)")
-          .eq("quote_secure_token", token)
-          .maybeSingle();
+        // Use edge function to fetch quote details (bypasses RLS for public access)
+        const { data: quoteData, error: fetchError } = await supabase.functions.invoke(
+          "vendor-quote-details",
+          { body: { token } }
+        );
 
-        if (quoteError || !data) {
-          setError("הקישור לא נמצא או שפג תוקפו");
+        if (fetchError || quoteData?.error) {
+          setError(quoteData?.error || "הקישור לא נמצא או שפג תוקפו");
           setLoading(false);
           return;
         }
 
         // Check if already processed based on approval type
-        if (approvalType === "vp" && data.vp_approved !== null) {
+        if (approvalType === "vp" && quoteData.vpApproved !== null) {
           setAlreadyProcessed(true);
         }
-        if (approvalType === "procurement_manager" && data.procurement_manager_approved !== null) {
+        if (approvalType === "procurement_manager" && quoteData.procurementManagerApproved !== null) {
           setAlreadyProcessed(true);
         }
 
-        setQuote(data);
-        setVendorName(data.vendor_requests?.vendor_name || "");
-        setVendorEmail(data.vendor_requests?.vendor_email || "");
+        // Map edge function response to quote format
+        setQuote({
+          id: quoteData.quoteId,
+          file_path: quoteData.filePath,
+          file_name: quoteData.fileName,
+          description: quoteData.description,
+          amount: quoteData.amount,
+          quote_date: quoteData.quoteDate,
+          status: quoteData.status,
+          vendor_submitted: quoteData.submitted,
+          vendor_submitted_at: quoteData.vendorSubmittedAt,
+          vp_approved: quoteData.vpApproved,
+          procurement_manager_approved: quoteData.procurementManagerApproved,
+          quote_secure_token: quoteData.quoteSecureToken,
+          vendor_requests: {
+            vendor_name: quoteData.vendorName,
+            vendor_email: quoteData.vendorEmail,
+            company_id: quoteData.companyId,
+          },
+        });
+        setVendorName(quoteData.vendorName || "");
+        setVendorEmail(quoteData.vendorEmail || "");
 
-        // Fetch approver name from settings
+        // Fetch approver name from settings via edge function or directly
         const settingKey = approvalType === "vp" ? "vp_name" : "procurement_manager_name";
         const { data: settingData } = await supabase
           .from("app_settings")
