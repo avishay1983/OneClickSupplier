@@ -39,7 +39,10 @@ serve(async (req: Request): Promise<Response> => {
     const { data: quote, error: quoteError } = await supabase
       .from("vendor_quotes")
       .select(
-        "id, vendor_submitted, quote_link_sent_at, created_at, vendor_requests(vendor_name)"
+        `id, file_path, file_name, description, amount, quote_date, status,
+         vendor_submitted, vendor_submitted_at, quote_link_sent_at, created_at,
+         vp_approved, procurement_manager_approved, quote_secure_token,
+         vendor_requests(vendor_name, vendor_email, company_id)`
       )
       .eq("quote_secure_token", token)
       .single();
@@ -68,12 +71,30 @@ serve(async (req: Request): Promise<Response> => {
     const vendorName = Array.isArray(vendorRequests)
       ? vendorRequests?.[0]?.vendor_name ?? ""
       : vendorRequests?.vendor_name ?? "";
+    const vendorEmail = Array.isArray(vendorRequests)
+      ? vendorRequests?.[0]?.vendor_email ?? ""
+      : vendorRequests?.vendor_email ?? "";
+    const companyId = Array.isArray(vendorRequests)
+      ? vendorRequests?.[0]?.company_id ?? ""
+      : vendorRequests?.company_id ?? "";
 
     return new Response(
       JSON.stringify({
         quoteId: quote.id,
         vendorName,
+        vendorEmail,
+        companyId,
+        filePath: quote.file_path,
+        fileName: quote.file_name,
+        description: quote.description,
+        amount: quote.amount,
+        quoteDate: quote.quote_date,
+        status: quote.status,
         submitted: Boolean(quote.vendor_submitted),
+        vendorSubmittedAt: quote.vendor_submitted_at,
+        vpApproved: quote.vp_approved,
+        procurementManagerApproved: quote.procurement_manager_approved,
+        quoteSecureToken: quote.quote_secure_token,
       }),
       {
         status: 200,
