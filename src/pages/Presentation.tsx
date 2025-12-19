@@ -34,8 +34,21 @@ import {
   PenTool,
   Workflow,
   Database,
-  Bell
+  Bell,
+  Camera
 } from 'lucide-react';
+
+// Import screenshots
+import screenshotNewRequestForm from '@/assets/screenshots/new-request-form.png';
+import screenshotDashboardManager from '@/assets/screenshots/dashboard-manager.png';
+import screenshotVendorRequestsTable from '@/assets/screenshots/vendor-requests-table.png';
+import screenshotCrmQuoteDialog from '@/assets/screenshots/crm-quote-dialog.png';
+import screenshotCrmQuotesMenu from '@/assets/screenshots/crm-quotes-menu.png';
+import screenshotCrmQuotesDialog from '@/assets/screenshots/crm-quotes-dialog.png';
+import screenshotCrmQuotesTable from '@/assets/screenshots/crm-quotes-table.png';
+import screenshotCrmVendorsList from '@/assets/screenshots/crm-vendors-list.png';
+import screenshotVendorActionsMenu from '@/assets/screenshots/vendor-actions-menu.png';
+import screenshotVendorRequestsActions from '@/assets/screenshots/vendor-requests-actions.png';
 
 const slides = [
   {
@@ -735,6 +748,126 @@ const slides = [
   },
   {
     id: 13,
+    title: 'צילומי מסך מהמערכת',
+    subtitle: 'תמונות מהמערכת בפעולה',
+    content: (
+      <div className="flex flex-col items-center justify-center h-full space-y-4" dir="rtl">
+        <div className="flex items-center gap-3 mb-2">
+          <Camera className="h-10 w-10 text-accent" />
+          <h3 className="text-3xl font-bold text-primary">צילומי מסך מהמערכת</h3>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-4 w-full max-w-6xl">
+          <div className="space-y-2">
+            <img 
+              src={screenshotNewRequestForm} 
+              alt="טופס בקשה חדשה" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">טופס בקשה חדשה</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotDashboardManager} 
+              alt="דשבורד מנהל" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">דשבורד מנהל - חתימות</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotVendorRequestsTable} 
+              alt="טבלת בקשות ספקים" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">טבלת בקשות ספקים</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotCrmVendorsList} 
+              alt="רשימת ספקים CRM" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">מערכת CRM - רשימת ספקים</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotCrmQuotesTable} 
+              alt="הצעות מחיר" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">ניהול הצעות מחיר</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotVendorActionsMenu} 
+              alt="תפריט פעולות" 
+              className="w-full h-40 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-xs text-center text-muted-foreground">תפריט פעולות ספק</p>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 14,
+    title: 'צילומי מסך נוספים',
+    subtitle: 'עוד תמונות מהמערכת',
+    content: (
+      <div className="flex flex-col items-center justify-center h-full space-y-4" dir="rtl">
+        <div className="flex items-center gap-3 mb-2">
+          <Camera className="h-10 w-10 text-brand-purple" />
+          <h3 className="text-3xl font-bold text-primary">צילומי מסך נוספים</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-6 w-full max-w-4xl">
+          <div className="space-y-2">
+            <img 
+              src={screenshotCrmQuoteDialog} 
+              alt="דיאלוג הצעת מחיר" 
+              className="w-full h-56 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">שליחת בקשה להצעת מחיר</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotCrmQuotesDialog} 
+              alt="דיאלוג בחירת ספק" 
+              className="w-full h-56 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">בחירת ספק להצעת מחיר</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotCrmQuotesMenu} 
+              alt="תפריט הצעות מחיר" 
+              className="w-full h-56 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">תפריט פעולות - הצעות מחיר</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotVendorRequestsActions} 
+              alt="פעולות בקשות" 
+              className="w-full h-56 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">פעולות על בקשת ספק</p>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 15,
     title: 'סיכום',
     subtitle: 'יתרונות המערכת',
     content: (
