@@ -4,10 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -24,6 +23,12 @@ const signupSchema = z.object({
 const resetSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
 });
+
+const features = [
+  { icon: Zap, title: 'מהיר וחכם', description: 'הקמת ספק תוך 24-48 שעות במקום שבועות' },
+  { icon: Shield, title: 'מאובטח לחלוטין', description: 'הזדהות דו-שלבית ואימות מסמכים' },
+  { icon: Sparkles, title: 'AI מתקדם', description: 'זיהוי אוטומטי של מסמכים ונתונים' },
+];
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -42,7 +47,6 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
-    // Check URL hash for recovery token on initial load
     const checkRecoveryToken = () => {
       const hash = window.location.hash;
       if (hash) {
@@ -51,13 +55,11 @@ export default function Auth() {
         const accessToken = hashParams.get('access_token');
         
         if (type === 'recovery' && accessToken) {
-          // Set the session from the recovery token
           supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: hashParams.get('refresh_token') || '',
           }).then(() => {
             setShowUpdatePassword(true);
-            // Clear hash from URL
             window.history.replaceState(null, '', window.location.pathname);
           });
           return true;
@@ -68,7 +70,6 @@ export default function Auth() {
 
     const isRecovery = checkRecoveryToken();
 
-    // Check if user is already logged in (only if not in recovery mode)
     if (!isRecovery) {
       const checkSession = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -79,12 +80,10 @@ export default function Auth() {
       checkSession();
     }
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setShowUpdatePassword(true);
       } else if (session && !showUpdatePassword) {
-        // Don't redirect if we're showing the update password form
         const hash = window.location.hash;
         if (!hash.includes('type=recovery')) {
           navigate('/');
@@ -195,13 +194,11 @@ export default function Auth() {
         return;
       }
 
-      // Check if user already exists (Supabase returns user but with empty identities when email exists)
       if (signUpData.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
         setShowUserExistsMessage(true);
         return;
       }
 
-      // Send approval request email to admin - only for truly new users
       if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length > 0) {
         try {
           await supabase.functions.invoke('send-approval-request', {
@@ -221,7 +218,6 @@ export default function Auth() {
         description: 'בקשתך נשלחה למנהל המערכת לאישור. תקבל הודעה כשהרישום יאושר.',
       });
       
-      // Sign out immediately since they're not approved yet
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Signup error:', error);
@@ -317,7 +313,6 @@ export default function Auth() {
         description: 'כעת תוכל להתחבר עם הסיסמה החדשה',
       });
 
-      // Sign out and redirect to login
       await supabase.auth.signOut();
       setShowUpdatePassword(false);
       setNewPassword('');
@@ -334,78 +329,223 @@ export default function Auth() {
     }
   };
 
-  // Update password form (after clicking email link)
+  // Branded side panel component
+  const BrandedPanel = () => (
+    <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-40 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-accent/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+      
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 opacity-10" style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+        backgroundSize: '50px 50px'
+      }} />
+
+      <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+        {/* Logo and brand */}
+        <div>
+          <img 
+            src="/images/bituach-yashir-logo.png" 
+            alt="ביטוח ישיר" 
+            className="h-14 brightness-0 invert"
+          />
+        </div>
+
+        {/* Main content */}
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold leading-tight">
+              ספק בקליק
+            </h1>
+            <p className="text-xl text-white/80 max-w-md">
+              מערכת הקמת ספקים מתקדמת המשלבת בינה מלאכותית לחוויה חלקה ומהירה
+            </p>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-6">
+            {features.map((feature, index) => (
+              <div 
+                key={index} 
+                className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:bg-white/15"
+              >
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <feature.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{feature.title}</h3>
+                  <p className="text-white/70 text-sm">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-white/60 text-sm">
+          © 2024 ביטוח ישיר. כל הזכויות שמורות.
+        </div>
+      </div>
+    </div>
+  );
+
+  // Form container with glass effect
+  const FormContainer = ({ children, title, description }: { children: React.ReactNode; title: string; description: string }) => (
+    <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-background via-background to-muted/30" dir="rtl">
+      <div className="w-full max-w-md">
+        {/* Mobile logo */}
+        <div className="lg:hidden mb-8 text-center">
+          <img 
+            src="/images/bituach-yashir-logo.png" 
+            alt="ביטוח ישיר" 
+            className="h-12 mx-auto mb-4"
+          />
+        </div>
+
+        {/* Glass card */}
+        <div className="relative">
+          {/* Glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-xl opacity-50" />
+          
+          <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-2xl">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl mb-4 shadow-lg">
+                <User className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">{title}</h2>
+              <p className="text-muted-foreground mt-2">{description}</p>
+            </div>
+
+            {children}
+          </div>
+        </div>
+
+        {/* Trust badges */}
+        <div className="mt-8 flex items-center justify-center gap-6 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            <span>מאובטח</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>פרטיות מלאה</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Styled input component
+  const StyledInput = ({ 
+    id, 
+    type, 
+    placeholder, 
+    value, 
+    onChange, 
+    icon: Icon, 
+    error, 
+    dir = 'rtl',
+    showPasswordToggle = false 
+  }: {
+    id: string;
+    type: string;
+    placeholder: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    icon: typeof Mail;
+    error?: string;
+    dir?: string;
+    showPasswordToggle?: boolean;
+  }) => (
+    <div className="space-y-2">
+      <div className="relative group">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+          <Icon className="w-5 h-5" />
+        </div>
+        <Input
+          id={id}
+          type={showPasswordToggle && showPassword ? "text" : type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          className={`h-12 pr-12 ${showPasswordToggle ? 'pl-12' : 'pl-4'} rounded-xl border-border/50 bg-background/50 focus:bg-background transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+          dir={dir}
+        />
+        {showPasswordToggle && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className="text-sm text-destructive flex items-center gap-1">
+          <span className="inline-block w-1 h-1 bg-destructive rounded-full" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+
+  // Styled button
+  const StyledButton = ({ children, isLoading: loading, ...props }: React.ComponentProps<typeof Button> & { isLoading?: boolean }) => (
+    <Button
+      {...props}
+      className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
+      disabled={loading || props.disabled}
+    >
+      {loading ? (
+        <Loader2 className="w-5 h-5 animate-spin" />
+      ) : (
+        children
+      )}
+    </Button>
+  );
+
+  // Update password form
   if (showUpdatePassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4" dir="rtl">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4">
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
-                className="h-12 mx-auto"
-              />
-            </div>
-            <CardTitle className="text-2xl">עדכון סיסמה</CardTitle>
-            <CardDescription>הזן את הסיסמה החדשה שלך</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="new-password">סיסמה חדשה</Label>
-                <div className="relative">
-                  <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="new-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="pr-10 pl-10"
-                    dir="ltr"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword}</p>}
-              </div>
+      <div className="min-h-screen flex">
+        <BrandedPanel />
+        <FormContainer title="עדכון סיסמה" description="הזן את הסיסמה החדשה שלך">
+          <form onSubmit={handleUpdatePassword} className="space-y-5">
+            <StyledInput
+              id="new-password"
+              type="password"
+              placeholder="סיסמה חדשה"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              icon={Lock}
+              error={errors.newPassword}
+              dir="ltr"
+              showPasswordToggle
+            />
 
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">אימות סיסמה</Label>
-                <div className="relative">
-                  <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="confirm-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pr-10 pl-10"
-                    dir="ltr"
-                  />
-                </div>
-                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
-              </div>
+            <StyledInput
+              id="confirm-password"
+              type="password"
+              placeholder="אימות סיסמה"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              icon={Lock}
+              error={errors.confirmPassword}
+              dir="ltr"
+              showPasswordToggle
+            />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    מעדכן...
-                  </>
-                ) : (
-                  'עדכן סיסמה'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <StyledButton type="submit" isLoading={isLoading}>
+              עדכן סיסמה
+            </StyledButton>
+          </form>
+        </FormContainer>
       </div>
     );
   }
@@ -413,351 +553,257 @@ export default function Auth() {
   // Reset password form
   if (showResetPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4" dir="rtl">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4">
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
-                className="h-12 mx-auto"
-              />
-            </div>
-            <CardTitle className="text-2xl">איפוס סיסמה</CardTitle>
-            <CardDescription>
-              {resetEmailSent 
-                ? 'בדוק את האימייל שלך להוראות איפוס הסיסמה'
-                : 'הזן את כתובת האימייל שלך לקבלת הוראות איפוס'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {resetEmailSent ? (
-              <div className="space-y-4">
-                <div className="text-center py-4">
-                  <Mail className="h-12 w-12 mx-auto text-primary mb-4" />
-                  <p className="text-muted-foreground">
-                    שלחנו לך מייל עם הוראות לאיפוס הסיסמה.
-                    <br />
-                    בדוק גם בתיקיית הספאם.
-                  </p>
+      <div className="min-h-screen flex">
+        <BrandedPanel />
+        <FormContainer 
+          title="איפוס סיסמה" 
+          description={resetEmailSent ? 'בדוק את האימייל שלך' : 'הזן את כתובת האימייל שלך'}
+        >
+          {resetEmailSent ? (
+            <div className="space-y-6">
+              <div className="text-center py-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-primary/10 rounded-full mb-4">
+                  <Mail className="h-10 w-10 text-primary" />
                 </div>
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  disabled={isLoading}
-                  onClick={async () => {
-                    setIsLoading(true);
-                    try {
-                      const redirectUrl = `${window.location.origin}/auth`;
-                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                        redirectTo: redirectUrl,
-                      });
-                      if (error) {
-                        toast({
-                          title: 'שגיאה',
-                          description: error.message,
-                          variant: 'destructive',
-                        });
-                      } else {
-                        toast({
-                          title: 'נשלח בהצלחה',
-                          description: 'מייל איפוס נשלח שוב',
-                        });
-                      }
-                    } catch (error) {
+                <p className="text-muted-foreground">
+                  שלחנו לך מייל עם הוראות לאיפוס הסיסמה.
+                  <br />
+                  בדוק גם בתיקיית הספאם.
+                </p>
+              </div>
+              <StyledButton
+                isLoading={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
+                  try {
+                    const redirectUrl = `${window.location.origin}/auth`;
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: redirectUrl,
+                    });
+                    if (error) {
                       toast({
                         title: 'שגיאה',
-                        description: 'אירעה שגיאה בשליחה',
+                        description: error.message,
                         variant: 'destructive',
                       });
-                    } finally {
-                      setIsLoading(false);
+                    } else {
+                      toast({
+                        title: 'נשלח בהצלחה',
+                        description: 'מייל איפוס נשלח שוב',
+                      });
                     }
-                  }}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      שולח...
-                    </>
-                  ) : (
-                    'שלח שוב'
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-2"
-                  onClick={() => {
-                    setShowResetPassword(false);
-                    setResetEmailSent(false);
-                    setEmail('');
-                  }}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  חזרה להתחברות
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">אימייל</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pr-10"
-                      dir="ltr"
-                    />
-                  </div>
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      שולח...
-                    </>
-                  ) : (
-                    'שלח הוראות איפוס'
-                  )}
-                </Button>
-                
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  className="w-full gap-2"
-                  onClick={() => {
-                    setShowResetPassword(false);
-                    setErrors({});
-                  }}
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  חזרה להתחברות
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                  } catch (error) {
+                    toast({
+                      title: 'שגיאה',
+                      description: 'אירעה שגיאה בשליחה',
+                      variant: 'destructive',
+                    });
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+              >
+                שלח שוב
+              </StyledButton>
+              <Button 
+                variant="ghost" 
+                className="w-full h-12 rounded-xl gap-2"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setResetEmailSent(false);
+                  setEmail('');
+                }}
+              >
+                <ArrowRight className="h-4 w-4" />
+                חזרה להתחברות
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <StyledInput
+                id="reset-email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={Mail}
+                error={errors.email}
+                dir="ltr"
+              />
+              
+              <StyledButton type="submit" isLoading={isLoading}>
+                שלח הוראות איפוס
+              </StyledButton>
+              
+              <Button 
+                type="button"
+                variant="ghost" 
+                className="w-full h-12 rounded-xl gap-2"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setErrors({});
+                }}
+              >
+                <ArrowRight className="h-4 w-4" />
+                חזרה להתחברות
+              </Button>
+            </form>
+          )}
+        </FormContainer>
       </div>
     );
   }
 
+  // Main auth form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4" dir="rtl">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <img 
-              src="/images/bituach-yashir-logo.png" 
-              alt="ביטוח ישיר" 
-              className="h-12 mx-auto"
-            />
-          </div>
-          <CardTitle className="text-2xl">מערכת הקמת ספקים</CardTitle>
-          <CardDescription>התחבר או הירשם כדי להמשיך</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">התחברות</TabsTrigger>
-              <TabsTrigger value="signup">הרשמה</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">אימייל</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pr-10"
-                      dir="ltr"
-                    />
+    <div className="min-h-screen flex">
+      <BrandedPanel />
+      <FormContainer title="ברוכים הבאים" description="התחבר או הירשם כדי להמשיך">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 h-12 rounded-xl bg-muted/50 p-1 mb-6">
+            <TabsTrigger 
+              value="login" 
+              className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            >
+              התחברות
+            </TabsTrigger>
+            <TabsTrigger 
+              value="signup"
+              className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
+            >
+              הרשמה
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login" className="mt-0">
+            <form onSubmit={handleLogin} className="space-y-5">
+              <StyledInput
+                id="login-email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={Mail}
+                error={errors.email}
+                dir="ltr"
+              />
+              
+              <StyledInput
+                id="login-password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                icon={Lock}
+                error={errors.password}
+                dir="ltr"
+                showPasswordToggle
+              />
+              
+              <StyledButton type="submit" isLoading={isLoading}>
+                התחבר
+              </StyledButton>
+              
+              <Button 
+                type="button"
+                variant="link" 
+                className="w-full text-sm text-muted-foreground hover:text-primary"
+                onClick={() => {
+                  setShowResetPassword(true);
+                  setErrors({});
+                }}
+              >
+                שכחת סיסמה?
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="signup" className="mt-0">
+            {showUserExistsMessage ? (
+              <div className="space-y-6 py-4">
+                <div className="text-center">
+                  <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+                    <User className="h-8 w-8 text-amber-600 dark:text-amber-400" />
                   </div>
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  <h3 className="font-semibold text-lg mb-2">המשתמש כבר קיים במערכת</h3>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    כתובת האימייל {email} כבר רשומה במערכת.
+                  </p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">סיסמה</Label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="login-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10 pl-10"
-                      dir="ltr"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      מתחבר...
-                    </>
-                  ) : (
-                    'התחבר'
-                  )}
-                </Button>
-                
-                <Button 
-                  type="button"
-                  variant="link" 
-                  className="w-full text-sm"
-                  onClick={() => {
-                    setShowResetPassword(true);
-                    setErrors({});
-                  }}
-                >
-                  שכחת סיסמה?
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              {showUserExistsMessage ? (
-                <div className="space-y-4 py-4">
-                  <div className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                      <User className="h-6 w-6 text-amber-600" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">המשתמש כבר קיים במערכת</h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      כתובת האימייל {email} כבר רשומה במערכת.
-                      <br />
-                      ניתן להתחבר או לאפס את הסיסמה.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        setShowUserExistsMessage(false);
-                        setActiveTab('login');
-                      }}
-                    >
-                      עבור להתחברות
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setShowUserExistsMessage(false);
-                        setShowResetPassword(true);
-                      }}
-                    >
-                      שכחתי סיסמה
-                    </Button>
-                    <Button 
-                      variant="ghost"
-                      className="w-full text-sm"
-                      onClick={() => {
-                        setShowUserExistsMessage(false);
-                        setEmail('');
-                      }}
-                    >
-                      נסה עם אימייל אחר
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">שם מלא</Label>
-                    <div className="relative">
-                      <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="ישראל ישראלי"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pr-10"
-                      />
-                    </div>
-                    {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">אימייל</Label>
-                    <div className="relative">
-                      <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pr-10"
-                        dir="ltr"
-                      />
-                    </div>
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">סיסמה</Label>
-                    <div className="relative">
-                      <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 pl-10"
-                        dir="ltr"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                  </div>
-                  
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                        נרשם...
-                      </>
-                    ) : (
-                      'הירשם'
-                    )}
+                <div className="flex flex-col gap-3">
+                  <StyledButton
+                    onClick={() => {
+                      setShowUserExistsMessage(false);
+                      setActiveTab('login');
+                    }}
+                  >
+                    עבור להתחברות
+                  </StyledButton>
+                  <Button 
+                    variant="outline"
+                    className="w-full h-12 rounded-xl"
+                    onClick={() => {
+                      setShowUserExistsMessage(false);
+                      setShowResetPassword(true);
+                    }}
+                  >
+                    שכחתי סיסמה
                   </Button>
-                </form>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  <Button 
+                    variant="ghost"
+                    className="w-full h-12 rounded-xl text-sm"
+                    onClick={() => {
+                      setShowUserExistsMessage(false);
+                      setEmail('');
+                    }}
+                  >
+                    נסה עם אימייל אחר
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSignup} className="space-y-5">
+                <StyledInput
+                  id="signup-name"
+                  type="text"
+                  placeholder="ישראל ישראלי"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  icon={User}
+                  error={errors.fullName}
+                />
+                
+                <StyledInput
+                  id="signup-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  icon={Mail}
+                  error={errors.email}
+                  dir="ltr"
+                />
+                
+                <StyledInput
+                  id="signup-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  icon={Lock}
+                  error={errors.password}
+                  dir="ltr"
+                  showPasswordToggle
+                />
+                
+                <StyledButton type="submit" isLoading={isLoading}>
+                  הירשם
+                </StyledButton>
+              </form>
+            )}
+          </TabsContent>
+        </Tabs>
+      </FormContainer>
     </div>
   );
 }
