@@ -351,7 +351,7 @@ export default function Auth() {
           <img 
             src="/images/bituach-yashir-logo.png" 
             alt="ביטוח ישיר" 
-            className="h-14 brightness-0 invert"
+            className="h-14"
           />
         </div>
 
@@ -387,7 +387,7 @@ export default function Auth() {
 
         {/* Footer */}
         <div className="text-white/60 text-sm">
-          © 2024 ביטוח ישיר. כל הזכויות שמורות.
+          © 2025 ביטוח ישיר. כל הזכויות שמורות.
         </div>
       </div>
     </div>
