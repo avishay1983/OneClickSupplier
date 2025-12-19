@@ -203,11 +203,13 @@ const QuoteApproval = () => {
 
       const xPosition = Math.max(10, Math.min(rawX, pageWidth - sigWidth - 10));
       const yPosition = Math.max(10, Math.min(rawY, pageHeight - sigHeight - 10));
-        xPosition, 
-        yPosition, 
-        pageWidth, 
+
+      console.log('Placing signature at:', {
+        xPosition,
+        yPosition,
+        pageWidth,
         pageHeight,
-        signerType: approvalType 
+        signerType: approvalType,
       });
       
       // Draw signature
