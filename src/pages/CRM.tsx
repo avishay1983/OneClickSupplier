@@ -281,12 +281,11 @@ export default function CRM() {
 
     setIsLoading(true);
     try {
-      // Fetch vendors
+      // Fetch vendors - either fully signed, or approved without VP requirement
       const { data, error } = await supabase
         .from('vendor_requests')
         .select('*')
         .eq('status', 'approved')
-        .eq('ceo_signed', true)
         .eq('procurement_manager_signed', true)
         .order('updated_at', { ascending: false });
 
