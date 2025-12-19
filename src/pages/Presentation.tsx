@@ -79,7 +79,7 @@ const slides = [
               </div>
               <span className="font-medium text-sm">{step.label}</span>
               {index < 5 && (
-                <ArrowLeft className="h-5 w-5 text-muted-foreground mt-1 rotate-180" />
+                <ArrowLeft className="h-5 w-5 text-muted-foreground mt-1" />
               )}
             </div>
           ))}
