@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
+import { downloadJudgesPdf } from '@/utils/generateJudgesPdf';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -1251,6 +1252,15 @@ const Presentation = () => {
                 PDF
               </>
             )}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={downloadJudgesPdf}
+            className="border-green-500/30 hover:border-green-500 hover:bg-green-500/10"
+          >
+            <FileText className="h-4 w-4 ml-2" />
+            תשובות לשופטים
           </Button>
           <Button 
             variant="outline" 
