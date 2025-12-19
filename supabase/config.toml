@@ -77,3 +77,9 @@ verify_jwt = false
 
 [functions.detect-signature-position]
 verify_jwt = false
+
+[functions.vendor-receipts-data]
+verify_jwt = false
+
+[functions.send-quote-request]
+verify_jwt = false
