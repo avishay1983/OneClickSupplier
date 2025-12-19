@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.vendor-quote-details]
 verify_jwt = false
+
+[functions.send-quote-approval-email]
+verify_jwt = false
+
+[functions.detect-signature-position]
+verify_jwt = false
