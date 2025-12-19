@@ -8,7 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Upload, FileSpreadsheet, X, Download } from 'lucide-react';
+import { 
+  Upload, 
+  FileSpreadsheet, 
+  X, 
+  Download, 
+  User, 
+  Building2, 
+  Mail, 
+  Clock, 
+  Shield, 
+  CheckCircle2,
+  Users,
+  Sparkles,
+  Send
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface NewRequestDialogProps {
@@ -354,33 +368,68 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
       if (!isOpen) resetForm();
       onOpenChange(isOpen);
     }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="text-xl text-right">בקשה חדשה להקמת ספק</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 border-0 shadow-2xl" dir="rtl">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-l from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl text-white font-bold">בקשה חדשה להקמת ספק</DialogTitle>
+                <p className="text-white/80 text-sm mt-1">מלא את הפרטים ונשלח קישור לספק</p>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="bulk">העלאה מאקסל</TabsTrigger>
-            <TabsTrigger value="single">ספק בודד</TabsTrigger>
-          </TabsList>
+        <div className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl h-12">
+              <TabsTrigger 
+                value="bulk" 
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 transition-all"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                העלאה מאקסל
+              </TabsTrigger>
+              <TabsTrigger 
+                value="single" 
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-2 transition-all"
+              >
+                <User className="h-4 w-4" />
+                ספק בודד
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="single" className="mt-4">
-            <form onSubmit={handleSubmit} className="space-y-4 text-right">
-              <div className="flex flex-col gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="handler_name" className="block text-right">מזמין הספק</Label>
+            <TabsContent value="single" className="mt-6 animate-fade-in">
+              <form onSubmit={handleSubmit} className="space-y-5 text-right">
+                {/* Handler Section */}
+                <div className="bg-gradient-to-l from-accent/5 to-accent/10 rounded-xl p-4 border border-accent/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                      <User className="h-4 w-4 text-accent" />
+                    </div>
+                    <Label className="font-semibold text-accent">מזמין הספק</Label>
+                  </div>
                   <Input
                     id="handler_name"
-                    className="text-right"
+                    className="text-right bg-white/80 border-accent/20 focus:border-accent focus:ring-accent/20"
                     value={formData.handler_name}
                     onChange={(e) => setFormData({ ...formData, handler_name: e.target.value })}
                     placeholder="הכנס שם מזמין"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="block text-right">סוג ספק</Label>
+                {/* Vendor Type Section */}
+                <div className="bg-gradient-to-l from-brand-purple/5 to-brand-purple/10 rounded-xl p-4 border border-brand-purple/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-brand-purple/20 flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-brand-purple" />
+                    </div>
+                    <Label className="font-semibold text-brand-purple">סוג ספק</Label>
+                  </div>
                   <Select
                     value={formData.vendor_type}
                     onValueChange={(value: 'general' | 'claims') => {
@@ -392,7 +441,7 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       });
                     }}
                   >
-                    <SelectTrigger className="flex-row-reverse">
+                    <SelectTrigger className="flex-row-reverse bg-white/80 border-brand-purple/20">
                       <SelectValue placeholder="בחר סוג ספק" className="text-right" />
                     </SelectTrigger>
                     <SelectContent>
@@ -400,93 +449,101 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                       <SelectItem value="claims">ספק תביעות</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {formData.vendor_type === 'claims' && (
+                    <div className="mt-3 space-y-3">
+                      <Select
+                        value={formData.claims_area || ''}
+                        onValueChange={(value) => setFormData({ ...formData, claims_area: value, claims_sub_category: null })}
+                      >
+                        <SelectTrigger className="flex-row-reverse bg-white/80 border-brand-purple/20">
+                          <SelectValue placeholder="בחר אזור תביעות" className="text-right" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="home">דירה</SelectItem>
+                          <SelectItem value="car">רכב</SelectItem>
+                          <SelectItem value="life">חיים</SelectItem>
+                          <SelectItem value="health">בריאות</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.claims_area && (
+                        <p className="text-sm text-destructive text-right">{errors.claims_area}</p>
+                      )}
+
+                      {formData.claims_area === 'car' && (
+                        <Select
+                          value={formData.claims_sub_category || ''}
+                          onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
+                        >
+                          <SelectTrigger className="flex-row-reverse bg-white/80 border-brand-purple/20">
+                            <SelectValue placeholder="בחר סוג ספק רכב" className="text-right" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="garage">מוסך</SelectItem>
+                            <SelectItem value="appraiser">שמאי</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {(formData.claims_area === 'life' || formData.claims_area === 'health') && (
+                        <Select
+                          value={formData.claims_sub_category || ''}
+                          onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
+                        >
+                          <SelectTrigger className="flex-row-reverse bg-white/80 border-brand-purple/20">
+                            <SelectValue placeholder={`בחר סוג ספק ${formData.claims_area === 'life' ? 'חיים' : 'בריאות'}`} className="text-right" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="doctor">רופא</SelectItem>
+                            <SelectItem value="lawyer">עורך דין</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {formData.claims_area === 'home' && (
+                        <Select
+                          value={formData.claims_sub_category || ''}
+                          onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
+                        >
+                          <SelectTrigger className="flex-row-reverse bg-white/80 border-brand-purple/20">
+                            <SelectValue placeholder="בחר סוג ספק דירה" className="text-right" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="plumber">שרברב</SelectItem>
+                            <SelectItem value="management">חברת ניהול</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {formData.vendor_type === 'claims' && (
-                  <div className="space-y-2">
-                    <Label className="block text-right">אזור תביעות *</Label>
-                    <Select
-                      value={formData.claims_area || ''}
-                      onValueChange={(value) => setFormData({ ...formData, claims_area: value, claims_sub_category: null })}
-                    >
-                      <SelectTrigger className="flex-row-reverse">
-                        <SelectValue placeholder="בחר אזור תביעות" className="text-right" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="home">דירה</SelectItem>
-                        <SelectItem value="car">רכב</SelectItem>
-                        <SelectItem value="life">חיים</SelectItem>
-                        <SelectItem value="health">בריאות</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.claims_area && (
-                      <p className="text-sm text-destructive text-right">{errors.claims_area}</p>
-                    )}
+                {/* Vendor Details Section */}
+                <div className="bg-gradient-to-l from-success/5 to-success/10 rounded-xl p-4 border border-success/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-success" />
+                    </div>
+                    <Label className="font-semibold text-success">פרטי הספק *</Label>
                   </div>
-                )}
-
-                {formData.claims_area === 'car' && (
-                  <div className="space-y-2">
-                    <Label className="block text-right">סוג ספק רכב *</Label>
-                    <Select
-                      value={formData.claims_sub_category || ''}
-                      onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
-                    >
-                      <SelectTrigger className="flex-row-reverse">
-                        <SelectValue placeholder="בחר סוג ספק" className="text-right" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="garage">מוסך</SelectItem>
-                        <SelectItem value="appraiser">שמאי</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {(formData.claims_area === 'life' || formData.claims_area === 'health') && (
-                  <div className="space-y-2">
-                    <Label className="block text-right">סוג ספק {formData.claims_area === 'life' ? 'חיים' : 'בריאות'} *</Label>
-                    <Select
-                      value={formData.claims_sub_category || ''}
-                      onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
-                    >
-                      <SelectTrigger className="flex-row-reverse">
-                        <SelectValue placeholder="בחר סוג ספק" className="text-right" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="doctor">רופא</SelectItem>
-                        <SelectItem value="lawyer">עורך דין</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {formData.claims_area === 'home' && (
-                  <div className="space-y-2">
-                    <Label className="block text-right">סוג ספק דירה *</Label>
-                    <Select
-                      value={formData.claims_sub_category || ''}
-                      onValueChange={(value) => setFormData({ ...formData, claims_sub_category: value })}
-                    >
-                      <SelectTrigger className="flex-row-reverse">
-                        <SelectValue placeholder="בחר סוג ספק" className="text-right" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="plumber">שרברב</SelectItem>
-                        <SelectItem value="management">חברת ניהול</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label className="block text-right">פרטי הספק *</Label>
-                  <div className="flex flex-row gap-3">
-                    <div className="flex-1 space-y-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Input
+                        id="vendor_name"
+                        className="text-right bg-white/80 border-success/20 focus:border-success focus:ring-success/20"
+                        value={formData.vendor_name}
+                        onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
+                        placeholder="שם הספק"
+                      />
+                      {errors.vendor_name && (
+                        <p className="text-sm text-destructive text-right">{errors.vendor_name}</p>
+                      )}
+                    </div>
+                    <div className="space-y-1">
                       <Input
                         id="vendor_email"
                         type="email"
-                        className="text-right"
+                        className="text-left bg-white/80 border-success/20 focus:border-success focus:ring-success/20"
                         dir="ltr"
                         value={formData.vendor_email}
                         onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })}
@@ -496,28 +553,22 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         <p className="text-sm text-destructive text-right">{errors.vendor_email}</p>
                       )}
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <Input
-                        id="vendor_name"
-                        className="text-right"
-                        value={formData.vendor_name}
-                        onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })}
-                        placeholder="שם הספק"
-                      />
-                      {errors.vendor_name && (
-                        <p className="text-sm text-destructive text-right">{errors.vendor_name}</p>
-                      )}
-                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="expires_in_days" className="block text-right">תוקף הקישור</Label>
+                {/* Link Expiry Section */}
+                <div className="bg-gradient-to-l from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-warning" />
+                    </div>
+                    <Label className="font-semibold text-warning">תוקף הקישור</Label>
+                  </div>
                   <Select
                     value={String(formData.expires_in_days)}
                     onValueChange={(value) => setFormData({ ...formData, expires_in_days: Number(value) })}
                   >
-                    <SelectTrigger className="flex-row-reverse">
+                    <SelectTrigger className="flex-row-reverse bg-white/80 border-warning/20">
                       <SelectValue placeholder="בחר תוקף" className="text-right" />
                     </SelectTrigger>
                     <SelectContent>
@@ -530,80 +581,110 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   </Select>
                 </div>
 
-                {/* Approval type selection */}
-                <div className="mt-4 p-4 bg-muted/50 border rounded-lg space-y-3">
-                  <Label className="font-medium block text-right">סוג אישור נדרש</Label>
+                {/* Approval Type Section */}
+                <div className="bg-gradient-to-l from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <Shield className="h-4 w-4 text-primary" />
+                    </div>
+                    <Label className="font-semibold text-primary">סוג אישור נדרש</Label>
+                  </div>
                   
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="approval_none" className="cursor-pointer">
-                      ללא צורך באישור מנהל
-                    </Label>
-                    <Checkbox
-                      id="approval_none"
-                      checked={formData.skip_manager_approval === true}
-                      onCheckedChange={(checked) => 
-                        setFormData({ 
-                          ...formData, 
-                          skip_manager_approval: checked as boolean,
-                          requires_vp_approval: checked ? false : formData.requires_vp_approval
-                        })
-                      }
-                    />
-                  </div>
+                  <div className="space-y-3">
+                    <label 
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                        formData.skip_manager_approval 
+                          ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                          : 'bg-white/50 border-transparent hover:bg-white/80'
+                      }`}
+                    >
+                      <Checkbox
+                        id="approval_none"
+                        checked={formData.skip_manager_approval === true}
+                        onCheckedChange={(checked) => 
+                          setFormData({ 
+                            ...formData, 
+                            skip_manager_approval: checked as boolean,
+                            requires_vp_approval: checked ? false : formData.requires_vp_approval
+                          })
+                        }
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium">ללא צורך באישור מנהל</span>
+                        <p className="text-xs text-muted-foreground">הספק יאושר אוטומטית</p>
+                      </div>
+                    </label>
 
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="approval_pm_only" className="cursor-pointer">
-                      אישור מנהל רכש בלבד
-                    </Label>
-                    <Checkbox
-                      id="approval_pm_only"
-                      checked={!formData.requires_vp_approval && !formData.skip_manager_approval}
-                      onCheckedChange={(checked) => 
-                        setFormData({ 
-                          ...formData, 
-                          requires_vp_approval: !(checked as boolean),
-                          skip_manager_approval: false
-                        })
-                      }
-                    />
-                  </div>
+                    <label 
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                        !formData.requires_vp_approval && !formData.skip_manager_approval 
+                          ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                          : 'bg-white/50 border-transparent hover:bg-white/80'
+                      }`}
+                    >
+                      <Checkbox
+                        id="approval_pm_only"
+                        checked={!formData.requires_vp_approval && !formData.skip_manager_approval}
+                        onCheckedChange={(checked) => 
+                          setFormData({ 
+                            ...formData, 
+                            requires_vp_approval: !(checked as boolean),
+                            skip_manager_approval: false
+                          })
+                        }
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium">אישור מנהל רכש בלבד</span>
+                        <p className="text-xs text-muted-foreground">חתימה אחת נדרשת</p>
+                      </div>
+                    </label>
 
-                  <div className="flex items-center gap-2 justify-end">
-                    <Label htmlFor="approval_both" className="cursor-pointer">
-                      אישור מנהל רכש + סמנכ"ל
-                    </Label>
-                    <Checkbox
-                      id="approval_both"
-                      checked={formData.requires_vp_approval && !formData.skip_manager_approval}
-                      onCheckedChange={(checked) => 
-                        setFormData({ 
-                          ...formData, 
-                          requires_vp_approval: checked as boolean,
-                          skip_manager_approval: false
-                        })
-                      }
-                    />
+                    <label 
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                        formData.requires_vp_approval && !formData.skip_manager_approval 
+                          ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                          : 'bg-white/50 border-transparent hover:bg-white/80'
+                      }`}
+                    >
+                      <Checkbox
+                        id="approval_both"
+                        checked={formData.requires_vp_approval && !formData.skip_manager_approval}
+                        onCheckedChange={(checked) => 
+                          setFormData({ 
+                            ...formData, 
+                            requires_vp_approval: checked as boolean,
+                            skip_manager_approval: false
+                          })
+                        }
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium">אישור מנהל רכש + סמנכ"ל</span>
+                        <p className="text-xs text-muted-foreground">שתי חתימות נדרשות</p>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
-              </div>
+                <DialogFooter className="gap-3 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+                    ביטול
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gradient-to-l from-primary to-accent hover:from-primary/90 hover:to-accent/90 gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isSubmitting ? 'יוצר...' : 'צור בקשה וקבל קישור'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
 
-            <DialogFooter className="gap-2 sm:gap-0 flex-row-reverse">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'יוצר...' : 'צור בקשה וקבל קישור'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                ביטול
-              </Button>
-            </DialogFooter>
-          </form>
-        </TabsContent>
-
-          <TabsContent value="bulk" className="mt-4 space-y-4" dir="rtl">
-            <div className="space-y-4 text-right">
+            <TabsContent value="bulk" className="mt-6 space-y-5 animate-fade-in" dir="rtl">
               {/* File upload area */}
               <div 
-                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                className="border-2 border-dashed border-primary/30 rounded-xl p-8 text-center hover:border-primary/60 hover:bg-primary/5 transition-all cursor-pointer group"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <input
@@ -613,26 +694,33 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-                <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-2">לחץ להעלאת קובץ אקסל</p>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <FileSpreadsheet className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-primary font-medium mb-1">לחץ להעלאת קובץ אקסל</p>
                 <p className="text-xs text-muted-foreground">תומך ב: xlsx, xls, csv</p>
               </div>
 
               {/* Download template button */}
-              <Button variant="outline" onClick={downloadTemplate} className="w-full gap-2">
+              <Button variant="outline" onClick={downloadTemplate} className="w-full gap-2 h-11">
                 <Download className="h-4 w-4" />
                 הורד תבנית לדוגמא
               </Button>
 
               {/* Expiry selection */}
-              <div className="space-y-2">
-                <Label className="block text-right">תוקף הקישורים</Label>
-              <Select
+              <div className="bg-gradient-to-l from-warning/5 to-warning/10 rounded-xl p-4 border border-warning/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-warning" />
+                  </div>
+                  <Label className="font-semibold text-warning">תוקף הקישורים</Label>
+                </div>
+                <Select
                   value={String(bulkExpiresInDays)}
                   onValueChange={(value) => setBulkExpiresInDays(Number(value))}
                   dir="rtl"
                 >
-                  <SelectTrigger className="text-right">
+                  <SelectTrigger className="text-right bg-white/80 border-warning/20">
                     <SelectValue placeholder="בחר תוקף" />
                   </SelectTrigger>
                   <SelectContent>
@@ -645,13 +733,21 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
               </div>
 
               {/* Approval type selection */}
-              <div className="space-y-3">
-                <Label className="block text-right">סוג אישור נדרש</Label>
+              <div className="bg-gradient-to-l from-primary/5 to-primary/10 rounded-xl p-4 border border-primary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <Label className="font-semibold text-primary">סוג אישור נדרש</Label>
+                </div>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
-                    <Label htmlFor="bulk-procurement-only" className="font-normal cursor-pointer">
-                      אישור מנהל רכש בלבד
-                    </Label>
+                  <label 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                      !bulkRequiresVpApproval 
+                        ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                        : 'bg-white/50 border-transparent hover:bg-white/80'
+                    }`}
+                  >
                     <Checkbox
                       id="bulk-procurement-only"
                       checked={!bulkRequiresVpApproval}
@@ -659,11 +755,15 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(false);
                       }}
                     />
-                  </div>
-                  <div className="flex items-center gap-2 flex-row-reverse justify-end">
-                    <Label htmlFor="bulk-requires-vp" className="font-normal cursor-pointer">
-                      אישור מנהל רכש + סמנכ"ל
-                    </Label>
+                    <span className="font-medium">אישור מנהל רכש בלבד</span>
+                  </label>
+                  <label 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                      bulkRequiresVpApproval 
+                        ? 'bg-primary/10 border-primary/30 shadow-sm' 
+                        : 'bg-white/50 border-transparent hover:bg-white/80'
+                    }`}
+                  >
                     <Checkbox
                       id="bulk-requires-vp"
                       checked={bulkRequiresVpApproval}
@@ -671,42 +771,47 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                         if (checked) setBulkRequiresVpApproval(true);
                       }}
                     />
-                  </div>
+                    <span className="font-medium">אישור מנהל רכש + סמנכ"ל</span>
+                  </label>
                 </div>
               </div>
 
               {/* Uploaded file info and vendor list */}
               {uploadedFileName && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5 text-primary" />
-                      <span className="font-medium">{uploadedFileName}</span>
+                <div className="space-y-3 animate-fade-in">
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-l from-success/10 to-success/5 rounded-xl border border-success/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
+                        <CheckCircle2 className="h-5 w-5 text-success" />
+                      </div>
+                      <div>
+                        <span className="font-medium block">{uploadedFileName}</span>
+                        <span className="text-sm text-muted-foreground">{bulkVendors.length} ספקים נמצאו</span>
+                      </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">{bulkVendors.length} ספקים</span>
                   </div>
 
                   {/* Vendor list preview */}
-                  <div className="border rounded-lg max-h-48 overflow-y-auto">
+                  <div className="border rounded-xl max-h-48 overflow-y-auto bg-white">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted sticky top-0">
+                      <thead className="bg-muted/50 sticky top-0">
                         <tr>
-                          <th className="text-right p-2">שם ספק</th>
-                          <th className="text-right p-2">אימייל</th>
+                          <th className="text-right p-3 font-medium">שם ספק</th>
+                          <th className="text-right p-3 font-medium">אימייל</th>
                           <th className="w-10"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {bulkVendors.map((vendor, index) => (
-                          <tr key={index} className="border-t">
-                            <td className="p-2">{vendor.vendor_name}</td>
-                            <td className="p-2 ltr text-right">{vendor.vendor_email}</td>
-                            <td className="p-1">
+                          <tr key={index} className="border-t hover:bg-muted/30 transition-colors">
+                            <td className="p-3">{vendor.vendor_name}</td>
+                            <td className="p-3 ltr text-right text-muted-foreground">{vendor.vendor_email}</td>
+                            <td className="p-2">
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => removeVendor(index)}
                               >
                                 <X className="h-4 w-4" />
@@ -719,21 +824,23 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
                   </div>
                 </div>
               )}
-            </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 flex justify-start">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                ביטול
-              </Button>
-              <Button 
-                onClick={handleBulkSubmit} 
-                disabled={isSubmitting || bulkVendors.length === 0}
-              >
-                {isSubmitting ? 'שולח...' : `שלח ל-${bulkVendors.length} ספקים`}
-              </Button>
-            </DialogFooter>
-          </TabsContent>
-        </Tabs>
+              <DialogFooter className="gap-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+                  ביטול
+                </Button>
+                <Button 
+                  onClick={handleBulkSubmit} 
+                  disabled={isSubmitting || bulkVendors.length === 0}
+                  className="flex-1 bg-gradient-to-l from-primary to-accent hover:from-primary/90 hover:to-accent/90 gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  {isSubmitting ? 'שולח...' : `שלח ל-${bulkVendors.length} ספקים`}
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
