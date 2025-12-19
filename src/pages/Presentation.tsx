@@ -27,7 +27,14 @@ import {
   Scan,
   Home,
   Download,
-  Loader2
+  Loader2,
+  FileCheck,
+  CreditCard,
+  Link,
+  PenTool,
+  Workflow,
+  Database,
+  Bell
 } from 'lucide-react';
 
 const slides = [
@@ -42,10 +49,11 @@ const slides = [
         <p className="text-2xl text-muted-foreground text-center max-w-2xl">
           מערכת דיגיטלית מתקדמת להקמת ספקים - מהבקשה ועד האישור הסופי
         </p>
-        <div className="flex gap-4 mt-8">
+        <div className="flex flex-wrap gap-4 mt-8 justify-center">
           <Badge variant="outline" className="text-lg px-4 py-2 border-accent text-accent">אוטומציה מלאה</Badge>
           <Badge variant="outline" className="text-lg px-4 py-2 border-brand-purple text-brand-purple">OCR חכם</Badge>
           <Badge variant="outline" className="text-lg px-4 py-2 border-brand-coral text-brand-coral">חתימות דיגיטליות</Badge>
+          <Badge variant="outline" className="text-lg px-4 py-2 border-success text-success">הצעות מחיר</Badge>
         </div>
       </div>
     ),
@@ -56,26 +64,27 @@ const slides = [
     subtitle: 'מבט על מלמעלה',
     content: (
       <div className="flex flex-col items-center justify-center h-full space-y-6">
-        <div className="grid grid-cols-5 gap-4 w-full max-w-5xl">
+        <div className="grid grid-cols-6 gap-3 w-full max-w-6xl">
           {[
             { icon: Send, label: 'שליחת בקשה', color: 'bg-accent/10 text-accent' },
             { icon: FileText, label: 'מילוי פרטים', color: 'bg-success/10 text-success' },
             { icon: UserCheck, label: 'בקרה ראשונה', color: 'bg-warning/10 text-warning' },
             { icon: FileSignature, label: 'חתימות מנהלים', color: 'bg-brand-purple/10 text-brand-purple' },
             { icon: CheckCircle, label: 'אישור סופי', color: 'bg-success/10 text-success' },
+            { icon: FileCheck, label: 'הצעות וקבלות', color: 'bg-accent/10 text-accent' },
           ].map((step, index) => (
             <div key={index} className="flex flex-col items-center text-center">
-              <div className={`w-20 h-20 rounded-full ${step.color} flex items-center justify-center mb-3`}>
-                <step.icon className="h-10 w-10" />
+              <div className={`w-16 h-16 rounded-full ${step.color} flex items-center justify-center mb-2`}>
+                <step.icon className="h-8 w-8" />
               </div>
-              <span className="font-medium text-lg">{step.label}</span>
-              {index < 4 && (
-                <ArrowLeft className="h-6 w-6 text-muted-foreground mt-2 rotate-180" />
+              <span className="font-medium text-sm">{step.label}</span>
+              {index < 5 && (
+                <ArrowLeft className="h-5 w-5 text-muted-foreground mt-1 rotate-180" />
               )}
             </div>
           ))}
         </div>
-        <div className="mt-8 p-6 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
+        <div className="mt-6 p-4 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
           <p className="text-lg text-center">
             תהליך מובנה ומאובטח שמבטיח עמידה בכל דרישות הארגון והרגולציה
           </p>
@@ -241,7 +250,7 @@ const slides = [
           
           <Card className="p-6 text-center border-success/20 hover:border-success/40 transition-colors">
             <CardContent>
-              <Eye className="h-12 w-12 mx-auto mb-4 text-success" />
+              <Bell className="h-12 w-12 mx-auto mb-4 text-success" />
               <h4 className="font-bold text-lg mb-2">תזכורת פקיעה</h4>
               <p className="text-sm text-muted-foreground">
                 התראה אוטומטית 24 שעות לפני סיום תוקף הקישור
@@ -360,7 +369,7 @@ const slides = [
           </Card>
         </div>
         
-        <div className="mt-8 p-6 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
+        <div className="mt-6 p-6 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
           <div className="grid grid-cols-2 gap-6">
             <div>
               <h5 className="font-bold mb-2">✉️ התראות במייל</h5>
@@ -381,6 +390,71 @@ const slides = [
   },
   {
     id: 8,
+    title: 'חתימה על חוזה',
+    subtitle: 'מיקום חתימה חכם',
+    content: (
+      <div className="grid grid-cols-2 gap-8 h-full items-center" dir="rtl">
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <PenTool className="h-10 w-10 text-brand-purple" />
+            <h3 className="text-3xl font-bold text-primary">חתימה חכמה על PDF</h3>
+          </div>
+          
+          <ul className="space-y-4 text-lg">
+            <li className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+              <span>צפייה במסמך PDF בתוך המערכת</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+              <span>בחירת מיקום החתימה על המסמך</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+              <span>חתימה ידנית על קנבס דיגיטלי</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+              <span>שמירת החתימה על ה-PDF המקורי</span>
+            </li>
+          </ul>
+
+          <div className="p-4 bg-brand-purple/5 rounded-xl border border-brand-purple/20">
+            <h5 className="font-bold mb-2 text-brand-purple">זיהוי אוטומטי AI</h5>
+            <p className="text-sm text-muted-foreground">
+              המערכת מזהה אוטומטית את המיקום המתאים לחתימה בחוזה באמצעות AI
+            </p>
+          </div>
+        </div>
+
+        <Card className="p-6 bg-gradient-to-br from-brand-purple/5 to-accent/5 border-brand-purple/20">
+          <CardContent className="space-y-4">
+            <h4 className="font-bold text-xl text-brand-purple">תהליך החתימה</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-brand-purple/10">
+                <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-bold">1</div>
+                <span>מנהל מקבל מייל עם קישור</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-brand-purple/10">
+                <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-bold">2</div>
+                <span>צפייה בחוזה במערכת</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-brand-purple/10">
+                <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-bold">3</div>
+                <span>לחיצה על מיקום החתימה</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-brand-purple/10">
+                <div className="w-8 h-8 rounded-full bg-brand-purple/10 flex items-center justify-center text-brand-purple font-bold">4</div>
+                <span>חתימה ידנית ואישור</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    ),
+  },
+  {
+    id: 9,
     title: 'שלב 5: אישור סופי',
     subtitle: 'הספק פעיל במערכת',
     content: (
@@ -407,6 +481,10 @@ const slides = [
             <li className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-accent" />
               <span>הספק מופיע ב-CRM</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <FileCheck className="h-5 w-5 text-accent" />
+              <span>אפשרות לשליחת הצעות מחיר</span>
             </li>
           </ul>
         </div>
@@ -442,7 +520,89 @@ const slides = [
     ),
   },
   {
-    id: 9,
+    id: 10,
+    title: 'ניהול הצעות מחיר',
+    subtitle: 'תהליך הצעות מחיר מקצה לקצה',
+    content: (
+      <div className="flex flex-col items-center justify-center h-full space-y-6" dir="rtl">
+        <div className="flex items-center gap-3">
+          <FileCheck className="h-16 w-16 text-accent" />
+          <h3 className="text-3xl font-bold text-primary">מערכת הצעות מחיר</h3>
+        </div>
+        
+        <div className="grid grid-cols-4 gap-4 w-full max-w-5xl">
+          <Card className="p-4 border-accent/20 hover:border-accent/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                <Send className="h-6 w-6 text-accent" />
+              </div>
+              <h4 className="font-bold text-sm mb-1">שליחת בקשה</h4>
+              <p className="text-xs text-muted-foreground">
+                שליחת קישור לספק להגשת הצעה
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-warning/20 hover:border-warning/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-3">
+                <Upload className="h-6 w-6 text-warning" />
+              </div>
+              <h4 className="font-bold text-sm mb-1">הגשת הצעה</h4>
+              <p className="text-xs text-muted-foreground">
+                הספק מעלה קובץ עם סכום ותיאור
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-brand-purple/20 hover:border-brand-purple/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <div className="w-12 h-12 rounded-full bg-brand-purple/10 flex items-center justify-center mx-auto mb-3">
+                <UserCheck className="h-6 w-6 text-brand-purple" />
+              </div>
+              <h4 className="font-bold text-sm mb-1">אישור מנהלים</h4>
+              <p className="text-xs text-muted-foreground">
+                מטפל → מנהל רכש → סמנכ"ל
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-success/20 hover:border-success/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
+                <FileSignature className="h-6 w-6 text-success" />
+              </div>
+              <h4 className="font-bold text-sm mb-1">חתימה</h4>
+              <p className="text-xs text-muted-foreground">
+                חתימה דיגיטלית על ההצעה
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6 w-full max-w-4xl mt-4">
+          <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
+            <h5 className="font-bold mb-2 text-accent">✉️ התראות אוטומטיות</h5>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• מייל לספק עם קישור להגשה</li>
+              <li>• מייל למנהלים לאישור</li>
+              <li>• עדכון לספק על סטטוס ההצעה</li>
+            </ul>
+          </div>
+          <div className="p-4 bg-success/5 rounded-xl border border-success/20">
+            <h5 className="font-bold mb-2 text-success">📊 מעקב וסטטוסים</h5>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• ממתין להגשה / הוגש</li>
+              <li>• ממתין לאישור מטפל / מנהל / סמנכ"ל</li>
+              <li>• מאושר / נדחה</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 11,
     title: 'ניהול קבלות',
     subtitle: 'מעקב אחר הוצאות',
     content: (
@@ -450,97 +610,200 @@ const slides = [
         <Receipt className="h-20 w-20 text-primary" />
         <h3 className="text-3xl font-bold">מערכת קבלות</h3>
         
-        <div className="grid grid-cols-3 gap-6 w-full max-w-4xl">
-          <Card className="p-6 border-accent/20 hover:border-accent/40 transition-colors">
-            <CardContent className="text-center">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-accent" />
-              <h4 className="font-bold mb-2">העלאה</h4>
-              <p className="text-sm text-muted-foreground">
+        <div className="grid grid-cols-4 gap-4 w-full max-w-5xl">
+          <Card className="p-4 border-accent/20 hover:border-accent/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <Link className="h-10 w-10 mx-auto mb-3 text-accent" />
+              <h4 className="font-bold text-sm mb-1">שליחת קישור</h4>
+              <p className="text-xs text-muted-foreground">
+                שליחת קישור לספק מה-CRM
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="p-4 border-warning/20 hover:border-warning/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <Upload className="h-10 w-10 mx-auto mb-3 text-warning" />
+              <h4 className="font-bold text-sm mb-1">העלאה</h4>
+              <p className="text-xs text-muted-foreground">
                 הספק מעלה קבלות דרך קישור מאובטח
               </p>
             </CardContent>
           </Card>
           
-          <Card className="p-6 border-warning/20 hover:border-warning/40 transition-colors">
-            <CardContent className="text-center">
-              <Eye className="h-12 w-12 mx-auto mb-4 text-warning" />
-              <h4 className="font-bold mb-2">בדיקה</h4>
-              <p className="text-sm text-muted-foreground">
+          <Card className="p-4 border-brand-purple/20 hover:border-brand-purple/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <Eye className="h-10 w-10 mx-auto mb-3 text-brand-purple" />
+              <h4 className="font-bold text-sm mb-1">בדיקה</h4>
+              <p className="text-xs text-muted-foreground">
                 המטפל בודק ומאשר/דוחה כל קבלה
               </p>
             </CardContent>
           </Card>
           
-          <Card className="p-6 border-success/20 hover:border-success/40 transition-colors">
-            <CardContent className="text-center">
-              <Star className="h-12 w-12 mx-auto mb-4 text-success" />
-              <h4 className="font-bold mb-2">דירוג</h4>
-              <p className="text-sm text-muted-foreground">
+          <Card className="p-4 border-success/20 hover:border-success/40 transition-colors">
+            <CardContent className="text-center p-0">
+              <Star className="h-10 w-10 mx-auto mb-3 text-success" />
+              <h4 className="font-bold text-sm mb-1">דירוג</h4>
+              <p className="text-xs text-muted-foreground">
                 דירוג ספקים לפי ביצועים
               </p>
             </CardContent>
           </Card>
         </div>
         
-        <div className="p-4 bg-primary/5 rounded-xl max-w-2xl border border-primary/10">
+        <div className="p-4 bg-primary/5 rounded-xl max-w-3xl border border-primary/10">
           <p className="text-center text-muted-foreground">
             כל קבלה כוללת: סכום, תאריך, תיאור, וסטטוס (ממתין / מאושר / נדחה)
+          </p>
+        </div>
+
+        <div className="p-4 bg-accent/5 rounded-xl max-w-3xl border border-accent/20">
+          <h5 className="font-bold mb-2 text-accent text-center">🔗 שליחת קישור קבלות מה-CRM</h5>
+          <p className="text-sm text-muted-foreground text-center">
+            לחיצה על "שלח קישור להעלאת קבלות" בתפריט הפעולות של הספק ב-CRM
           </p>
         </div>
       </div>
     ),
   },
   {
-    id: 10,
+    id: 12,
+    title: 'מערכת CRM',
+    subtitle: 'ניהול ספקים מאושרים',
+    content: (
+      <div className="grid grid-cols-2 gap-8 h-full items-center" dir="rtl">
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Database className="h-10 w-10 text-primary" />
+            <h3 className="text-3xl font-bold text-primary">מערכת CRM מתקדמת</h3>
+          </div>
+          
+          <ul className="space-y-4 text-lg">
+            <li className="flex items-center gap-3">
+              <Building2 className="h-6 w-6 text-accent flex-shrink-0" />
+              <span>רשימת כל הספקים המאושרים</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <FileCheck className="h-6 w-6 text-accent flex-shrink-0" />
+              <span>ניהול הצעות מחיר</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Receipt className="h-6 w-6 text-accent flex-shrink-0" />
+              <span>ניהול קבלות</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Star className="h-6 w-6 text-accent flex-shrink-0" />
+              <span>דירוג ספקים</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <Send className="h-6 w-6 text-accent flex-shrink-0" />
+              <span>שליחת קישורים לספקים</span>
+            </li>
+          </ul>
+        </div>
+
+        <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+          <CardContent className="space-y-4">
+            <h4 className="font-bold text-xl text-primary">פעולות ב-CRM</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-primary/10">
+                <Eye className="h-5 w-5 text-accent" />
+                <span>צפייה בפרטי ספק</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-primary/10">
+                <FileCheck className="h-5 w-5 text-accent" />
+                <span>שליחת בקשה להצעת מחיר</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-primary/10">
+                <Link className="h-5 w-5 text-accent" />
+                <span>שליחת קישור להעלאת קבלות</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-primary/10">
+                <Star className="h-5 w-5 text-warning" />
+                <span>דירוג ספק</span>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-primary/10">
+                <Workflow className="h-5 w-5 text-brand-purple" />
+                <span>שינוי סטטוס (VIP, מושהה וכו')</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    ),
+  },
+  {
+    id: 13,
     title: 'סיכום',
     subtitle: 'יתרונות המערכת',
     content: (
-      <div className="flex flex-col items-center justify-center h-full space-y-8" dir="rtl">
+      <div className="flex flex-col items-center justify-center h-full space-y-6" dir="rtl">
         <h3 className="text-4xl font-bold text-gradient-brand text-center">למה ספק בקליק?</h3>
         
-        <div className="grid grid-cols-2 gap-6 w-full max-w-4xl">
-          <div className="p-6 bg-accent/5 rounded-xl border border-accent/20">
+        <div className="grid grid-cols-3 gap-4 w-full max-w-5xl">
+          <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
             <div className="flex items-center gap-3 mb-3">
               <Clock className="h-8 w-8 text-accent" />
-              <span className="font-bold text-xl">חיסכון בזמן</span>
+              <span className="font-bold text-lg">חיסכון בזמן</span>
             </div>
-            <p className="text-muted-foreground">
-              תהליך אוטומטי שמחליף טפסים ידניים והתכתבויות אינסופיות
+            <p className="text-sm text-muted-foreground">
+              תהליך אוטומטי שמחליף טפסים ידניים
             </p>
           </div>
           
-          <div className="p-6 bg-success/5 rounded-xl border border-success/20">
+          <div className="p-4 bg-success/5 rounded-xl border border-success/20">
             <div className="flex items-center gap-3 mb-3">
               <Shield className="h-8 w-8 text-success" />
-              <span className="font-bold text-xl">אבטחה מלאה</span>
+              <span className="font-bold text-lg">אבטחה מלאה</span>
             </div>
-            <p className="text-muted-foreground">
-              קישורים מוגני זמן, אימות OTP, והצפנת נתונים
+            <p className="text-sm text-muted-foreground">
+              קישורים מוגני זמן, אימות OTP
             </p>
           </div>
           
-          <div className="p-6 bg-brand-purple/5 rounded-xl border border-brand-purple/20">
+          <div className="p-4 bg-brand-purple/5 rounded-xl border border-brand-purple/20">
             <div className="flex items-center gap-3 mb-3">
               <Scan className="h-8 w-8 text-brand-purple" />
-              <span className="font-bold text-xl">OCR חכם</span>
+              <span className="font-bold text-lg">OCR חכם</span>
             </div>
-            <p className="text-muted-foreground">
-              חילוץ אוטומטי של נתונים ממסמכים - פחות טעויות הקלדה
+            <p className="text-sm text-muted-foreground">
+              חילוץ אוטומטי של נתונים ממסמכים
             </p>
           </div>
           
-          <div className="p-6 bg-warning/5 rounded-xl border border-warning/20">
+          <div className="p-4 bg-warning/5 rounded-xl border border-warning/20">
             <div className="flex items-center gap-3 mb-3">
               <FileSignature className="h-8 w-8 text-warning" />
-              <span className="font-bold text-xl">חתימות דיגיטליות</span>
+              <span className="font-bold text-lg">חתימות דיגיטליות</span>
             </div>
-            <p className="text-muted-foreground">
-              תהליך אישור מובנה עם חתימות דיגיטליות על מסמכים
+            <p className="text-sm text-muted-foreground">
+              חתימה על חוזים והצעות מחיר
+            </p>
+          </div>
+          
+          <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
+            <div className="flex items-center gap-3 mb-3">
+              <FileCheck className="h-8 w-8 text-accent" />
+              <span className="font-bold text-lg">הצעות מחיר</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              ניהול מלא של הצעות מחיר
+            </p>
+          </div>
+          
+          <div className="p-4 bg-success/5 rounded-xl border border-success/20">
+            <div className="flex items-center gap-3 mb-3">
+              <Receipt className="h-8 w-8 text-success" />
+              <span className="font-bold text-lg">ניהול קבלות</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              מעקב ואישור קבלות מספקים
             </p>
           </div>
         </div>
         
-        <div className="mt-8">
+        <div className="mt-6">
           <Badge className="text-xl px-6 py-3 gradient-brand text-primary-foreground border-0">
             ביטוח ישיר - ספק בקליק 🚀
           </Badge>
