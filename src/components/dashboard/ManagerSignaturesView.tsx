@@ -154,7 +154,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
 
   const openQuoteForSigning = (quote: VendorQuote) => {
     const approvalType = role === 'vp' ? 'vp' : 'procurement_manager';
-    const url = `/quote-approval?token=${quote.quote_secure_token}&type=${approvalType}`;
+    const url = `/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
     window.open(url, '_blank');
   };
 
