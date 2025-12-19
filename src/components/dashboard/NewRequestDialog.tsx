@@ -373,8 +373,8 @@ export function NewRequestDialog({ open, onOpenChange, onSubmit, onBulkSubmit }:
         <div className="bg-gradient-to-r from-primary via-primary/90 to-accent/80 p-6 rounded-t-lg">
           <DialogHeader>
             <div className="flex items-center gap-3 flex-row-reverse">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1">
+                <img src="/images/bituach-yashir-logo-clean.png" alt="ביטוח ישיר" className="h-8 w-auto" />
               </div>
               <div className="text-right">
                 <DialogTitle className="text-2xl text-white font-bold text-right">בקשה חדשה להקמת ספק</DialogTitle>
