@@ -163,7 +163,7 @@ const QuoteApproval = () => {
         });
 
         // Use the LAST page for signature detection (signatures are typically on the last page)
-        const img = await pdfToImage(pdfFile, { page: "last" });
+        const img = await pdfToImage(pdfFile, { page: "last", scale: 3 });
         if (img?.base64) {
           const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
 
