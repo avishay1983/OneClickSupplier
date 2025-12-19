@@ -148,20 +148,20 @@ serve(async (req: Request): Promise<Response> => {
                 
                 <!-- Main Content -->
                 <tr>
-                  <td style="padding: 40px;">
+                  <td style="padding: 40px; text-align: right; direction: rtl;">
                     <h1 style="color: #1e3a8a; font-size: 24px; font-weight: bold; margin: 0 0 25px 0; text-align: center;">
                       בקשה להצעת מחיר
                     </h1>
                     
-                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0;">
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0; text-align: right;">
                       שלום <strong>${vendorName}</strong>,
                     </p>
                     
-                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0;">
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0; text-align: right;">
                       <strong>${handlerName}</strong> מבקש/ת ממך להגיש הצעת מחיר.
                     </p>
                     
-                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 30px 0;">
+                    <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 30px 0; text-align: right;">
                       לחץ על הכפתור למטה כדי להגיש את הצעת המחיר שלך:
                     </p>
                     
