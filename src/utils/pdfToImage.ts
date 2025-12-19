@@ -1,7 +1,10 @@
 /**
- * Convert the first page of a PDF file to a base64 image using pdf.js via CDN
+ * Convert a page of a PDF file to a base64 image using pdf.js via CDN
  */
-export async function pdfToImage(file: File): Promise<{ base64: string; mimeType: string } | null> {
+export async function pdfToImage(
+  file: File,
+  options?: { page?: number | "last"; scale?: number }
+): Promise<{ base64: string; mimeType: string } | null> {
   try {
     // Dynamically load pdf.js from CDN
     const pdfjsLib = await loadPdfJs();
@@ -12,38 +15,46 @@ export async function pdfToImage(file: File): Promise<{ base64: string; mimeType
 
     // Read the file as ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Load the PDF document
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    
-    // Get the first page
-    const page = await pdf.getPage(1);
-    
+
+    const requestedPage = options?.page ?? 1;
+    const pageNumber =
+      requestedPage === "last"
+        ? pdf.numPages
+        : Math.max(1, Math.min(requestedPage, pdf.numPages));
+
+    // Get the selected page
+    const page = await pdf.getPage(pageNumber);
+
     // Set scale for good quality (2x for clarity)
-    const scale = 2;
+    const scale = options?.scale ?? 2;
     const viewport = page.getViewport({ scale });
-    
+
     // Create canvas
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    
+
     if (!context) {
       throw new Error('Could not get canvas context');
     }
-    
+
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    
+
     // Render the page to canvas
-    await page.render({
-      canvasContext: context,
-      viewport: viewport,
-    }).promise;
-    
+    await page
+      .render({
+        canvasContext: context,
+        viewport: viewport,
+      })
+      .promise;
+
     // Convert to base64
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     const base64 = dataUrl.split(',')[1];
-    
+
     return {
       base64,
       mimeType: 'image/jpeg',

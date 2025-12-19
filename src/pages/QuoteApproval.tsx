@@ -154,15 +154,16 @@ const QuoteApproval = () => {
 
       let signaturePosition: { x_percent: number; y_percent: number; found?: boolean } =
         approvalType === "vp"
-          ? { x_percent: 10, y_percent: 62, found: false }
-          : { x_percent: 40, y_percent: 62, found: false };
+          ? { x_percent: 12, y_percent: 12, found: false }
+          : { x_percent: 44, y_percent: 12, found: false };
 
       try {
         const pdfFile = new File([pdfData], quote?.file_name || "quote.pdf", {
           type: "application/pdf",
         });
 
-        const img = await pdfToImage(pdfFile);
+        // Use the LAST page for signature detection (signatures are typically on the last page)
+        const img = await pdfToImage(pdfFile, { page: "last" });
         if (img?.base64) {
           const imageDataUrl = `data:${img.mimeType};base64,${img.base64}`;
 
@@ -177,6 +178,14 @@ const QuoteApproval = () => {
           if (!positionError && positionData?.x_percent != null && positionData?.y_percent != null) {
             signaturePosition = positionData;
           }
+        }
+
+        // Sanity guard: signatures are at the bottom of the page (pdf-lib Y is from bottom)
+        if (signaturePosition.y_percent > 30 || signaturePosition.y_percent < 0) {
+          signaturePosition.y_percent = 12;
+        }
+        if (signaturePosition.x_percent < 0 || signaturePosition.x_percent > 100) {
+          signaturePosition.x_percent = approvalType === "vp" ? 12 : 44;
         }
 
         console.log("Signature position:", { approvalType, signaturePosition });

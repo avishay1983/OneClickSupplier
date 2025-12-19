@@ -105,11 +105,10 @@ If you can identify the signature area, set found=true. If not visible, estimate
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      
       // Return default positions if AI fails
       const defaultPositions = {
-        vp: { x_percent: 10, y_percent: 62, found: false },
-        procurement_manager: { x_percent: 40, y_percent: 62, found: false }
+        vp: { x_percent: 12, y_percent: 12, found: false },
+        procurement_manager: { x_percent: 44, y_percent: 12, found: false }
       };
       
       return new Response(
@@ -148,8 +147,8 @@ If you can identify the signature area, set found=true. If not visible, estimate
 
     // Default fallback positions
     const defaultPositions = {
-      vp: { x_percent: 10, y_percent: 62, found: false },
-      procurement_manager: { x_percent: 40, y_percent: 62, found: false }
+      vp: { x_percent: 12, y_percent: 12, found: false },
+      procurement_manager: { x_percent: 44, y_percent: 12, found: false }
     };
 
     console.log('Using default position for:', signerType);
