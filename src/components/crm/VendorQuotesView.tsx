@@ -179,7 +179,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         .order('vendor_name');
 
       if (error) throw error;
-      setVendors(data || []);
+      
+      // Filter out test vendors
+      const filteredVendors = (data || []).filter(vendor => {
+        const name = vendor.vendor_name.toLowerCase();
+        return !name.includes('טסט') && !name.includes('test') && !name.includes('בדיקה');
+      });
+      
+      setVendors(filteredVendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     }
