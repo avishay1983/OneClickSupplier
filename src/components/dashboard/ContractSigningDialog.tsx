@@ -501,6 +501,26 @@ export function ContractSigningDialog({
     });
   };
 
+  // Load pdf.js dynamically
+  const loadPdfJs = async (): Promise<any> => {
+    if ((window as any).pdfjsLib) {
+      return (window as any).pdfjsLib;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load pdf.js'));
+      document.head.appendChild(script);
+    });
+
+    const pdfjsLib = (window as any).pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    
+    return pdfjsLib;
+  };
+
   // Toggle debug mode to show signature position picker
   const toggleDebugMode = async () => {
     if (debugMode) {
@@ -519,32 +539,52 @@ export function ContractSigningDialog({
     }
 
     try {
-      // Get signed URL for the PDF
-      const { data: signedUrlData } = await supabase.storage
+      // Download PDF and convert to image
+      const cacheBuster = `?t=${Date.now()}`;
+      const { data: pdfData, error } = await supabase.storage
         .from('vendor_documents')
-        .createSignedUrl(signatureStatus.contractFilePath, 3600);
+        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
+
+      if (error) throw error;
+
+      // Load pdf.js
+      const pdfjsLib = await loadPdfJs();
+      if (!pdfjsLib) {
+        throw new Error('Failed to load pdf.js');
+      }
+
+      // Convert PDF to image
+      const arrayBuffer = await pdfData.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const lastPageNum = pdf.numPages;
+      const page = await pdf.getPage(lastPageNum);
       
-      if (signedUrlData?.signedUrl) {
-        // Convert PDF first page to image
-        const pdfUrl = signedUrlData.signedUrl;
-        const response = await fetch(pdfUrl);
-        const pdfBytes = await response.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const pages = pdfDoc.getPages();
-        const lastPage = pages[pages.length - 1];
-        
-        // Create a preview URL directly from the PDF
-        setDebugPreviewUrl(pdfUrl);
-        setDebugMode(true);
-        
-        // Set initial signature position if not set
-        if (!customSignaturePosition) {
-          setCustomSignaturePosition({
-            x: 50,
-            y: lastPage.getHeight() - 520 - 40, // Convert from PDF coords (bottom-up) to image coords (top-down)
-            page: pages.length - 1
-          });
-        }
+      const scale = 1.5;
+      const viewport = page.getViewport({ scale });
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not get canvas context');
+      
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      await page.render({
+        canvasContext: context,
+        viewport: viewport,
+      }).promise;
+      
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setDebugPreviewUrl(imageDataUrl);
+      setDebugMode(true);
+      
+      // Set initial signature position if not set
+      if (!customSignaturePosition) {
+        setCustomSignaturePosition({
+          x: 50,
+          y: 200,
+          page: lastPageNum - 1
+        });
       }
     } catch (error) {
       console.error('Error loading PDF preview:', error);
@@ -760,12 +800,12 @@ export function ContractSigningDialog({
                     onTouchMove={handleDragMove}
                     onTouchEnd={handleDragEnd}
                   >
-                    <iframe
-                      ref={debugImageRef as any}
-                      src={debugPreviewUrl + '#page=last'}
+                    <img
+                      ref={debugImageRef}
+                      src={debugPreviewUrl}
                       className="w-full"
-                      style={{ height: '400px', border: 'none' }}
-                      title="PDF Preview"
+                      alt="PDF Preview"
+                      draggable={false}
                     />
                     {customSignaturePosition && (
                       <div
