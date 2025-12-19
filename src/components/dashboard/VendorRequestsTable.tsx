@@ -394,48 +394,51 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                 <TableCell>
                   {request.requires_contract_signature ? (
                     <div className="flex flex-wrap gap-1.5">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
-                              request.ceo_signed 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
-                                : request.status === 'submitted'
-                                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 animate-pulse'
-                                  : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                            }`}>
+                      {/* VP/CEO signature - only show if requires_vp_approval is true */}
+                      {request.requires_vp_approval ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                                request.ceo_signed 
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
+                                  : request.status === 'submitted'
+                                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 animate-pulse'
+                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                              }`}>
+                                {request.ceo_signed ? (
+                                  <Check className="h-3 w-3" />
+                                ) : request.status === 'submitted' ? (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                ) : (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                )}
+                                <span>סמנכ"ל</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" dir="rtl">
                               {request.ceo_signed ? (
-                                <Check className="h-3 w-3" />
-                              ) : request.status === 'submitted' ? (
-                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                <p>חתם: {request.ceo_signed_by} בתאריך {request.ceo_signed_at ? new Date(request.ceo_signed_at).toLocaleDateString('he-IL') : ''}</p>
                               ) : (
-                                <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                <p>טרם חתם</p>
                               )}
-                              <span>סמנכ"ל</span>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" dir="rtl">
-                            {request.ceo_signed ? (
-                              <p>חתם: {request.ceo_signed_by} בתאריך {request.ceo_signed_at ? new Date(request.ceo_signed_at).toLocaleDateString('he-IL') : ''}</p>
-                            ) : (
-                              <p>טרם חתם</p>
-                            )}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : null}
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
                               request.procurement_manager_signed 
                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
-                                : request.ceo_signed
+                                : (request.ceo_signed || !request.requires_vp_approval)
                                   ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 animate-pulse'
                                   : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                             }`}>
                               {request.procurement_manager_signed ? (
                                 <Check className="h-3 w-3" />
-                              ) : request.ceo_signed ? (
+                              ) : (request.ceo_signed || !request.requires_vp_approval) ? (
                                 <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
                               ) : (
                                 <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
