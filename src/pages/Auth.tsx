@@ -349,16 +349,16 @@ export default function Auth() {
         {/* Logo and brand */}
         <div>
           <svg width="150" height="52" viewBox="0 0 275 95" role="img" aria-label="לוגו ביטוח ישיר" xmlns="http://www.w3.org/2000/svg">
-            <g fontFamily="Arial, Helvetica, sans-serif" fontWeight="900" fill="#ffffff" textAnchor="end">
-              <text x="135" y="45" fontSize="45">ביטוח</text>
-              <text x="135" y="88" fontSize="45">ישיר</text>
-            </g>
             <g fill="#FF2D55">
-              <circle cx="165" cy="25" r="10" />
-              <circle cx="205" cy="25" r="10" />
-              <circle cx="185" cy="47.5" r="10" />
-              <circle cx="165" cy="70" r="10" />
-              <circle cx="205" cy="70" r="10" />
+              <circle cx="25" cy="25" r="10" />
+              <circle cx="65" cy="25" r="10" />
+              <circle cx="45" cy="47.5" r="10" />
+              <circle cx="25" cy="70" r="10" />
+              <circle cx="65" cy="70" r="10" />
+            </g>
+            <g fontFamily="Arial, Helvetica, sans-serif" fontWeight="900" fill="#ffffff" textAnchor="start">
+              <text x="90" y="45" fontSize="45">ביטוח</text>
+              <text x="90" y="88" fontSize="45">ישיר</text>
             </g>
           </svg>
         </div>
@@ -408,16 +408,16 @@ export default function Auth() {
         {/* Mobile logo */}
         <div className="lg:hidden mb-8 flex justify-center">
           <svg width="150" height="52" viewBox="0 0 275 95" role="img" aria-label="לוגו ביטוח ישיר" xmlns="http://www.w3.org/2000/svg">
-            <g fontFamily="Arial, Helvetica, sans-serif" fontWeight="900" fill="#202A65" textAnchor="end">
-              <text x="135" y="45" fontSize="45">ביטוח</text>
-              <text x="135" y="88" fontSize="45">ישיר</text>
-            </g>
             <g fill="#FF2D55">
-              <circle cx="165" cy="25" r="10" />
-              <circle cx="205" cy="25" r="10" />
-              <circle cx="185" cy="47.5" r="10" />
-              <circle cx="165" cy="70" r="10" />
-              <circle cx="205" cy="70" r="10" />
+              <circle cx="25" cy="25" r="10" />
+              <circle cx="65" cy="25" r="10" />
+              <circle cx="45" cy="47.5" r="10" />
+              <circle cx="25" cy="70" r="10" />
+              <circle cx="65" cy="70" r="10" />
+            </g>
+            <g fontFamily="Arial, Helvetica, sans-serif" fontWeight="900" fill="#202A65" textAnchor="start">
+              <text x="90" y="45" fontSize="45">ביטוח</text>
+              <text x="90" y="88" fontSize="45">ישיר</text>
             </g>
           </svg>
         </div>
