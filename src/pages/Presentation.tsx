@@ -49,6 +49,9 @@ import screenshotCrmQuotesTable from '@/assets/screenshots/crm-quotes-table.png'
 import screenshotCrmVendorsList from '@/assets/screenshots/crm-vendors-list.png';
 import screenshotVendorActionsMenu from '@/assets/screenshots/vendor-actions-menu.png';
 import screenshotVendorRequestsActions from '@/assets/screenshots/vendor-requests-actions.png';
+import screenshotDigitalSignature from '@/assets/screenshots/digital-signature.png';
+import screenshotQuoteApproval from '@/assets/screenshots/quote-approval.png';
+import screenshotDashboardManager2 from '@/assets/screenshots/dashboard-manager-2.png';
 
 const slides = [
   {
@@ -868,6 +871,54 @@ const slides = [
   },
   {
     id: 15,
+    title: 'חתימות דיגיטליות',
+    subtitle: 'תהליך החתימה על הצעות מחיר',
+    content: (
+      <div className="flex flex-col items-center justify-center h-full space-y-4" dir="rtl">
+        <div className="flex items-center gap-3 mb-2">
+          <FileSignature className="h-10 w-10 text-brand-purple" />
+          <h3 className="text-3xl font-bold text-primary">חתימות דיגיטליות</h3>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-6 w-full max-w-6xl">
+          <div className="space-y-2">
+            <img 
+              src={screenshotQuoteApproval} 
+              alt="אישור הצעת מחיר" 
+              className="w-full h-64 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">מסך אישור הצעת מחיר</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotDigitalSignature} 
+              alt="חתימה דיגיטלית" 
+              className="w-full h-64 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">חתימה דיגיטלית על הצעה</p>
+          </div>
+          
+          <div className="space-y-2">
+            <img 
+              src={screenshotDashboardManager2} 
+              alt="דשבורד מנהל" 
+              className="w-full h-64 object-cover object-top rounded-lg border border-primary/20 shadow-md hover:scale-105 transition-transform cursor-pointer"
+            />
+            <p className="text-sm text-center text-muted-foreground">דשבורד סמנכ"ל - הצעות לחתימה</p>
+          </div>
+        </div>
+        
+        <div className="p-4 bg-brand-purple/5 rounded-xl border border-brand-purple/20 max-w-3xl mt-4">
+          <p className="text-center text-muted-foreground">
+            <strong className="text-brand-purple">חתימה דיגיטלית מאובטחת</strong> - המנהלים חותמים ישירות על המסמך ב-PDF
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 16,
     title: 'סיכום',
     subtitle: 'יתרונות המערכת',
     content: (
