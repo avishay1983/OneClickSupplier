@@ -3,11 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// ... שאר ה-imports נשארים אותו דבר ...
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, CheckCircle2 } from 'lucide-react';
 import { z } from 'zod';
 
-// ... הגדרות ה-Schemas נשארות כאן ...
+// --- סכמות Zod ---
+const loginSchema = z.object({
+  email: z.string().email('כתובת אימייל לא תקינה'),
+  password: z.string().min(6, 'סיסמה חייבת להכיל לפחות 6 תווים'),
+});
+
+const signupSchema = z.object({
+  email: z.string().email('כתובת אימייל לא תקינה'),
+  password: z.string().min(6, 'סיסמה חייבת להכיל לפחות 6 תווים'),
+  fullName: z.string().min(2, 'שם מלא חייב להכיל לפחות 2 תווים'),
+});
+
+const resetSchema = z.object({
+  email: z.string().email('כתובת אימייל לא תקינה'),
+});
 
 const features = [
   { icon: Zap, title: 'מהיר וחכם', description: 'הקמת ספק תוך 24-48 שעות במקום שבועות' },
@@ -15,69 +30,65 @@ const features = [
   { icon: Sparkles, title: 'AI מתקדם', description: 'זיהוי אוטומטי של מסמכים ונתונים' },
 ];
 
-// --- העברנו את הרכיבים לכאן (מחוץ ל-Auth) ---
+// --- רכיבים חיצוניים (חובה שיהיו מחוץ ל-Auth כדי למנוע איבוד פוקוס) ---
 
-// Branded side panel component
 const BrandedPanel = () => (
   <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 relative overflow-hidden">
-    {/* ... תוכן הקומפוננטה ... */}
-    {/* (הקוד זהה למה שכתבת, רק המיקום השתנה) */}
-     <div className="absolute inset-0">
-        <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-40 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-accent/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-      
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-        backgroundSize: '50px 50px'
-      }} />
+    <div className="absolute inset-0">
+      <div className="absolute top-20 right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-40 left-10 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-accent/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+    </div>
+    
+    <div className="absolute inset-0 opacity-10" style={{
+      backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+      backgroundSize: '50px 50px'
+    }} />
 
-      <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-        <div>
-          <img 
-            src="/images/bituach-yashir-logo.png" 
-            alt="ביטוח ישיר" 
-            className="h-14"
-          />
+    <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
+      <div>
+        <img 
+          src="/images/bituach-yashir-logo.png" 
+          alt="ביטוח ישיר" 
+          className="h-14"
+        />
+      </div>
+
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <h1 className="text-4xl font-bold leading-tight">
+            ספק בקליק
+          </h1>
+          <p className="text-xl text-white/80 max-w-md">
+            מערכת הקמת ספקים מתקדמת המשלבת בינה מלאכותית לחוויה חלקה ומהירה
+          </p>
         </div>
 
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold leading-tight">
-              ספק בקליק
-            </h1>
-            <p className="text-xl text-white/80 max-w-md">
-              מערכת הקמת ספקים מתקדמת המשלבת בינה מלאכותית לחוויה חלקה ומהירה
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {features.map((feature, index) => (
-              <div 
-                key={index} 
-                className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:bg-white/15"
-              >
-                <div className="p-3 bg-white/20 rounded-xl">
-                  <feature.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{feature.title}</h3>
-                  <p className="text-white/70 text-sm">{feature.description}</p>
-                </div>
+        <div className="space-y-6">
+          {features.map((feature, index) => (
+            <div 
+              key={index} 
+              className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:bg-white/15"
+            >
+              <div className="p-3 bg-white/20 rounded-xl">
+                <feature.icon className="w-6 h-6" />
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-white/60 text-sm">
-          © 2025 ביטוח ישיר. כל הזכויות שמורות.
+              <div>
+                <h3 className="font-semibold text-lg">{feature.title}</h3>
+                <p className="text-white/70 text-sm">{feature.description}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      <div className="text-white/60 text-sm">
+        © 2025 ביטוח ישיר. כל הזכויות שמורות.
+      </div>
+    </div>
   </div>
 );
 
-// Form container
 const FormContainer = ({ children, title, description }: { children: React.ReactNode; title: string; description: string }) => (
   <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-background via-background to-muted/30" dir="rtl">
     <div className="w-full max-w-md">
@@ -119,7 +130,7 @@ const FormContainer = ({ children, title, description }: { children: React.React
   </div>
 );
 
-// Styled input component
+// רכיב האינפוט - מוגדר בחוץ ומנהל את הטוגל של העין בעצמו
 const StyledInput = ({ 
   id, 
   type, 
@@ -136,15 +147,12 @@ const StyledInput = ({
   placeholder: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  icon: any; // שיניתי את ה-Type כדי למנוע בעיות ייבוא, או שתשתמש ב-LucideIcon
+  icon: any;
   error?: string;
   dir?: string;
   showPasswordToggle?: boolean;
 }) => {
-  // צריך להעביר את ה-State של הסיסמה לתוך הקומפוננטה או לקבל אותו כ-prop
-  // בגלל שזה extracted, נשתמש ב-state מקומי לטוגל של העין
   const [showPassword, setShowPassword] = useState(false);
-  
   const inputType = showPasswordToggle && showPassword ? "text" : type;
 
   return (
@@ -182,47 +190,8 @@ const StyledInput = ({
   );
 };
 
-// Styled button
 const StyledButton = ({ children, isLoading: loading, ...props }: React.ComponentProps<typeof Button> & { isLoading?: boolean }) => (
   <Button
     {...props}
     className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
-    disabled={loading || props.disabled}
-  >
-    {loading ? (
-      <Loader2 className="w-5 h-5 animate-spin" />
-    ) : (
-      children
-    )}
-  </Button>
-);
-
-
-// --- הקומפוננטה הראשית Auth ---
-
-export default function Auth() {
-  const navigate = useNavigate();
-  // ... שאר ה-State ...
-  const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [resetEmailSent, setResetEmailSent] = useState(false);
-  // שימי לב: מחקנו את showPassword מה-Auth כי הוא עבר לתוך StyledInput או שצריך לנהל אותו אחרת
-  // במקרה הזה StyledInput ינהל את הטוגל של עצמו באופן מקומי (כפי שתיקנתי למעלה)
-  const [showUserExistsMessage, setShowUserExistsMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
-  const [showUpdatePassword, setShowUpdatePassword] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  // ... שאר הלוגיקה וה-Effects נשארים אותו דבר בדיוק ...
-  
-  // (אין צורך להגדיר כאן את BrandedPanel, FormContainer, StyledInput, StyledButton)
-
-  // ... פונקציות ה-Handle (Login, Signup וכו') נשארות אותו דבר ...
-
-  // החלק של ה-Return נשאר זהה, הרכיבים זמינים כי הם באותו קובץ למעלה
-  // ...
+    disabled={loading ||
