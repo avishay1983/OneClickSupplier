@@ -21,6 +21,16 @@ serve(async (req) => {
       );
     }
 
+    // Validate UUID format before querying
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      console.log('Invalid token format:', token);
+      return new Response(
+        JSON.stringify({ error: 'not_found', message: 'הבקשה לא נמצאה' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
