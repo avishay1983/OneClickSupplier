@@ -605,8 +605,7 @@ export default function Auth() {
             <img 
               src="/images/bituach-yashir-logo.png" 
               alt="ביטוח ישיר" 
-              className="h-14 mb-8 [&]:mix-blend-multiply dark:[&]:mix-blend-screen"
-              style={{ backgroundColor: 'transparent' }}
+              className="h-14 mb-8 brightness-0 invert"
             />
             <h1 className="text-4xl xl:text-5xl font-bold text-white mb-4 leading-tight">
               ספק בקליק
@@ -644,8 +643,7 @@ export default function Auth() {
             <img 
               src="/images/bituach-yashir-logo.png" 
               alt="ביטוח ישיר" 
-              className="h-10 mx-auto mb-4 [&]:mix-blend-multiply dark:[&]:mix-blend-screen"
-              style={{ backgroundColor: 'transparent' }}
+              className="h-10 mx-auto mb-4 brightness-0 invert"
             />
             <h2 className="text-2xl font-bold text-white">ספק בקליק</h2>
           </div>
