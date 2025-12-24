@@ -12,9 +12,12 @@ import { PDFDocument, rgb } from "pdf-lib";
 import { pdfToImage } from "@/utils/pdfToImage";
 
 const QuoteApproval = () => {
-  const { token } = useParams();
+  const { token: rawToken } = useParams();
   const [searchParams] = useSearchParams();
   const approvalType = searchParams.get("type") as "vp" | "procurement_manager";
+  
+  // Clean token from any query string that might have been appended
+  const token = rawToken?.split('?')[0];
   
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -49,14 +52,25 @@ const QuoteApproval = () => {
       }
 
       try {
+        console.log("Fetching quote with token:", token);
+        
         // Use edge function to fetch quote details (bypasses RLS for public access)
         const { data: quoteData, error: fetchError } = await supabase.functions.invoke(
           "vendor-quote-details",
           { body: { token } }
         );
 
-        if (fetchError || quoteData?.error) {
-          setError(quoteData?.error || "הקישור לא נמצא או שפג תוקפו");
+        console.log("Quote response:", { quoteData, fetchError });
+
+        if (fetchError) {
+          console.error("Fetch error:", fetchError);
+          setError("שגיאה בטעינת הנתונים");
+          setLoading(false);
+          return;
+        }
+        
+        if (quoteData?.error) {
+          setError(quoteData.error);
           setLoading(false);
           return;
         }
@@ -92,16 +106,20 @@ const QuoteApproval = () => {
         setVendorName(quoteData.vendorName || "");
         setVendorEmail(quoteData.vendorEmail || "");
 
-        // Fetch approver name from settings via edge function or directly
-        const settingKey = approvalType === "vp" ? "vp_name" : "procurement_manager_name";
-        const { data: settingData } = await supabase
-          .from("app_settings")
-          .select("setting_value")
-          .eq("setting_key", settingKey)
-          .maybeSingle();
-        
-        if (settingData?.setting_value) {
-          setApproverName(settingData.setting_value);
+        // Fetch approver name from settings - wrapped in try/catch to not block page load
+        try {
+          const settingKey = approvalType === "vp" ? "vp_name" : "procurement_manager_name";
+          const { data: settingData } = await supabase
+            .from("app_settings")
+            .select("setting_value")
+            .eq("setting_key", settingKey)
+            .maybeSingle();
+          
+          if (settingData?.setting_value) {
+            setApproverName(settingData.setting_value);
+          }
+        } catch (err) {
+          console.log("Could not fetch approver name, using default");
         }
 
         setLoading(false);
