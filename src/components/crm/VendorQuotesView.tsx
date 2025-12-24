@@ -928,10 +928,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                         </TableCell>
                         <TableCell>
                           {quote.file_path ? (
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-muted-foreground" />
+                            <button
+                              onClick={() => handleDownload(quote)}
+                              className="flex items-center gap-2 text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer"
+                              title="לחץ להורדה"
+                            >
+                              <FileText className="h-4 w-4" />
                               <span className="text-sm max-w-[150px] truncate">{quote.file_name}</span>
-                            </div>
+                            </button>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
