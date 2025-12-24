@@ -159,11 +159,22 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
   };
 
   const totalPending = pendingSignatures.length + pendingQuotes.length;
+  
+  // Count urgent contracts (over 3 days)
   const urgentContracts = pendingSignatures.filter(r => {
     const created = new Date(r.created_at);
     const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
     return daysDiff > 3;
   }).length;
+  
+  // Count urgent quotes (over 3 days)
+  const urgentQuotes = pendingQuotes.filter(q => {
+    const created = new Date(q.created_at);
+    const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    return daysDiff > 3;
+  }).length;
+  
+  const totalUrgent = urgentContracts + urgentQuotes;
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -218,7 +229,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-red-600 dark:text-red-400">דחוף (מעל 3 ימים)</p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{urgentContracts}</p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{totalUrgent}</p>
               </div>
               <AlertCircle className="h-10 w-10 text-red-500/50" />
             </div>
@@ -250,24 +261,46 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
             {pendingQuotes.map((quote) => {
               const created = new Date(quote.created_at);
               const daysDiff = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
+              const isUrgent = daysDiff > 3;
 
               return (
                 <Card 
                   key={quote.id} 
-                  className="overflow-hidden transition-all hover:shadow-lg border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10"
+                  className={`overflow-hidden transition-all hover:shadow-lg ${
+                    isUrgent 
+                      ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20' 
+                      : 'border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10'
+                  }`}
                 >
                   <CardContent className="p-0">
                     <div className="flex items-center gap-4 p-6">
                       {/* Icon */}
-                      <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/50">
-                        <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                      <div className={`p-3 rounded-xl ${
+                        isUrgent 
+                          ? 'bg-red-100 dark:bg-red-900/50' 
+                          : 'bg-blue-100 dark:bg-blue-900/50'
+                      }`}>
+                        <FileText className={`h-8 w-8 ${
+                          isUrgent 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'text-blue-600 dark:text-blue-400'
+                        }`} />
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg font-semibold truncate">{quote.vendor_name}</h3>
-                          <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                          {isUrgent && (
+                            <Badge variant="destructive" className="text-xs animate-pulse">
+                              דחוף מאוד
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className={`text-xs ${
+                            isUrgent 
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                          }`}>
                             הצעת מחיר
                           </Badge>
                         </div>
