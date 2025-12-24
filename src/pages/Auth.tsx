@@ -603,9 +603,9 @@ export default function Auth() {
         <div className="max-w-lg">
           <div className="mb-12">
             <img 
-              src="/images/bituach-yashir-logo-clean.png" 
-              alt="ביטוח ישיר" 
-              className="h-14 mb-8"
+              src="/images/bituach-yashir-logo-transparent.png" 
+              alt="לוגו ביטוח ישיר" 
+              className="h-14 mb-8 drop-shadow-[0_12px_24px_hsl(var(--foreground)_/_0.15)]"
             />
             <h1 className="text-4xl xl:text-5xl font-bold text-white mb-4 leading-tight">
               ספק בקליק
@@ -641,9 +641,9 @@ export default function Auth() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <img 
-              src="/images/bituach-yashir-logo-clean.png" 
-              alt="ביטוח ישיר" 
-              className="h-10 mx-auto mb-4"
+              src="/images/bituach-yashir-logo-transparent.png" 
+              alt="לוגו ביטוח ישיר" 
+              className="h-10 mx-auto mb-4 drop-shadow-[0_10px_20px_hsl(var(--foreground)_/_0.15)]"
             />
             <h2 className="text-2xl font-bold text-white">ספק בקליק</h2>
           </div>
