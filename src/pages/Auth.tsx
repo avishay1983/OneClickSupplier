@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, LucideIcon } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -24,12 +24,60 @@ const resetSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
 });
 
-// Floating orb component for background
+// Floating orb component for background - defined OUTSIDE Auth component
 const FloatingOrb = ({ className, delay = 0 }: { className?: string; delay?: number }) => (
   <div 
     className={`absolute rounded-full blur-3xl opacity-30 animate-pulse ${className}`}
     style={{ animationDelay: `${delay}s`, animationDuration: '4s' }}
   />
+);
+
+// Glass card component - defined OUTSIDE Auth component
+const GlassCard = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  <div className={`backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl ${className}`}>
+    {children}
+  </div>
+);
+
+// Feature item for side panel - defined OUTSIDE Auth component
+const FeatureItem = ({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) => (
+  <div className="flex items-start gap-4 group">
+    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+    <div>
+      <h3 className="font-semibold text-white text-lg mb-1">{title}</h3>
+      <p className="text-white/70 text-sm leading-relaxed">{description}</p>
+    </div>
+  </div>
+);
+
+// Shared background component - defined OUTSIDE Auth component
+const AuthBackground = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen relative overflow-hidden" dir="rtl">
+    {/* Animated gradient background */}
+    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
+    
+    {/* Animated mesh gradient overlay */}
+    <div className="absolute inset-0 opacity-50">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/40 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-brand-magenta/30 via-transparent to-transparent" />
+    </div>
+    
+    {/* Floating orbs */}
+    <FloatingOrb className="w-96 h-96 bg-accent -top-20 -right-20" delay={0} />
+    <FloatingOrb className="w-72 h-72 bg-brand-pink top-1/3 -left-10" delay={1} />
+    <FloatingOrb className="w-64 h-64 bg-brand-magenta bottom-10 right-1/4" delay={2} />
+    <FloatingOrb className="w-48 h-48 bg-accent/50 top-1/2 right-1/3" delay={1.5} />
+    
+    {/* Grid pattern overlay */}
+    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNMzAgMzBtLTEgMGExIDEgMCAxIDAgMiAwYTEgMSAwIDEgMCAtMiAwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L2c+PC9zdmc+')] opacity-40" />
+    
+    {/* Content container */}
+    <div className="relative z-10 min-h-screen flex">
+      {children}
+    </div>
+  </div>
 );
 
 export default function Auth() {
@@ -330,54 +378,6 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
-
-  // Shared background component
-  const AuthBackground = ({ children }: { children: React.ReactNode }) => (
-    <div className="min-h-screen relative overflow-hidden" dir="rtl">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent" />
-      
-      {/* Animated mesh gradient overlay */}
-      <div className="absolute inset-0 opacity-50">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/40 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-brand-magenta/30 via-transparent to-transparent" />
-      </div>
-      
-      {/* Floating orbs */}
-      <FloatingOrb className="w-96 h-96 bg-accent -top-20 -right-20" delay={0} />
-      <FloatingOrb className="w-72 h-72 bg-brand-pink top-1/3 -left-10" delay={1} />
-      <FloatingOrb className="w-64 h-64 bg-brand-magenta bottom-10 right-1/4" delay={2} />
-      <FloatingOrb className="w-48 h-48 bg-accent/50 top-1/2 right-1/3" delay={1.5} />
-      
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNMzAgMzBtLTEgMGExIDEgMCAxIDAgMiAwYTEgMSAwIDEgMCAtMiAwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L2c+PC9zdmc+')] opacity-40" />
-      
-      {/* Content container */}
-      <div className="relative z-10 min-h-screen flex">
-        {children}
-      </div>
-    </div>
-  );
-
-  // Glass card component
-  const GlassCard = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-    <div className={`backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl ${className}`}>
-      {children}
-    </div>
-  );
-
-  // Feature item for side panel
-  const FeatureItem = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
-    <div className="flex items-start gap-4 group">
-      <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 group-hover:bg-white/20 transition-all duration-300">
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <h3 className="font-semibold text-white text-lg mb-1">{title}</h3>
-        <p className="text-white/70 text-sm leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
 
   // Update password form
   if (showUpdatePassword) {
