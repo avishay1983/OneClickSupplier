@@ -125,6 +125,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   
   const [sendQuoteDialogOpen, setSendQuoteDialogOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
+  const [quoteDescription, setQuoteDescription] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
   const [resendingQuoteId, setResendingQuoteId] = useState<string | null>(null);
   
@@ -240,6 +241,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           vendor_request_id: selectedVendorId,
           file_path: '',
           file_name: '',
+          description: quoteDescription.trim() || null,
           submitted_by: currentUserName,
           status: 'pending_vendor',
           vendor_submitted: false,
@@ -256,6 +258,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           vendorEmail: selectedVendor.vendor_email,
           vendorName: selectedVendor.vendor_name,
           handlerName: currentUserName,
+          description: quoteDescription.trim() || null,
         },
       });
 
@@ -271,6 +274,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
       setSendQuoteDialogOpen(false);
       setSelectedVendorId('');
+      setQuoteDescription('');
       fetchQuotes();
     } catch (error) {
       console.error('Error sending quote request:', error);
@@ -1112,7 +1116,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              בחר ספק לשליחת בקשה להצעת מחיר. הספק יקבל מייל עם לינק להגשת הצעה.
+              בחר ספק ופרט על מה הבקשה להצעת מחיר. הספק יקבל מייל עם לינק להגשת הצעה.
             </p>
             <div className="space-y-2">
               <Label>בחר ספק *</Label>
@@ -1121,6 +1125,15 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                 onChange={(vendorId) => setSelectedVendorId(vendorId)}
                 vendors={vendors}
                 placeholder="הקלד שם ספק לחיפוש..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>תיאור הבקשה (אופציונלי)</Label>
+              <Textarea
+                value={quoteDescription}
+                onChange={(e) => setQuoteDescription(e.target.value)}
+                placeholder="פרט על מה הצעת המחיר הנדרשת, לדוגמה: ציוד משרדי לחודש ינואר, שירותי ייעוץ לפרויקט X..."
+                rows={3}
               />
             </div>
           </div>
