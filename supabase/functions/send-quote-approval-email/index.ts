@@ -144,8 +144,6 @@ serve(async (req: Request): Promise<Response> => {
     const baseUrl = 'https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com';
     const approvalLink = `${baseUrl}/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
 
-    const approvalTypeName = approvalType === 'vp' ? 'סמנכ"ל' : 'מנהל רכש';
-
     const emailHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
@@ -159,7 +157,7 @@ serve(async (req: Request): Promise<Response> => {
 </div>
 <div style="padding: 30px;">
 <p style="margin: 12px 0;">שלום ${approverName},</p>
-<p style="margin: 12px 0;">הצעת מחיר חדשה ממתינה לאישורך כ${approvalTypeName}:</p>
+<p style="margin: 12px 0;">הצעת מחיר חדשה ממתינה לאישורך:</p>
 
 <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
 <h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי ההצעה:</h3>
