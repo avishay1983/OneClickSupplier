@@ -284,7 +284,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
@@ -399,13 +399,13 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">ספק</TableHead>
-                    <TableHead className="text-right">קובץ</TableHead>
-                    <TableHead className="text-right">סכום</TableHead>
-                    <TableHead className="text-right">תאריך קבלה</TableHead>
-                    <TableHead className="text-right">תיאור</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
-                    <TableHead className="text-right">פעולות</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>ספק</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>קובץ</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סכום</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>תאריך קבלה</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>תיאור</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סטטוס</TableHead>
+                    <TableHead className="text-right" style={{ textAlign: 'right' }}>פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
