@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Upload, FileText, CheckCircle, Clock, XCircle, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -179,13 +178,36 @@ export default function VendorReceipts() {
 
   const handleDownload = async (receipt: Receipt) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('vendor_documents')
-        .download(receipt.file_path);
+      // Use edge function to download (bypasses RLS for public access)
+      const response = await fetch(
+        'https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-receipt-download',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            token, 
+            filePath: receipt.file_path 
+          }),
+        }
+      );
 
-      if (error) throw error;
+      const result = await response.json();
 
-      const url = URL.createObjectURL(data);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to download file');
+      }
+
+      // Convert base64 to blob
+      const binaryString = atob(result.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: result.contentType });
+
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = receipt.file_name;

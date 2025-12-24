@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.send-quote-request]
 verify_jwt = false
+
+[functions.vendor-receipt-download]
+verify_jwt = false
