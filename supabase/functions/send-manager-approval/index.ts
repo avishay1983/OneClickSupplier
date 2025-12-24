@@ -16,7 +16,25 @@ interface SendManagerApprovalRequest {
 function encodeBase64(str: string): string {
   const encoder = new TextEncoder();
   const data = encoder.encode(str);
-  return btoa(String.fromCharCode(...data));
+  // Process in chunks to avoid stack overflow for large strings
+  let result = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.subarray(i, i + chunkSize);
+    result += String.fromCharCode(...chunk);
+  }
+  return btoa(result);
+}
+
+// Encode Uint8Array to Base64 in chunks (memory efficient for large files)
+function encodeUint8ArrayToBase64(data: Uint8Array): string {
+  const chunkSize = 8192;
+  let result = '';
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const chunk = data.subarray(i, i + chunkSize);
+    result += String.fromCharCode(...chunk);
+  }
+  return btoa(result);
 }
 
 // Send email via raw SMTP with PDF attachment
@@ -36,8 +54,8 @@ async function sendEmailViaSMTP(
   let rawEmail: string;
   
   if (attachment) {
-    // Email with attachment
-    const attachmentBase64 = btoa(String.fromCharCode(...attachment.content));
+    // Email with attachment - use chunked encoding for large files
+    const attachmentBase64 = encodeUint8ArrayToBase64(attachment.content);
     rawEmail = [
       `From: ${gmailUser}`,
       `To: ${to}`,
