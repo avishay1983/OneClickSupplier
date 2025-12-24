@@ -11,6 +11,7 @@ interface SendQuoteRequestPayload {
   vendorEmail: string;
   vendorName: string;
   handlerName: string;
+  description?: string | null;
 }
 
 function encodeBase64(str: string): string {
@@ -80,9 +81,9 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { quoteId, vendorEmail, vendorName, handlerName }: SendQuoteRequestPayload = await req.json();
+    const { quoteId, vendorEmail, vendorName, handlerName, description }: SendQuoteRequestPayload = await req.json();
 
-    console.log("Sending quote request to vendor:", { quoteId, vendorEmail, vendorName });
+    console.log("Sending quote request to vendor:", { quoteId, vendorEmail, vendorName, description });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -160,6 +161,13 @@ serve(async (req: Request): Promise<Response> => {
                     <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 15px 0; text-align: right;">
                       <strong>${handlerName}</strong> מבקש/ת ממך להגיש הצעת מחיר.
                     </p>
+                    
+                    ${description ? `
+                    <div style="background-color: #f0f9ff; border-right: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                      <p style="color: #1e40af; font-size: 14px; font-weight: bold; margin: 0 0 8px 0;">פרטי הבקשה:</p>
+                      <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0;">${description}</p>
+                    </div>
+                    ` : ''}
                     
                     <p style="color: #374151; font-size: 16px; line-height: 1.8; margin: 0 0 30px 0; text-align: right;">
                       לחץ על הכפתור למטה כדי להגיש את הצעת המחיר שלך:
