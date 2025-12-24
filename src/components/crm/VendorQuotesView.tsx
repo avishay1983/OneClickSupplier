@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { VendorAutocomplete } from '@/components/ui/vendor-autocomplete';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1115,18 +1116,12 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </p>
             <div className="space-y-2">
               <Label>בחר ספק *</Label>
-              <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="בחר ספק..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.vendor_name} ({vendor.vendor_email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <VendorAutocomplete
+                value={selectedVendorId}
+                onChange={(vendorId) => setSelectedVendorId(vendorId)}
+                vendors={vendors}
+                placeholder="הקלד שם ספק לחיפוש..."
+              />
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
