@@ -868,7 +868,7 @@ export default function Auth() {
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-white/10 text-center">
             <p className="text-white/50 text-sm">
-              © 2025 ביטוח ישיר. כל הזכויות שמורות.
+              © 2024 ביטוח ישיר. כל הזכויות שמורות.
             </p>
           </div>
         </GlassCard>

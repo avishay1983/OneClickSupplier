@@ -5,12 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Table,
   TableBody,
   TableCell,
@@ -45,8 +39,7 @@ import {
   Search,
   Receipt,
   DollarSign,
-  TrendingUp,
-  SlidersHorizontal
+  TrendingUp
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -284,7 +277,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card 
@@ -399,13 +392,13 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>ספק</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>קובץ</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סכום</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>תאריך קבלה</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>תיאור</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>סטטוס</TableHead>
-                    <TableHead className="text-right" style={{ textAlign: 'right' }}>פעולות</TableHead>
+                    <TableHead className="text-right">ספק</TableHead>
+                    <TableHead className="text-right">קובץ</TableHead>
+                    <TableHead className="text-right">סכום</TableHead>
+                    <TableHead className="text-right">תאריך קבלה</TableHead>
+                    <TableHead className="text-right">תיאור</TableHead>
+                    <TableHead className="text-right">סטטוס</TableHead>
+                    <TableHead className="text-right">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -422,14 +415,10 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <button
-                            onClick={() => handleDownload(receipt)}
-                            className="flex items-center gap-2 text-primary hover:text-primary/80 hover:underline transition-colors cursor-pointer"
-                            title="לחץ להורדה"
-                          >
-                            <FileText className="h-4 w-4" />
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm max-w-[150px] truncate">{receipt.file_name}</span>
-                          </button>
+                          </div>
                         </TableCell>
                         <TableCell className="font-bold">
                           ₪{receipt.amount.toLocaleString()}
@@ -452,47 +441,43 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
                           )}
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 transition-all hover:rotate-90 duration-300"
-                              >
-                                <SlidersHorizontal className="h-5 w-5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="bg-background">
-                              <DropdownMenuItem onClick={() => handleDownload(receipt)}>
-                                <Download className="h-4 w-4 ml-2" />
-                                הורד קובץ
-                              </DropdownMenuItem>
-                              
-                              {receipt.status === 'pending' && (
-                                <>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleApprove(receipt)}
-                                    disabled={isUpdating}
-                                    className="text-success focus:text-success"
-                                  >
-                                    <CheckCircle className="h-4 w-4 ml-2" />
-                                    אשר תשלום
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => {
-                                      setSelectedReceipt(receipt);
-                                      setRejectDialogOpen(true);
-                                    }}
-                                    disabled={isUpdating}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <XCircle className="h-4 w-4 ml-2" />
-                                    דחה קבלה
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownload(receipt)}
+                              title="הורדה"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            {receipt.status === 'pending' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleApprove(receipt)}
+                                  disabled={isUpdating}
+                                  className="text-success hover:text-success hover:bg-success/10"
+                                  title="אשר תשלום"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedReceipt(receipt);
+                                    setRejectDialogOpen(true);
+                                  }}
+                                  disabled={isUpdating}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="דחה"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
