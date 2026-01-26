@@ -9,6 +9,7 @@ import VendorForm from "./pages/VendorForm";
 import VendorStatus from "./pages/VendorStatus";
 import VendorReceipts from "./pages/VendorReceipts";
 import SystemDocumentation from "./pages/SystemDocumentation";
+import DatabaseDocumentation from "./pages/DatabaseDocumentation";
 import Presentation from "./pages/Presentation";
 import Auth from "./pages/Auth";
 import ManagerApprovalResult from "./pages/ManagerApprovalResult";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/vendor-quote/:token" element={<VendorQuoteSubmit />} />
             <Route path="/quote-approval/:token" element={<QuoteApproval />} />
             <Route path="/documentation" element={<SystemDocumentation />} />
+            <Route path="/database-docs" element={<DatabaseDocumentation />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
