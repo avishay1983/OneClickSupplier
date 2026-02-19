@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, FileText, Database, Server, Mail, Brain, Code, Eye, List } from "lucide-react";
+import { Download, FileText, Database, Server, Mail, Brain, Code, Eye, List, Link } from "lucide-react";
+import { downloadIntegrationsDoc } from "@/utils/exportIntegrationsDoc";
 
 const SystemDocumentation = () => {
   const [activeTab, setActiveTab] = useState("architecture");
@@ -696,10 +697,16 @@ Response: { success: boolean }</pre>
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-foreground">תיעוד טכני - ספק בקליק</h1>
-          <Button onClick={downloadDocumentation} className="gap-2">
-            <Download className="h-4 w-4" />
-            הורד תיעוד מלא
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={downloadIntegrationsDoc} variant="outline" className="gap-2">
+              <Link className="h-4 w-4" />
+              הורד מסמך אינטגרציות
+            </Button>
+            <Button onClick={downloadDocumentation} className="gap-2">
+              <Download className="h-4 w-4" />
+              הורד תיעוד מלא
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
