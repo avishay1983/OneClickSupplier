@@ -1,8 +1,9 @@
 
 // API Configuration for Python Backend Service
 
-// Default to localhost for development, can be overridden by .env
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// In production (same-origin deploy), use empty string so requests go to same server.
+// In development, use localhost:8000.
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 export const ENDPOINTS = {
     // Vendor Portal (Public)
