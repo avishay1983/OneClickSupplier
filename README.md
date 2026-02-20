@@ -71,3 +71,49 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+---
+
+## Python Backend (Migrated from Edge Functions)
+
+This project now uses a Python FastAPI backend instead of Supabase Edge Functions for complex logic (Vendor API, Receipts, Quotes, Cron Jobs).
+
+### Setup
+
+1.  Navigate to the backend directory:
+    ```sh
+    cd backend
+    ```
+
+2.  Create and activate a virtual environment:
+    ```sh
+    python -m venv venv
+    # Windows:
+    .\venv\Scripts\activate
+    # Linux/Mac:
+    source venv/bin/activate
+    ```
+
+3.  Install dependencies:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+4.  Configure Environment Variables:
+    *   Copy `.env.example` to `.env` (or create one).
+    *   Required: `SUPABASE_URL`, `SUPABASE_KEY` (Service Role), `GMAIL_USER`, `GMAIL_APP_PASSWORD`.
+
+### Running the Server
+
+```sh
+uvicorn main:app --reload
+```
+
+The API will be available at `http://localhost:8000`.
+Documentation is available at `http://localhost:8000/docs`.
+
+### Key Features
+*   **Vendors**: Onboarding, OTP, Status.
+*   **Quotes**: Request and Submit quotes.
+*   **Receipts**: Upload and manage receipts with status updates.
+*   **Cron Jobs**: `POST /api/cron/send-expiry-reminder` for expiry notifications.

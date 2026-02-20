@@ -18,6 +18,8 @@ import NotFound from "./pages/NotFound";
 import VendorQuoteSubmit from "./pages/VendorQuoteSubmit";
 import QuoteApproval from "./pages/QuoteApproval";
 
+import MigrationProgress from "./pages/MigrationProgress";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,6 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/migration-status" element={<MigrationProgress />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/crm" element={<CRM />} />
             <Route path="/presentation" element={<Presentation />} />

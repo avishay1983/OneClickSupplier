@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { adminService } from '@/services/admin.service';
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
@@ -81,7 +82,7 @@ export default function Dashboard() {
         const { data: settings } = await supabase
           .from('app_settings')
           .select('setting_key, setting_value');
-        
+
         const settingsMap: Record<string, string> = {};
         settings?.forEach((s) => {
           settingsMap[s.setting_key] = s.setting_value;
@@ -108,7 +109,7 @@ export default function Dashboard() {
           const pendingForSignature = requests.filter(req => {
             // Must have contract uploaded
             if (!req.contract_file_path) return false;
-            
+
             if (role === 'vp') {
               // VP needs to sign and hasn't signed yet
               return req.requires_vp_approval && !req.ceo_signed;
@@ -142,21 +143,17 @@ export default function Dashboard() {
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('vendor_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setRequests((data as VendorRequest[]) || []);
+      // Use the new Admin Service
+      const data = await adminService.getRequests();
+      setRequests(data);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast({
         title: 'שגיאה',
-        description: 'לא ניתן לטעון את הבקשות',
+        description: 'לא ניתן לטעון את הבקשות מהשרת החדש',
         variant: 'destructive',
       });
     } finally {
@@ -174,13 +171,13 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchPendingReceiptsCount = async () => {
       if (!user || !isApproved) return;
-      
+
       try {
         const { count, error } = await supabase
           .from('vendor_receipts')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending');
-        
+
         if (!error && count !== null) {
           setPendingReceiptsCount(count);
         }
@@ -199,8 +196,8 @@ export default function Dashboard() {
       return true;
     }
     // Otherwise show only requests where user is the handler
-    return request.handler_email === user?.email || 
-           request.handler_name === currentUserName;
+    return request.handler_email === user?.email ||
+      request.handler_name === currentUserName;
   });
 
   const handleSignOut = async () => {
@@ -217,75 +214,29 @@ export default function Dashboard() {
       });
       return;
     }
-    
-    const secureToken = crypto.randomUUID();
-    // Use milliseconds calculation to support fractional days (e.g., 10 minutes = 0.007 days)
-    const expiresInMs = (data.expires_in_days || 7) * 24 * 60 * 60 * 1000;
-    const expiresAt = new Date(Date.now() + expiresInMs);
-    
-    // Remove fields that are not DB columns
-    const { expires_in_days, skip_manager_approval, ...dbData } = data;
-    
-    // Set handler_email to current user's email if handler_name is the current user
-    const requestData = {
-      ...dbData,
-      handler_email: user?.email || null,
-      // If skip_manager_approval is true, pre-approve manager fields
-      ...(skip_manager_approval && {
-        procurement_manager_approved: true,
-        procurement_manager_approved_at: new Date().toISOString(),
-        procurement_manager_approved_by: 'ללא צורך באישור',
-        vp_approved: true,
-        vp_approved_at: new Date().toISOString(),
-        vp_approved_by: 'ללא צורך באישור',
-      }),
-    };
-    
-    const { error } = await supabase
-      .from('vendor_requests')
-      .insert({
-        ...requestData,
-        secure_token: secureToken,
-        status: 'with_vendor',
-        payment_terms: 'שוטף + 60',
-        expires_at: expiresAt.toISOString(),
-      });
 
-    if (error) throw error;
-
-    // Send email to vendor
-    const secureLink = `${window.location.origin}/vendor/${secureToken}`;
     try {
-      const { error: emailError } = await supabase.functions.invoke('send-vendor-email', {
-        body: {
-          vendorName: data.vendor_name,
-          vendorEmail: data.vendor_email,
-          secureLink,
-        },
+      // Use the new Admin Service
+      await adminService.createRequest({
+        ...data,
+        handler_name: user?.user_metadata?.full_name || user?.email, // Fallback if name is empty
+        handler_email: user?.email
       });
 
-      if (emailError) {
-        console.error('Email error:', emailError);
-        toast({
-          title: 'הבקשה נוצרה',
-          description: 'הבקשה נוצרה אך שליחת המייל נכשלה. ניתן להעתיק את הקישור ידנית.',
-          variant: 'default',
-        });
-      } else {
-        toast({
-          title: 'הבקשה נוצרה בהצלחה',
-          description: 'הקישור המאובטח נשלח לספק במייל',
-        });
-      }
-    } catch (emailErr) {
-      console.error('Email send error:', emailErr);
       toast({
-        title: 'הבקשה נוצרה',
-        description: 'הבקשה נוצרה אך שליחת המייל נכשלה. ניתן להעתיק את הקישור ידנית.',
+        title: 'הבקשה נוצרה בהצלחה',
+        description: 'הקישור המאובטח נשלח לספק במייל',
+      });
+
+      fetchRequests();
+    } catch (error: any) {
+      console.error('Error creating request:', error);
+      toast({
+        title: 'שגיאה',
+        description: error.message || 'לא ניתן ליצור את הבקשה',
+        variant: 'destructive',
       });
     }
-
-    fetchRequests();
   };
 
   const handleBulkCreateRequests = async (vendors: BulkVendorData[]) => {
@@ -387,7 +338,7 @@ export default function Dashboard() {
 
   const handleResendApprovalRequest = async () => {
     if (!user) return;
-    
+
     setResendingApproval(true);
     try {
       const { error } = await supabase.functions.invoke('send-approval-request', {
@@ -430,9 +381,9 @@ export default function Dashboard() {
               תקבל הודעה כשהרישום יאושר.
             </p>
             <div className="flex flex-col gap-3">
-              <Button 
-                variant="default" 
-                onClick={handleResendApprovalRequest} 
+              <Button
+                variant="default"
+                onClick={handleResendApprovalRequest}
                 disabled={resendingApproval}
                 className="gap-2"
               >
@@ -466,9 +417,9 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
+              <img
+                src="/images/bituach-yashir-logo.png"
+                alt="ביטוח ישיר"
                 className="h-10 w-auto"
               />
               <div className="border-r border-white/20 pr-4">
@@ -480,7 +431,7 @@ export default function Dashboard() {
               <span className="text-white/70 text-sm hidden sm:inline">
                 {user.email}
               </span>
-              
+
               {/* Manager View Toggle */}
               {userManagerRole && (
                 <ToggleGroup
@@ -493,15 +444,15 @@ export default function Dashboard() {
                   }}
                   className="bg-white/10 rounded-lg p-0.5"
                 >
-                  <ToggleGroupItem 
-                    value="manager" 
+                  <ToggleGroupItem
+                    value="manager"
                     className="gap-1.5 text-white data-[state=on]:bg-white data-[state=on]:text-[#1a2b5f] hover:bg-white/20 text-xs px-2"
                   >
                     <FileSignature className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">חתימות</span>
                   </ToggleGroupItem>
-                  <ToggleGroupItem 
-                    value="regular" 
+                  <ToggleGroupItem
+                    value="regular"
                     className="gap-1.5 text-white data-[state=on]:bg-white data-[state=on]:text-[#1a2b5f] hover:bg-white/20 text-xs px-2"
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />
@@ -585,13 +536,13 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <FileSignature className="h-5 w-5 text-primary" />
                     <span className="text-sm font-medium">
-                      {pendingSignatures.length === 1 
+                      {pendingSignatures.length === 1
                         ? 'יש חוזה אחד ממתין לחתימתך'
                         : `יש ${pendingSignatures.length} חוזים ממתינים לחתימתך`
                       }
                     </span>
                   </div>
-                  <Button 
+                  <Button
                     size="sm"
                     variant="outline"
                     className="gap-2"
@@ -603,13 +554,13 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            
+
             <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
                 <p className="text-muted-foreground">
-                  {isAdmin && showAllRequests 
-                    ? 'צפה בכל הבקשות במערכת' 
+                  {isAdmin && showAllRequests
+                    ? 'צפה בכל הבקשות במערכת'
                     : 'צפה ונהל את הבקשות שלך'}
                 </p>
               </div>

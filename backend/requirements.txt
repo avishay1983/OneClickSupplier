@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+# supabase - causing build issues on Py3.14 due to pyiceberg/C++ deps
+gotrue
+postgrest
+httpx
+python-dotenv
+asyncpg
+greenlet
+email-validator
+python-multipart
+google-generativeai
