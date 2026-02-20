@@ -15,34 +15,23 @@ class StorageFileApi:
 
     
     def remove(self, paths: list):
-        # DELETE /storage/v1/object/{bucket}
-        # Body: { prefixes: [path1, path2] }
         url = f"{self.url}/storage/v1/object/{self.bucket}"
         response = httpx.request("DELETE", url, headers=self.headers, json={"prefixes": paths})
         if response.status_code != 200:
-             # It seems DELETE returns 200 on success with deleted objects list
              raise Exception(f"Failed to delete file: {response.status_code} {response.text}")
         return response.json()
 
     def upload(self, path: str, file_content: bytes, content_type: str = "application/octet-stream", upsert: bool = False):
-        # POST /storage/v1/object/{bucket}/{path}
         url = f"{self.url}/storage/v1/object/{self.bucket}/{path}"
-        
-        # Headers for upload
         headers = self.headers.copy()
         headers["Content-Type"] = content_type
         headers["x-upsert"] = "true" if upsert else "false"
-        
         response = httpx.post(url, headers=headers, content=file_content)
         if response.status_code != 200:
             raise Exception(f"Failed to upload file: {response.status_code} {response.text}")
         return response.json()
 
     def download(self, path: str):
-        # GET /storage/v1/object/public/{bucket}/{path} or authorized?
-        # Standard download is /storage/v1/object/{bucket}/{path}
-        # But for signed/private, we need auth header which we have.
-        # Note: 'authenticated' download logic implies we send the Bearer token.
         url = f"{self.url}/storage/v1/object/{self.bucket}/{path}"
         response = httpx.get(url, headers=self.headers)
         if response.status_code != 200:
@@ -66,42 +55,37 @@ class SupabaseClient:
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json"
         }
-        
-        # PostgREST
         self.postgrest = SyncPostgrestClient(f"{url}/rest/v1", headers=self.headers)
-        
-        # GoTrue
         self.auth = SyncGoTrueClient(
             url=f"{url}/auth/v1",
             headers=self.headers
         )
-        
-        # Storage
         self.storage = StorageClient(url, self.headers)
 
     def table(self, table_name: str):
         return self.postgrest.from_(table_name)
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-service_key: str = os.environ.get("SERVICE_ROLE_KEY")
-
-if not url or not key:
-    raise ValueError("Supabase URL and Key must be set in .env")
-
-# Standard client
-supabase = SupabaseClient(url, key)
-
-# Admin client
-supabase_admin = None
-if service_key:
-    supabase_admin = SupabaseClient(url, service_key)
+# --- Lazy initialization ---
+# Don't crash at import time; initialize on first use
+_supabase = None
+_supabase_admin = None
 
 def get_supabase() -> SupabaseClient:
-    return supabase
+    global _supabase
+    if _supabase is None:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_KEY")
+        if not url or not key:
+            raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
+        _supabase = SupabaseClient(url, key)
+    return _supabase
 
 def get_supabase_admin() -> SupabaseClient:
-    if not supabase_admin:
-        raise ValueError("SERVICE_ROLE_KEY not set in .env")
-    return supabase_admin
-
+    global _supabase_admin
+    if _supabase_admin is None:
+        url = os.environ.get("SUPABASE_URL")
+        service_key = os.environ.get("SERVICE_ROLE_KEY")
+        if not url or not service_key:
+            raise ValueError("SUPABASE_URL and SERVICE_ROLE_KEY must be set in environment variables")
+        _supabase_admin = SupabaseClient(url, service_key)
+    return _supabase_admin
