@@ -39,6 +39,35 @@ async def health_check():
         return {"status": "error", "message": str(e)}
 
 
+@app.get("/api/test-email")
+async def test_email():
+    """Temporary endpoint to diagnose email sending issues on Render."""
+    import traceback
+    result = {
+        "gmail_user_set": bool(os.environ.get("GMAIL_USER")),
+        "gmail_password_set": bool(os.environ.get("GMAIL_APP_PASSWORD")),
+        "gmail_user_value": (os.environ.get("GMAIL_USER") or "")[:10] + "...",
+        "gmail_password_length": len(os.environ.get("GMAIL_APP_PASSWORD") or ""),
+    }
+    
+    gmail_user = os.environ.get("GMAIL_USER")
+    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
+    
+    if gmail_user and gmail_password:
+        try:
+            import smtplib
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+                server.login(gmail_user, gmail_password)
+                result["smtp_login"] = "SUCCESS"
+        except Exception as e:
+            result["smtp_login"] = f"FAILED: {str(e)}"
+            result["smtp_traceback"] = traceback.format_exc()
+    else:
+        result["smtp_login"] = "SKIPPED - missing credentials"
+    
+    return result
+
+
 @app.get("/api/protected")
 async def protected_route(user = Depends(get_current_user)):
     return {"message": "You are authenticated!", "user_id": user.id, "email": user.email}

@@ -571,7 +571,9 @@ async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
         raise he
     except Exception as e:
         print(f"Error sending quote approval email: {e}")
-        return {"success": False, "error": str(e)}
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 class VendorStatusRequest(BaseModel):
     token: str
