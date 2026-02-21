@@ -43,6 +43,9 @@ async def health_check():
 async def test_email():
     """Temporary endpoint to diagnose email sending issues on Render."""
     import traceback
+    import socket
+    import ssl
+    
     result = {
         "gmail_user_set": bool(os.environ.get("GMAIL_USER")),
         "gmail_password_set": bool(os.environ.get("GMAIL_APP_PASSWORD")),
@@ -53,15 +56,38 @@ async def test_email():
     gmail_user = os.environ.get("GMAIL_USER")
     gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
     
+    # Resolve to IPv4
+    try:
+        ipv4_results = socket.getaddrinfo("smtp.gmail.com", None, socket.AF_INET)
+        ipv4_addr = ipv4_results[0][4][0] if ipv4_results else "FAILED"
+        result["ipv4_resolved"] = ipv4_addr
+    except Exception as e:
+        result["ipv4_resolved"] = f"ERROR: {e}"
+        ipv4_addr = "smtp.gmail.com"
+    
     if gmail_user and gmail_password:
+        # Test 1: SSL port 465 with IPv4
         try:
             import smtplib
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(ipv4_addr, 465, timeout=10, context=context) as server:
                 server.login(gmail_user, gmail_password)
-                result["smtp_login"] = "SUCCESS"
+                result["ssl_465"] = "SUCCESS"
         except Exception as e:
-            result["smtp_login"] = f"FAILED: {str(e)}"
-            result["smtp_traceback"] = traceback.format_exc()
+            result["ssl_465"] = f"FAILED: {str(e)}"
+        
+        # Test 2: STARTTLS port 587 with IPv4
+        try:
+            import smtplib
+            context = ssl.create_default_context()
+            with smtplib.SMTP(ipv4_addr, 587, timeout=10) as server:
+                server.ehlo()
+                server.starttls(context=context)
+                server.ehlo()
+                server.login(gmail_user, gmail_password)
+                result["starttls_587"] = "SUCCESS"
+        except Exception as e:
+            result["starttls_587"] = f"FAILED: {str(e)}"
     else:
         result["smtp_login"] = "SKIPPED - missing credentials"
     
