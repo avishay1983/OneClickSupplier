@@ -37,6 +37,7 @@ export const ENDPOINTS = {
         UPDATE_RECEIPT_STATUS: `${API_BASE_URL}/api/receipts/status`,
         SEND_RECEIPTS_LINK: `${API_BASE_URL}/api/receipts/send-link`,
         SEND_MANAGER_APPROVAL: `${API_BASE_URL}/api/users/send-manager-approval`,
+        SEND_QUOTE_APPROVAL_EMAIL: `${API_BASE_URL}/api/vendors/send-quote-approval-email`,
     },
 
     // Utils / AI Services

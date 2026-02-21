@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ENDPOINTS, getHeaders } from '@/config/api';
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,10 @@ const QuoteApproval = () => {
   const { token: rawToken } = useParams();
   const [searchParams] = useSearchParams();
   const approvalType = searchParams.get("type") as "vp" | "procurement_manager";
-  
+
   // Clean token from any query string that might have been appended
   const token = rawToken?.split('?')[0];
-  
+
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [quote, setQuote] = useState<any>(null);
@@ -31,7 +32,7 @@ const QuoteApproval = () => {
   const [showSignature, setShowSignature] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [approverName, setApproverName] = useState("");
-  
+
   // Debug mode state
   const [debugMode, setDebugMode] = useState(false);
   const [debugPreviewUrl, setDebugPreviewUrl] = useState<string | null>(null);
@@ -39,7 +40,7 @@ const QuoteApproval = () => {
   const [debugLoading, setDebugLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
 
@@ -53,7 +54,7 @@ const QuoteApproval = () => {
 
       try {
         console.log("Fetching quote with token:", token);
-        
+
         // Use edge function to fetch quote details (bypasses RLS for public access)
         const { data: quoteData, error: fetchError } = await supabase.functions.invoke(
           "vendor-quote-details",
@@ -68,7 +69,7 @@ const QuoteApproval = () => {
           setLoading(false);
           return;
         }
-        
+
         if (quoteData?.error) {
           setError(quoteData.error);
           setLoading(false);
@@ -114,7 +115,7 @@ const QuoteApproval = () => {
             .select("setting_value")
             .eq("setting_key", settingKey)
             .maybeSingle();
-          
+
           if (settingData?.setting_value) {
             setApproverName(settingData.setting_value);
           }
@@ -135,24 +136,24 @@ const QuoteApproval = () => {
   // Initialize signature pad when showing signature
   useEffect(() => {
     if (!showSignature || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const container = canvas.parentElement;
-    
+
     if (!container) return;
-    
+
     // Get container dimensions
     const rect = container.getBoundingClientRect();
-    
+
     // Set canvas dimensions
     canvas.width = Math.min(rect.width, 400);
     canvas.height = 200;
-    
+
     // Destroy previous instance if exists
     if (signaturePadRef.current) {
       signaturePadRef.current.off();
     }
-    
+
     // Initialize SignaturePad
     signaturePadRef.current = new SignaturePad(canvas, {
       backgroundColor: 'rgb(255, 255, 255)',
@@ -161,10 +162,10 @@ const QuoteApproval = () => {
       maxWidth: 2.5,
       throttle: 16,
     });
-    
+
     // Clear to set background
     signaturePadRef.current.clear();
-    
+
     return () => {
       if (signaturePadRef.current) {
         signaturePadRef.current.off();
@@ -238,10 +239,10 @@ const QuoteApproval = () => {
 
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging || !previewContainerRef.current) return;
-    
+
     const container = previewContainerRef.current;
     const rect = container.getBoundingClientRect();
-    
+
     let clientX: number, clientY: number;
     if ('touches' in e) {
       clientX = e.touches[0].clientX;
@@ -250,14 +251,14 @@ const QuoteApproval = () => {
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
-    
+
     // Keep within bounds (accounting for box size)
     const clampedX = Math.max(0, Math.min(x, 85));
     const clampedY = Math.max(0, Math.min(y, 94));
-    
+
     setDebugPosition({ x: clampedX, y: clampedY });
   };
 
@@ -279,10 +280,10 @@ const QuoteApproval = () => {
 
     setProcessing(true);
     setStatusMessage("מעבד את החתימה...");
-    
+
     try {
       const signatureDataUrl = signaturePadRef.current.toDataURL('image/png');
-      
+
       // Download the PDF
       setStatusMessage("מוריד את הצעת המחיר...");
       const { data: pdfData, error: downloadError } = await supabase.storage
@@ -292,23 +293,23 @@ const QuoteApproval = () => {
       if (downloadError) throw downloadError;
 
       const pdfBytes = await pdfData.arrayBuffer();
-      
+
       // Load PDF and add signature
       setStatusMessage("מוסיף חתימה למסמך...");
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const signatureImage = await pdfDoc.embedPng(signatureDataUrl);
-      
+
       const pages = pdfDoc.getPages();
       const lastPage = pages[pages.length - 1];
       const { width: pageWidth, height: pageHeight } = lastPage.getSize();
-      
+
       // Calculate signature position
       const sigWidth = 100;
       const sigHeight = 40;
-      
+
       let xPosition: number;
       let yPosition: number;
-      
+
       // If user has set a custom position via debug mode, use it
       if (debugPosition) {
         // Convert from percentage (top-left origin for preview) to PDF coordinates (bottom-left origin)
@@ -323,7 +324,7 @@ const QuoteApproval = () => {
           xPosition = (pageWidth - sigWidth) / 2;
         }
       }
-      
+
       console.log('Placing signature at:', { xPosition, yPosition, pageWidth, pageHeight, approvalType, debugPosition });
 
       console.log('Placing signature at:', {
@@ -333,7 +334,7 @@ const QuoteApproval = () => {
         pageHeight,
         signerType: approvalType,
       });
-      
+
       // Draw signature
       lastPage.drawImage(signatureImage, {
         x: xPosition,
@@ -341,7 +342,7 @@ const QuoteApproval = () => {
         width: sigWidth,
         height: sigHeight,
       });
-      
+
       // Add date below signature
       const dateStr = new Date().toLocaleDateString('he-IL');
       lastPage.drawText(dateStr, {
@@ -354,7 +355,7 @@ const QuoteApproval = () => {
       // Save the modified PDF
       const modifiedPdfBytes = await pdfDoc.save();
       const modifiedPdfBlob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: 'application/pdf' });
-      
+
       // Upload the signed PDF
       setStatusMessage("שומר את המסמך החתום...");
       const { error: uploadError } = await supabase.storage
@@ -403,8 +404,10 @@ const QuoteApproval = () => {
           .maybeSingle();
 
         if (settings?.setting_value) {
-          await supabase.functions.invoke("send-quote-approval-email", {
-            body: {
+          await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({
               quoteId: quote.id,
               approverEmail: settings.setting_value,
               approverName: nameSettings?.setting_value || "מנהל רכש",
@@ -412,7 +415,7 @@ const QuoteApproval = () => {
               amount: quote.amount,
               description: quote.description,
               approvalType: "procurement_manager",
-            },
+            }),
           });
         }
       }
@@ -597,7 +600,7 @@ const QuoteApproval = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 גרור את הריבוע הכחול למיקום הרצוי לחתימת <strong>{approvalTypeName}</strong>.
               </p>
-              <div 
+              <div
                 ref={previewContainerRef}
                 className="relative border rounded-lg overflow-hidden bg-white cursor-crosshair select-none"
                 onMouseMove={handleDragMove}
@@ -634,8 +637,8 @@ const QuoteApproval = () => {
                 <p className="text-xs text-muted-foreground">
                   X: {debugPosition?.x?.toFixed(1)}% | Y: {debugPosition?.y?.toFixed(1)}%
                 </p>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={() => {
                     // Reset to default position
                     const yFromTop = 38;
@@ -660,7 +663,7 @@ const QuoteApproval = () => {
               <p className="text-sm text-muted-foreground">
                 נא לחתום במסגרת להלן. החתימה תוטמע אוטומטית במיקום הנכון ב-PDF (מתחת ל-"{approvalTypeName}")
               </p>
-              
+
               <div className="border-2 border-dashed border-border rounded-lg p-2 bg-white">
                 <canvas
                   ref={canvasRef}
@@ -668,7 +671,7 @@ const QuoteApproval = () => {
                   style={{ maxWidth: '400px', margin: '0 auto', display: 'block' }}
                 />
               </div>
-              
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -688,14 +691,14 @@ const QuoteApproval = () => {
                   ביטול
                 </Button>
               </div>
-              
+
               {statusMessage && (
                 <div className="text-center text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin inline ml-2" />
                   {statusMessage}
                 </div>
               )}
-              
+
               <Button
                 onClick={handleApprove}
                 disabled={processing}

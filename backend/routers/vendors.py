@@ -494,6 +494,85 @@ async def send_quote_request_email(request: SendQuoteEmailRequest):
         print(f"Error sending quote email: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+class SendQuoteApprovalEmailRequest(BaseModel):
+    quoteId: str
+    approverEmail: str
+    approverName: str
+    vendorName: str
+    amount: Optional[float] = None
+    description: Optional[str] = None
+    approvalType: str  # "vp" or "procurement_manager"
+
+@router.post("/send-quote-approval-email")
+async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
+    """
+    Send approval email for a quote to VP or procurement manager.
+    Replaces: supabase.functions.invoke('send-quote-approval-email')
+    """
+    try:
+        supabase = get_supabase_admin()
+        
+        # Get the quote's secure token
+        response = supabase.table("vendor_quotes").select("quote_secure_token, file_path").eq("id", request.quoteId).maybe_single().execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        
+        quote = response.data
+        
+        # Build the approval link
+        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+        approval_link = f"{frontend_url}/quote-approval/{quote['quote_secure_token']}?type={request.approvalType}"
+        
+        amount_display = f"₪{request.amount:,.0f}" if request.amount else "לא צוין"
+        description_display = request.description or "לא צוין"
+        
+        email_html = f"""<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+<h1 style="margin: 0; text-align: center; color: white;">בקשה לאישור הצעת מחיר</h1>
+</div>
+<div style="padding: 30px;">
+<p style="margin: 12px 0;">שלום {request.approverName},</p>
+<p style="margin: 12px 0;">הצעת מחיר חדשה ממתינה לאישורך:</p>
+
+<div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+<h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי ההצעה:</h3>
+<table style="width: 100%; border-collapse: collapse;">
+<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>ספק:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{request.vendorName}</td></tr>
+<tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>סכום:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{amount_display}</td></tr>
+<tr><td style="padding: 8px 0;"><strong>תיאור:</strong></td><td style="padding: 8px 0;">{description_display}</td></tr>
+</table>
+</div>
+
+<div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+<a href="{approval_link}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold;">צפייה ואישור</a>
+</div>
+
+<p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר</p>
+</div>
+</div>
+</body>
+</html>"""
+        
+        normalized_email = request.approverEmail.strip().lower()
+        send_email_via_smtp(normalized_email, f"בקשה לאישור הצעת מחיר - {request.vendorName}", email_html)
+        
+        return {"success": True}
+    
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error sending quote approval email: {e}")
+        return {"success": False, "error": str(e)}
+
 class VendorStatusRequest(BaseModel):
     token: str
 

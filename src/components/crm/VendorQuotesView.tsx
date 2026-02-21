@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ENDPOINTS, getHeaders } from '@/config/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,13 +38,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { 
-  Loader2, 
-  FileText, 
-  Download, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Loader2,
+  FileText,
+  Download,
+  CheckCircle,
+  XCircle,
+  Clock,
   RefreshCw,
   Search,
   Plus,
@@ -122,12 +123,12 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  
+
   const [sendQuoteDialogOpen, setSendQuoteDialogOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
   const [resendingQuoteId, setResendingQuoteId] = useState<string | null>(null);
-  
+
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<VendorQuote | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -149,7 +150,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       const formattedQuotes = (data || []).map((q: any) => ({
         ...q,
         vendor_name: q.vendor_requests.vendor_name,
@@ -157,7 +158,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         handler_name: q.vendor_requests.handler_name,
         handler_email: q.vendor_requests.handler_email,
       }));
-      
+
       setQuotes(formattedQuotes);
     } catch (error) {
       console.error('Error fetching quotes:', error);
@@ -180,13 +181,13 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         .order('vendor_name');
 
       if (error) throw error;
-      
+
       // Filter out test vendors
       const filteredVendors = (data || []).filter(vendor => {
         const name = vendor.vendor_name.toLowerCase();
         return !name.includes('טסט') && !name.includes('test') && !name.includes('בדיקה');
       });
-      
+
       setVendors(filteredVendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
@@ -338,7 +339,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       });
       return;
     }
-    
+
     try {
       const { data, error } = await supabase.storage
         .from('vendor_documents')
@@ -393,20 +394,21 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       if (!vpEmail) {
         emailState = 'not_configured';
       } else {
-        const { data: emailData, error: emailError } = await supabase.functions.invoke(
-          'send-quote-approval-email',
-          {
-            body: {
-              quoteId: quote.id,
-              approverEmail: vpEmail,
-              approverName: 'סמנכ"ל',
-              vendorName: quote.vendor_name,
-              amount: quote.amount,
-              description: quote.description,
-              approvalType: 'vp',
-            },
-          }
-        );
+        const emailRes = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            quoteId: quote.id,
+            approverEmail: vpEmail,
+            approverName: 'סמנכ"ל',
+            vendorName: quote.vendor_name,
+            amount: quote.amount,
+            description: quote.description,
+            approvalType: 'vp',
+          }),
+        });
+        const emailData = await emailRes.json();
+        const emailError = !emailRes.ok ? emailData : null;
 
         if (emailError || (emailData as any)?.success === false) {
           emailState = 'failed';
@@ -460,8 +462,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       }
 
       // Send email to VP
-      const { data: emailData, error } = await supabase.functions.invoke('send-quote-approval-email', {
-        body: {
+      const emailRes = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
           quoteId: quote.id,
           approverEmail: settings.setting_value,
           approverName: 'סמנכ"ל',
@@ -469,8 +473,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           amount: quote.amount,
           description: quote.description,
           approvalType: 'vp',
-        },
+        }),
       });
+      const emailData = await emailRes.json();
+      const error = !emailRes.ok ? emailData : null;
 
       if (error) throw error;
       if ((emailData as any)?.success === false) {
@@ -518,8 +524,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       }
 
       // Send email to procurement manager
-      const { data: emailData, error } = await supabase.functions.invoke('send-quote-approval-email', {
-        body: {
+      const emailRes = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
           quoteId: quote.id,
           approverEmail: settings.setting_value,
           approverName: 'מנהל רכש',
@@ -527,8 +535,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           amount: quote.amount,
           description: quote.description,
           approvalType: 'procurement_manager',
-        },
+        }),
       });
+      const emailData = await emailRes.json();
+      const error = !emailRes.ok ? emailData : null;
 
       if (error) throw error;
       if ((emailData as any)?.success === false) {
@@ -580,8 +590,10 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
       if (settings?.setting_value) {
         // Send email to procurement manager
-        await supabase.functions.invoke('send-quote-approval-email', {
-          body: {
+        await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
             quoteId: quote.id,
             approverEmail: settings.setting_value,
             approverName: 'מנהל רכש',
@@ -589,7 +601,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             amount: quote.amount,
             description: quote.description,
             approvalType: 'procurement_manager',
-          },
+          }),
         });
       }
 
@@ -657,7 +669,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
     setIsUpdating(true);
     try {
       let updateData: any = { status: 'rejected' };
-      
+
       if (rejectType === 'handler') {
         updateData = {
           ...updateData,
@@ -718,9 +730,9 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
   // Check if current user is the handler for this quote
   const isHandler = (quote: VendorQuote): boolean => {
-    return currentUserEmail === quote.handler_email || 
-           currentUserName === quote.handler_name ||
-           currentUserName === quote.submitted_by;
+    return currentUserEmail === quote.handler_email ||
+      currentUserName === quote.handler_name ||
+      currentUserName === quote.submitted_by;
   };
 
   const filteredQuotes = quotes.filter((quote) => {
@@ -754,7 +766,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
     <div className="space-y-6" dir="rtl">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
           onClick={() => setStatusFilter('all')}
         >
@@ -765,7 +777,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_vendor' ? 'ring-2 ring-gray-500' : ''}`}
           onClick={() => setStatusFilter('pending_vendor')}
         >
@@ -776,7 +788,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_handler' ? 'ring-2 ring-orange-500' : ''}`}
           onClick={() => setStatusFilter('pending_handler')}
         >
@@ -787,7 +799,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_vp' ? 'ring-2 ring-warning' : ''}`}
           onClick={() => setStatusFilter('pending_vp')}
         >
@@ -798,7 +810,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'pending_procurement' ? 'ring-2 ring-blue-500' : ''}`}
           onClick={() => setStatusFilter('pending_procurement')}
         >
@@ -809,7 +821,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'approved' ? 'ring-2 ring-success' : ''}`}
           onClick={() => setStatusFilter('approved')}
         >
@@ -820,7 +832,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'rejected' ? 'ring-2 ring-destructive' : ''}`}
           onClick={() => setStatusFilter('rejected')}
         >
@@ -908,7 +920,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                     const quoteStatus = getQuoteStatus(quote);
                     const statusConfig = STATUS_CONFIG[quoteStatus] || STATUS_CONFIG.pending_vendor;
                     const StatusIcon = statusConfig.icon;
-                    
+
                     return (
                       <TableRow key={quote.id}>
                         <TableCell>
@@ -967,9 +979,9 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 transition-all hover:rotate-90 duration-300"
                               >
                                 <SlidersHorizontal className="h-5 w-5" />
@@ -986,7 +998,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
                               {/* Resend to vendor - for pending_vendor status */}
                               {quoteStatus === 'pending_vendor' && (
-                                <DropdownMenuItem 
+                                <DropdownMenuItem
                                   onClick={() => handleResendQuoteRequest(quote)}
                                   disabled={resendingQuoteId === quote.id}
                                 >
@@ -999,14 +1011,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                               {quoteStatus === 'pending_handler' && isHandler(quote) && (
                                 <>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleHandlerApprove(quote)}
                                     disabled={isUpdating}
                                   >
                                     <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
                                     אשר ושלח לסמנכ"ל
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => {
                                       setSelectedQuote(quote);
                                       setRejectType('handler');
@@ -1023,7 +1035,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                               {/* VP actions - for pending_vp status */}
                               {quoteStatus === 'pending_vp' && (
                                 <>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleResendVPEmail(quote)}
                                     disabled={resendingVPQuoteId === quote.id}
                                   >
@@ -1033,14 +1045,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                                   {isVP && (
                                     <>
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => handleVPApprove(quote)}
                                         disabled={isUpdating}
                                       >
                                         <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
                                         אשר (סמנכ"ל)
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => {
                                           setSelectedQuote(quote);
                                           setRejectType('vp');
@@ -1059,7 +1071,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                               {/* Procurement Manager actions - for pending_procurement status */}
                               {quoteStatus === 'pending_procurement' && (
                                 <>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleResendProcurementEmail(quote)}
                                     disabled={resendingProcurementQuoteId === quote.id}
                                   >
@@ -1069,14 +1081,14 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                                   {isProcurementManager && (
                                     <>
                                       <DropdownMenuSeparator />
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => handleProcurementApprove(quote)}
                                         disabled={isUpdating}
                                       >
                                         <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
                                         אשר (מנהל רכש)
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => {
                                           setSelectedQuote(quote);
                                           setRejectType('procurement');
@@ -1152,9 +1164,9 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
             />
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
-            <Button 
-              variant="destructive" 
-              onClick={handleReject} 
+            <Button
+              variant="destructive"
+              onClick={handleReject}
               disabled={isUpdating || !rejectionReason.trim()}
             >
               {isUpdating && <Loader2 className="h-4 w-4 animate-spin ml-2" />}

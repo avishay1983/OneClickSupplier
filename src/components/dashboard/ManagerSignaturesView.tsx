@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ENDPOINTS, getHeaders } from '@/config/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
       setIsLoadingQuotes(true);
       try {
         const statusFilter = role === 'vp' ? 'pending_vp' : 'pending_procurement';
-        
+
         const { data, error } = await supabase
           .from('vendor_quotes')
           .select(`
@@ -59,14 +60,14 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        
+
         const formattedQuotes = (data || []).map((q: any) => ({
           ...q,
           vendor_name: q.vendor_requests.vendor_name,
           vendor_email: q.vendor_requests.vendor_email,
           handler_name: q.vendor_requests.handler_name,
         }));
-        
+
         setPendingQuotes(formattedQuotes);
       } catch (error) {
         console.error('Error fetching pending quotes:', error);
@@ -122,8 +123,10 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
         return;
       }
 
-      const { error } = await supabase.functions.invoke('send-quote-approval-email', {
-        body: {
+      const res = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
           quoteId: quote.id,
           approverEmail: settings.setting_value,
           approverName: roleName,
@@ -131,10 +134,10 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
           amount: quote.amount,
           description: quote.description,
           approvalType: role === 'vp' ? 'vp' : 'procurement_manager',
-        },
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error('Failed to send email');
 
       toast({
         title: 'המייל נשלח',
@@ -159,21 +162,21 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
   };
 
   const totalPending = pendingSignatures.length + pendingQuotes.length;
-  
+
   // Count urgent contracts (over 3 days)
   const urgentContracts = pendingSignatures.filter(r => {
     const created = new Date(r.created_at);
     const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
     return daysDiff > 3;
   }).length;
-  
+
   // Count urgent quotes (over 3 days)
   const urgentQuotes = pendingQuotes.filter(q => {
     const created = new Date(q.created_at);
     const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
     return daysDiff > 3;
   }).length;
-  
+
   const totalUrgent = urgentContracts + urgentQuotes;
 
   return (
@@ -187,9 +190,9 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
           <div>
             <h1 className="text-3xl font-bold text-foreground">שלום, {managerName}</h1>
             <p className="text-muted-foreground text-lg mt-1">
-              {totalPending === 0 
-                ? 'אין פריטים ממתינים לחתימתך' 
-                : totalPending === 1 
+              {totalPending === 0
+                ? 'אין פריטים ממתינים לחתימתך'
+                : totalPending === 1
                   ? 'יש פריט אחד ממתין לחתימתך'
                   : `יש ${totalPending} פריטים ממתינים לחתימתך`
               }
@@ -223,7 +226,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -256,7 +259,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
             <FileText className="h-5 w-5 text-blue-500" />
             הצעות מחיר ממתינות לחתימה
           </h2>
-          
+
           <div className="grid gap-4">
             {pendingQuotes.map((quote) => {
               const created = new Date(quote.created_at);
@@ -264,27 +267,24 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
               const isUrgent = daysDiff > 3;
 
               return (
-                <Card 
-                  key={quote.id} 
-                  className={`overflow-hidden transition-all hover:shadow-lg ${
-                    isUrgent 
-                      ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20' 
+                <Card
+                  key={quote.id}
+                  className={`overflow-hidden transition-all hover:shadow-lg ${isUrgent
+                      ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20'
                       : 'border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/10'
-                  }`}
+                    }`}
                 >
                   <CardContent className="p-0">
                     <div className="flex items-center gap-4 p-6">
                       {/* Icon */}
-                      <div className={`p-3 rounded-xl ${
-                        isUrgent 
-                          ? 'bg-red-100 dark:bg-red-900/50' 
+                      <div className={`p-3 rounded-xl ${isUrgent
+                          ? 'bg-red-100 dark:bg-red-900/50'
                           : 'bg-blue-100 dark:bg-blue-900/50'
-                      }`}>
-                        <FileText className={`h-8 w-8 ${
-                          isUrgent 
-                            ? 'text-red-600 dark:text-red-400' 
+                        }`}>
+                        <FileText className={`h-8 w-8 ${isUrgent
+                            ? 'text-red-600 dark:text-red-400'
                             : 'text-blue-600 dark:text-blue-400'
-                        }`} />
+                          }`} />
                       </div>
 
                       {/* Info */}
@@ -296,11 +296,10 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
                               דחוף מאוד
                             </Badge>
                           )}
-                          <Badge variant="secondary" className={`text-xs ${
-                            isUrgent 
+                          <Badge variant="secondary" className={`text-xs ${isUrgent
                               ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                               : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                          }`}>
+                            }`}>
                             הצעת מחיר
                           </Badge>
                         </div>
@@ -332,7 +331,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-2">
-                        <Button 
+                        <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleResendQuoteEmail(quote)}
@@ -346,7 +345,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
                           )}
                           שלח שוב
                         </Button>
-                        <Button 
+                        <Button
                           size="lg"
                           onClick={() => openQuoteForSigning(quote)}
                           className="gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px]"
@@ -371,7 +370,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
             <FileSignature className="h-5 w-5 text-primary" />
             חוזים ממתינים לחתימה
           </h2>
-          
+
           <div className="grid gap-4">
             {pendingSignatures.map((request) => {
               const created = new Date(request.created_at);
@@ -379,25 +378,22 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
               const isUrgent = daysDiff > 3;
 
               return (
-                <Card 
-                  key={request.id} 
-                  className={`overflow-hidden transition-all hover:shadow-lg ${
-                    isUrgent ? 'border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/20' : ''
-                  }`}
+                <Card
+                  key={request.id}
+                  className={`overflow-hidden transition-all hover:shadow-lg ${isUrgent ? 'border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-950/20' : ''
+                    }`}
                 >
                   <CardContent className="p-0">
                     <div className="flex items-center gap-4 p-6">
                       {/* Icon */}
-                      <div className={`p-3 rounded-xl ${
-                        isUrgent 
-                          ? 'bg-orange-100 dark:bg-orange-900/50' 
+                      <div className={`p-3 rounded-xl ${isUrgent
+                          ? 'bg-orange-100 dark:bg-orange-900/50'
                           : 'bg-primary/10'
-                      }`}>
-                        <Building2 className={`h-8 w-8 ${
-                          isUrgent 
-                            ? 'text-orange-600 dark:text-orange-400' 
+                        }`}>
+                        <Building2 className={`h-8 w-8 ${isUrgent
+                            ? 'text-orange-600 dark:text-orange-400'
                             : 'text-primary'
-                        }`} />
+                          }`} />
                       </div>
 
                       {/* Info */}
@@ -434,7 +430,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
                       </div>
 
                       {/* Action Button */}
-                      <Button 
+                      <Button
                         size="lg"
                         onClick={() => handleSign(request)}
                         className="gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px]"
