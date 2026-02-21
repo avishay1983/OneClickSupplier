@@ -35,7 +35,7 @@ async function sendEmailViaSMTP(
   const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
 
   const boundary = "----=_Part_" + Date.now();
-  
+
   const rawEmail = [
     `From: ${gmailUser}`,
     `To: ${to}`,
@@ -141,7 +141,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     // Build the approval link
-    const baseUrl = 'https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com';
+    const baseUrl = Deno.env.get('FRONTEND_URL') || 'https://oneclicksupplier.onrender.com';
     const approvalLink = `${baseUrl}/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
 
     const emailHtml = `<!DOCTYPE html>
@@ -179,10 +179,10 @@ serve(async (req: Request): Promise<Response> => {
 </html>`;
 
     await sendEmailViaSMTP(
-      gmailUser, 
-      gmailAppPassword, 
-      normalizedApproverEmail, 
-      `בקשה לאישור הצעת מחיר - ${vendorName}`, 
+      gmailUser,
+      gmailAppPassword,
+      normalizedApproverEmail,
+      `בקשה לאישור הצעת מחיר - ${vendorName}`,
       emailHtml
     );
 

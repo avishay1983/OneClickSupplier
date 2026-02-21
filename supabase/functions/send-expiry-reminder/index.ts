@@ -36,8 +36,8 @@ async function sendReminderEmail(
     throw new Error("Gmail credentials not configured");
   }
 
-  const timeText = hoursRemaining <= 24 
-    ? `${Math.round(hoursRemaining)} שעות` 
+  const timeText = hoursRemaining <= 24
+    ? `${Math.round(hoursRemaining)} שעות`
     : `${Math.round(hoursRemaining / 24)} ימים`;
 
   const subject = encodeSubject(`תזכורת: הקישור לטופס הספק יפוג בעוד ${timeText}`);
@@ -176,8 +176,8 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("setting_key", "expiry_reminder_hours")
       .maybeSingle();
 
-    const reminderHours = settingsData?.setting_value 
-      ? parseInt(settingsData.setting_value) 
+    const reminderHours = settingsData?.setting_value
+      ? parseInt(settingsData.setting_value)
       : 24;
 
     // Find vendor requests that:
@@ -210,9 +210,9 @@ const handler = async (req: Request): Promise<Response> => {
       try {
         const expiresAt = new Date(request.expires_at);
         const hoursRemaining = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-        
+
         // Build the form link
-        const baseUrl = Deno.env.get("PUBLIC_APP_URL") || "https://ijyqtemnhlbamxmgjuzp.lovableproject.com";
+        const baseUrl = Deno.env.get("FRONTEND_URL") || "https://oneclicksupplier.onrender.com";
         const formLink = `${baseUrl}/vendor/${request.secure_token}`;
 
         console.log(`Sending reminder to ${request.vendor_email} for ${request.vendor_name}, expires in ${hoursRemaining.toFixed(1)} hours`);
@@ -241,9 +241,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Completed: ${sentCount} reminders sent, ${errorCount} errors`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sent: sentCount, 
+      JSON.stringify({
+        success: true,
+        sent: sentCount,
         errors: errorCount,
         checked: expiringRequests?.length || 0
       }),

@@ -148,7 +148,7 @@ async def send_receipts_link(request: SendLinkRequest):
 
     # Generate Link
     token = vendor["secure_token"]
-    frontend_url = os.environ.get("FRONTEND_URL", "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com")
+    frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
     link = f"{frontend_url}/vendor-onboarding?token={token}&step=receipts" 
     # Or maybe a dedicated /vendor-receipts/{token} route? 
     # Based on "send-receipts-link" implementation in edge functions likely goes to onboarding or dedicated page.

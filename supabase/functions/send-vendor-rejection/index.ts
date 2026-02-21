@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Vendor request not found");
     }
 
-    const statusUrl = `https://ijyqtemnhlbamxmgjuzp.lovableproject.com/vendor-status/${vendorRequest.secure_token}`;
+    const statusUrl = `${Deno.env.get('FRONTEND_URL') || 'https://oneclicksupplier.onrender.com'}/vendor-status/${vendorRequest.secure_token}`;
     const handlerName = vendorRequest.handler_name || "הנציג המטפל בתיק";
 
     const emailHtml = `

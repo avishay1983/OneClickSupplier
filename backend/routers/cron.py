@@ -49,7 +49,7 @@ async def send_expiry_reminder():
         error_count = 0
         error_details = []
         
-        frontend_url = os.environ.get("FRONTEND_URL", "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
         
         for req in expiring_requests:
             try:

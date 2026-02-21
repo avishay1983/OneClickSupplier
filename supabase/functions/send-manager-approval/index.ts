@@ -50,9 +50,9 @@ async function sendEmailViaSMTP(
   const encodedSubject = `=?UTF-8?B?${subjectBase64}?=`;
 
   const boundary = "----=_Part_" + Date.now();
-  
+
   let rawEmail: string;
-  
+
   if (attachment) {
     // Email with attachment - use chunked encoding for large files
     const attachmentBase64 = encodeUint8ArrayToBase64(attachment.content);
@@ -185,13 +185,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Download contract PDF if exists
     let contractAttachment: { filename: string; content: Uint8Array } | null = null;
-    
+
     if (vendorRequest.requires_contract_signature && vendorRequest.contract_file_path) {
       console.log("Downloading contract file:", vendorRequest.contract_file_path);
       const { data: fileData, error: downloadError } = await supabase.storage
         .from("vendor_documents")
         .download(vendorRequest.contract_file_path);
-      
+
       if (downloadError) {
         console.error("Error downloading contract:", downloadError);
       } else if (fileData) {
@@ -212,14 +212,14 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", vendorRequestId);
 
     // Get the app URL for signing link
-    const appUrl = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+    const appUrl = Deno.env.get('FRONTEND_URL') || "https://oneclicksupplier.onrender.com";
 
     const createApprovalEmail = (role: 'procurement_manager' | 'vp', recipientName: string, hasContract: boolean) => {
       // Direct link to dashboard - requires authentication
       const signingLink = `${appUrl}/?tab=signatures`;
-      
+
       // Different content based on whether contract signature is required
-      const actionSection = hasContract 
+      const actionSection = hasContract
         ? `<div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
             <h3 style="margin: 0 0 15px 0; color: #0369a1;">נדרשת חתימה דיגיטלית</h3>
             <p style="margin: 10px 0; color: #333;">החוזה מצורף למייל זה.</p>
@@ -273,20 +273,20 @@ ${actionSection}
     // Procurement manager email is only sent AFTER VP has signed (ceo_signed = true) IF VP approval is required
     // This check is for contracts requiring signature
     const vpHasSigned = vendorRequest.ceo_signed === true;
-    
+
     // If VP approval is not required, we can send to procurement manager immediately
     // If VP approval is required, we need VP to sign first (for contracts)
     const canSendToProcurement = !requiresVpApproval || !hasContract || vpHasSigned;
-    
-    const shouldSendToProcurement = targetRole === 'procurement_manager' 
+
+    const shouldSendToProcurement = targetRole === 'procurement_manager'
       ? (forceResend || (vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true)) && procurementManagerEmail && canSendToProcurement
       : (!targetRole && procurementManagerEmail && vendorRequest.procurement_manager_approved === null && vendorRequest.procurement_manager_signed !== true && canSendToProcurement);
-    
+
     if (shouldSendToProcurement) {
       const procurementEmailHtml = createApprovalEmail('procurement_manager', procurementManagerName, hasContract);
-      await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail, 
-        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
-        procurementEmailHtml, 
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, procurementManagerEmail,
+        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
+        procurementEmailHtml,
         contractAttachment
       );
       console.log("Email sent to procurement manager");
@@ -299,12 +299,12 @@ ${actionSection}
     const shouldSendToVp = requiresVpApproval && (targetRole === 'vp'
       ? (forceResend || (vendorRequest.vp_approved === null && vendorRequest.ceo_signed !== true)) && vpEmail
       : (!targetRole && vpEmail && vendorRequest.vp_approved === null && vendorRequest.ceo_signed !== true));
-    
+
     if (shouldSendToVp) {
       const vpEmailHtml = createApprovalEmail('vp', vpName, hasContract);
-      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail, 
-        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`, 
-        vpEmailHtml, 
+      await sendEmailViaSMTP(gmailUser, gmailAppPassword, vpEmail,
+        hasContract ? `הצעת מחיר לחתימה - ${vendorRequest.vendor_name}` : `אישור הקמת ספק - ${vendorRequest.vendor_name}`,
+        vpEmailHtml,
         contractAttachment
       );
       console.log("Email sent to VP");

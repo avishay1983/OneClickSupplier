@@ -47,7 +47,7 @@ async function sendEmailViaSMTP(
   await sendCommand("DATA");
 
   const boundary = "----=_Part_" + Math.random().toString(36).substring(2);
-  
+
   const emailContent = [
     `From: =?UTF-8?B?${encodeBase64("ביטוח ישיר")}?= <${gmailUser}>`,
     `To: ${to}`,
@@ -66,7 +66,7 @@ async function sendEmailViaSMTP(
   ].join("\r\n");
 
   await tlsConn.write(encoder.encode(emailContent + "\r\n"));
-  
+
   const buffer = new Uint8Array(1024);
   await tlsConn.read(buffer);
 
@@ -123,7 +123,7 @@ serve(async (req: Request): Promise<Response> => {
         ? normalized(origin)
         : referer
           ? new URL(referer).origin
-          : "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+          : Deno.env.get('FRONTEND_URL') || "https://oneclicksupplier.onrender.com";
 
     const quoteLink = `${baseUrl}/vendor-quote/${quote.quote_secure_token}`;
 

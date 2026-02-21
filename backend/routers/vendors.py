@@ -29,7 +29,7 @@ def send_handler_notification(handler_email: str, handler_name: str, vendor_name
         print("No handler email provided")
         return
 
-    dashboard_url = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/"
+    dashboard_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com") + "/"
     
     html_content = f"""
 <!DOCTYPE html>
@@ -409,7 +409,7 @@ async def send_quote_request_email(request: SendQuoteEmailRequest):
         
         # Build Link
         # Access frontend url from env or default
-        frontend_url = os.environ.get("FRONTEND_URL", "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
         quote_link = f"{frontend_url}/vendor-quote/{token}"
         
         # Build Email
@@ -683,7 +683,8 @@ async def send_vendor_email_endpoint(request: SendVendorEmailRequest):
              if response.data:
                  vendor_name = response.data["vendor_name"]
                  vendor_email = response.data["vendor_email"]
-                 secure_link = f"https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor/{response.data['secure_token']}"
+                 frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+                 secure_link = f"{frontend_url}/vendor/{response.data['secure_token']}"
         except Exception as e:
             print(f"Error fetching detail for email: {e}")
 
@@ -729,7 +730,8 @@ async def reject_vendor(request: RejectRequest):
         }).eq("id", request.vendorRequestId).execute()
         
         # Send Email
-        status_url = f"https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor-status/{vendor_request['secure_token']}"
+        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+        status_url = f"{frontend_url}/vendor-status/{vendor_request['secure_token']}"
         
         html_content = f"""
 <!DOCTYPE html>
@@ -773,7 +775,8 @@ async def confirm_vendor(request: ConfirmRequest):
         }).eq("id", request.vendorRequestId).execute()
 
         if request.sendReceiptsLink:
-             receipts_link = f"https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor-receipts/{vendor_request['secure_token']}"
+             frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+             receipts_link = f"{frontend_url}/vendor-receipts/{vendor_request['secure_token']}"
              
              html_content = f"""
 <!DOCTYPE html>

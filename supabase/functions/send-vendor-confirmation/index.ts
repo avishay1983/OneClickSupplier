@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const body: SendConfirmationRequest = await req.json();
-    
+
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if this is an approval notification request
     if (body.vendorRequestId && body.sendReceiptsLink) {
       console.log("Sending approval notification to vendor for request:", body.vendorRequestId);
-      
+
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -120,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Vendor request not found");
       }
 
-      const baseUrl = "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com";
+      const baseUrl = Deno.env.get('FRONTEND_URL') || "https://oneclicksupplier.onrender.com";
       const receiptsLink = `${baseUrl}/vendor-receipts/${vendorRequest.secure_token}`;
       const statusLink = `${baseUrl}/vendor-status/${vendorRequest.secure_token}`;
 

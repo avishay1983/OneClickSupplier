@@ -14,7 +14,7 @@ from typing import Optional, List
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 # helper to load env with default
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
 
 def create_html_response(title: str, message: str, success: bool) -> str:
     bg_color = "#22c55e" if success else "#ef4444"

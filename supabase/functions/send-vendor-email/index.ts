@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestData: SendVendorEmailRequest = await req.json();
-    
+
     let vendorName = requestData.vendorName;
     let vendorEmail = requestData.vendorEmail;
     let secureLink = requestData.secureLink;
@@ -116,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       vendorName = vendorRequest.vendor_name;
       vendorEmail = vendorRequest.vendor_email;
-      secureLink = `https://6422d882-b11f-4b09-8a0b-47925031a58e.lovableproject.com/vendor/${vendorRequest.secure_token}`;
+      secureLink = `${Deno.env.get('FRONTEND_URL') || 'https://oneclicksupplier.onrender.com'}/vendor/${vendorRequest.secure_token}`;
     }
 
     if (!vendorName || !vendorEmail || !secureLink) {
@@ -173,7 +173,7 @@ ${reasonSection}
 </html>`;
 
     const subject = includeReason ? "נדרשים תיקונים בטופס הספק" : "בקשה להקמת ספק - נדרשים פרטים";
-    
+
     await sendEmailViaSMTP(gmailUser, gmailAppPassword, vendorEmail, subject, emailHtml);
 
     console.log("Email sent successfully via raw SMTP");
