@@ -38,37 +38,6 @@ async def health_check():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/api/debug")
-async def debug_check():
-    """Temporary debug endpoint to diagnose Render deployment issues."""
-    import traceback
-    result = {
-        "env_vars": {
-            "SUPABASE_URL": bool(os.environ.get("SUPABASE_URL")),
-            "SUPABASE_KEY": bool(os.environ.get("SUPABASE_KEY")),
-            "SERVICE_ROLE_KEY": bool(os.environ.get("SERVICE_ROLE_KEY")),
-            "SUPABASE_URL_prefix": (os.environ.get("SUPABASE_URL") or "")[:30],
-            "SERVICE_ROLE_KEY_length": len(os.environ.get("SERVICE_ROLE_KEY") or ""),
-        },
-    }
-    
-    # Test admin client query
-    try:
-        from database import get_supabase_admin
-        admin = get_supabase_admin()
-        res = admin.table("vendor_requests").select("id", count="exact", head=True).execute()
-        result["admin_query"] = {"count": res.count, "success": True}
-    except Exception as e:
-        result["admin_query"] = {"error": str(e), "traceback": traceback.format_exc()}
-    
-    # Test standard client 
-    try:
-        client = get_supabase()
-        result["standard_client"] = {"success": True}
-    except Exception as e:
-        result["standard_client"] = {"error": str(e)}
-    
-    return result
 
 @app.get("/api/protected")
 async def protected_route(user = Depends(get_current_user)):
