@@ -2,12 +2,12 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from database import get_supabase
-from auth import get_current_user
+from db import get_db
+from auth.jwt_auth import get_current_user
 import os
 from pathlib import Path
 
-from routers import users, vendors, documents, receipts, cron, admin
+from routers import users, vendors, documents, receipts, cron, admin, auth_router
 
 app = FastAPI(title="Lovable Supplier Backend")
 
@@ -18,6 +18,7 @@ app.include_router(documents.router)
 app.include_router(receipts.router)
 app.include_router(cron.router)
 app.include_router(admin.router)
+app.include_router(auth_router.router)
 print("All routers included.")
 
 # Configure CORS
@@ -33,10 +34,22 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check():
     try:
-        supabase = get_supabase()
-        return {"status": "ok", "database": "connected"}
+        db = get_db()
+        return {"status": "ok", "database": "json_store", "tables": len(os.listdir(Path(__file__).parent / "data"))}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+# --- Serve uploaded files ---
+UPLOADS_DIR = Path(__file__).parent / "uploads"
+
+@app.get("/api/files/{bucket}/{file_path:path}")
+async def serve_file(bucket: str, file_path: str):
+    """Serve uploaded files (replaces Supabase Storage public URLs)."""
+    full_path = UPLOADS_DIR / bucket / file_path
+    if not full_path.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(str(full_path))
 
 
 @app.get("/api/test-email")
