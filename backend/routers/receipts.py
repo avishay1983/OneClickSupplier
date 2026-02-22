@@ -3,7 +3,8 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 import os
-from database import get_supabase_admin
+from db import get_db
+from storage import get_storage
 from utils.email import send_email_via_smtp
 
 router = APIRouter(prefix="/api/receipts", tags=["receipts"])
@@ -38,8 +39,8 @@ class SendLinkRequest(BaseModel):
 # --- Helpers ---
 
 async def get_vendor_by_token(token: str):
-    supabase = get_supabase_admin()
-    response = supabase.table("vendor_requests").select("id, vendor_name, vendor_email, status, secure_token").eq("secure_token", token).maybe_single().execute()
+    db = get_db()
+    response = db.table("vendor_requests").select("id, vendor_name, vendor_email, status, secure_token").eq("secure_token", token).maybe_single().execute()
     vendor = response.data
     
     if not vendor:
@@ -55,9 +56,9 @@ async def list_receipts(token: str):
     List all receipts from 'vendor_receipts' table.
     """
     vendor = await get_vendor_by_token(token)
-    supabase = get_supabase_admin()
+    db = get_db()
     
-    response = supabase.table("vendor_receipts").select("*").eq("vendor_request_id", vendor["id"]).order("created_at", desc=True).execute()
+    response = db.table("vendor_receipts").select("*").eq("vendor_request_id", vendor["id"]).order("created_at", desc=True).execute()
     receipts = response.data if response.data else []
     
     return {"success": True, "receipts": receipts}
@@ -71,7 +72,7 @@ async def upload_receipt(
     description: Optional[str] = Form(None)
 ):
     vendor = await get_vendor_by_token(token)
-    supabase = get_supabase_admin()
+    db = get_db()
     
     # Upload to Storage
     try:
@@ -82,10 +83,10 @@ async def upload_receipt(
         content = await file.read()
         
         # Upload
-        supabase.storage.from_("vendor_documents").upload(
+        storage = get_storage()
+        storage.from_("vendor_documents").upload(
             file_path,
-            content,
-            content_type=file.content_type
+            content
         )
         
         # Insert into vendor_receipts
@@ -99,7 +100,7 @@ async def upload_receipt(
             "status": "pending"
         }
         
-        supabase.table("vendor_receipts").insert(receipt_data).execute()
+        db.table("vendor_receipts").insert(receipt_data).execute()
         
         return {"success": True, "message": "Receipt uploaded successfully"}
         
@@ -115,15 +116,16 @@ class DeleteReceiptRequest(BaseModel):
 @router.post("/delete")
 async def delete_receipt(request: DeleteReceiptRequest):
     vendor = await get_vendor_by_token(request.token)
-    supabase = get_supabase_admin()
+    db = get_db()
     
     try:
         # Delete from DB
-        supabase.table("vendor_receipts").delete().eq("id", request.receiptId).eq("vendor_request_id", vendor["id"]).execute()
+        db.table("vendor_receipts").delete().eq("id", request.receiptId).eq("vendor_request_id", vendor["id"]).execute()
         
         # Delete from Storage
         # Note: bucket is still vendor_documents as per upload
-        supabase.storage.from_("vendor_documents").remove([request.filePath])
+        storage = get_storage()
+        storage.from_("vendor_documents").remove([request.filePath])
         
         return {"success": True}
         
@@ -134,13 +136,13 @@ async def delete_receipt(request: DeleteReceiptRequest):
 # New: Send Receipts Link
 @router.post("/send-link")
 async def send_receipts_link(request: SendLinkRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     vendor = None
     if request.token:
         vendor = await get_vendor_by_token(request.token)
     elif request.vendorId:
-         res = supabase.table("vendor_requests").select("*").eq("id", request.vendorId).maybe_single().execute()
+         res = db.table("vendor_requests").select("*").eq("id", request.vendorId).maybe_single().execute()
          vendor = res.data
     
     if not vendor:
@@ -171,7 +173,7 @@ async def send_receipts_link(request: SendLinkRequest):
         send_email_via_smtp(vendor['vendor_email'], "בקשה להעלאת חשבוניות - ביטוח ישיר", email_html)
         
         # Update timestamp
-        supabase.table("vendor_requests").update({
+        db.table("vendor_requests").update({
             "receipts_link_sent_at": datetime.utcnow().isoformat()
         }).eq("id", vendor["id"]).execute()
         
@@ -183,7 +185,7 @@ async def send_receipts_link(request: SendLinkRequest):
 @router.post("/status")
 async def update_receipt_status(request: UpdateStatusRequest):
     # This endpoint is likely called by an Admin manager
-    supabase = get_supabase_admin()
+    db = get_db()
     
     try:
         # Update DB
@@ -197,10 +199,10 @@ async def update_receipt_status(request: UpdateStatusRequest):
         print(f"Updating receipt {request.receiptId} with data: {update_data}")
         
         # Split into update and select because chaining .select() after .update() is not supported in this client version
-        supabase.table("vendor_receipts").update(update_data).eq("id", request.receiptId).execute()
+        db.table("vendor_receipts").update(update_data).eq("id", request.receiptId).execute()
         
         # Fetch updated record with vendor details
-        res = supabase.table("vendor_receipts").select("*, vendor_requests(vendor_email, vendor_name)").eq("id", request.receiptId).single().execute()
+        res = db.table("vendor_receipts").select("*, vendor_requests(vendor_email, vendor_name)").eq("id", request.receiptId).single().execute()
         
         if not res.data:
             raise HTTPException(status_code=404, detail="Receipt not found")

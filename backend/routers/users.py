@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
-from database import get_supabase_admin
+from db import get_db
+from storage import get_storage
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
 import smtplib
@@ -94,10 +95,10 @@ async def approve_user(
     This corresponds to the `approve-user` Edge Function.
     """
     try:
-        supabase = get_supabase_admin()
+        db = get_db()
         
         # Find the pending approval
-        response = supabase.table("pending_approvals").select("*").eq("approval_token", token).eq("status", "pending").maybe_single().execute()
+        response = db.table("pending_approvals").select("*").eq("approval_token", token).eq("status", "pending").maybe_single().execute()
         approval = response.data
         
         if not approval:
@@ -114,14 +115,14 @@ async def approve_user(
 
         if action == "approve":
             # Update profile to approved
-            supabase.table("profiles").update({
+            db.table("profiles").update({
                 "is_approved": True,
                 "approved_at": datetime.now().isoformat()
             }).eq("id", approval['user_id']).execute()
             
             # Set user role
             role = "admin" if is_admin else "user"
-            supabase.table("user_roles").upsert({
+            db.table("user_roles").upsert({
                 "user_id": approval['user_id'],
                 "role": role
             }, on_conflict="user_id,role").execute()
@@ -129,7 +130,7 @@ async def approve_user(
             print(f"User {approval.get('user_email')} approved with role: {role}")
             
             # Update pending approval status
-            supabase.table("pending_approvals").update({"status": "approved"}).eq("id", approval['id']).execute()
+            db.table("pending_approvals").update({"status": "approved"}).eq("id", approval['id']).execute()
             
             if format == "json":
                 return {"success": True, "message": "User approved", "role": role}
@@ -146,11 +147,11 @@ async def approve_user(
             
         else: # action == "reject"
             # Update status
-            supabase.table("pending_approvals").update({"status": "rejected"}).eq("id", approval['id']).execute()
+            db.table("pending_approvals").update({"status": "rejected"}).eq("id", approval['id']).execute()
             
-            # Delete user from auth
+            # Delete user from local users.json
             try:
-                supabase.auth.admin.delete_user(approval['user_id'])
+                db.table("users").delete().eq("id", approval['user_id']).execute()
             except Exception as e:
                 print(f"Error deleting user: {e}")
                 
@@ -219,7 +220,7 @@ async def send_approval_request(request: SendApprovalEmailRequest):
     Sends an approval request email to the admin.
     """
     try:
-        supabase = get_supabase_admin()
+        db = get_db()
         
         # Check environment variables
         admin_email = os.environ.get("ADMIN_EMAIL")
@@ -232,7 +233,7 @@ async def send_approval_request(request: SendApprovalEmailRequest):
         print(f"Processing approval request for: {request.userEmail}, userId: {request.userId}")
 
         # Find pending approval
-        response = supabase.table("pending_approvals").select("approval_token")\
+        response = db.table("pending_approvals").select("approval_token")\
             .eq("status", "pending")\
             .or_(f"user_id.eq.{request.userId},user_email.ilike.{request.userEmail}")\
             .maybe_single()\
@@ -362,8 +363,8 @@ async def send_vendor_approval_email(vendor: dict):
     
     send_email_via_smtp(vendor.get('vendor_email'), "בקשתך אושרה - ברוכים הבאים לביטוח ישיר!", html_body)
 
-    supabase = get_supabase_admin()
-    supabase.table("vendor_requests").update({
+    db = get_db()
+    db.table("vendor_requests").update({
         "receipts_link_sent_at": datetime.now().isoformat()
     }).eq("id", vendor.get("id")).execute()
 
@@ -378,7 +379,7 @@ async def handle_manager_approval(
     Handles approval or rejection by a manager (Procurement or VP).
     """
     try:
-        supabase = get_supabase_admin()
+        db = get_db()
         
         def create_redirect_url(status_code: str, title: str, message: str) -> str:
             params = {
@@ -388,7 +389,7 @@ async def handle_manager_approval(
             }
             return f"{FRONTEND_URL}/manager-approval-result?{urlencode(params)}"
 
-        response = supabase.table("vendor_requests").select("*").eq("id", vendorId).maybe_single().execute()
+        response = db.table("vendor_requests").select("*").eq("id", vendorId).maybe_single().execute()
         vendor_request = response.data
         
         if not vendor_request:
@@ -412,7 +413,7 @@ async def handle_manager_approval(
              )
 
         if action == "approve":
-            supabase.table("vendor_requests").update({
+            db.table("vendor_requests").update({
                 approved_field: True,
                 approved_at_field: datetime.now().isoformat(),
                 approved_by_field: role_label
@@ -426,7 +427,7 @@ async def handle_manager_approval(
             is_fully_approved = (procurement_approved and vp_approved) if requires_vp_approval else procurement_approved
             
             if is_fully_approved:
-                supabase.table("vendor_requests").update({"status": "approved"}).eq("id", vendorId).execute()
+                db.table("vendor_requests").update({"status": "approved"}).eq("id", vendorId).execute()
                 print(f"Vendor {vendorId} status updated to approved")
                 
                 try:
@@ -444,7 +445,7 @@ async def handle_manager_approval(
             )
 
         else: # action == "reject"
-             supabase.table("vendor_requests").update({
+             db.table("vendor_requests").update({
                 approved_field: False,
                 approved_at_field: datetime.now().isoformat(),
                 approved_by_field: role_label
@@ -475,17 +476,17 @@ async def send_manager_approval(request: SendManagerApprovalRequest):
     Sends approval request emails to managers (VP/Procurement) with PDF contracts attached if available.
     """
     try:
-        supabase = get_supabase_admin()
+        db = get_db()
         
         # Fetch vendor request
-        response = supabase.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
+        response = db.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
         vendor_request = response.data
         
         if not vendor_request:
             return JSONResponse(status_code=404, content={"success": False, "error": "Vendor request not found"})
 
         # Fetch settings
-        settings_response = supabase.table("app_settings").select("setting_key, setting_value").execute()
+        settings_response = db.table("app_settings").select("setting_key, setting_value").execute()
         settings_map = {item['setting_key']: item['setting_value'] for item in settings_response.data}
         
         procurement_email = settings_map.get("car_manager_email")
@@ -500,10 +501,8 @@ async def send_manager_approval(request: SendManagerApprovalRequest):
         contract_attachment = None
         if vendor_request.get('requires_contract_signature') and vendor_request.get('contract_file_path'):
             try:
-                # Note: supabase-py storage download returns a byte stream
-                # We need to verify how supabase storage download works in python
-                # storage.from_().download() returns byte string directly
-                file_data = supabase.storage.from_("vendor_documents").download(vendor_request['contract_file_path'])
+                storage = get_storage()
+                file_data = storage.from_("vendor_documents").download(vendor_request['contract_file_path'])
                 contract_attachment = {
                     "filename": f"contract_{vendor_request.get('vendor_name')}.pdf",
                     "content": file_data
@@ -513,7 +512,7 @@ async def send_manager_approval(request: SendManagerApprovalRequest):
                 print(f"Error downloading contract: {e}")
         
         # Update sent time
-        supabase.table("vendor_requests").update({"approval_email_sent_at": datetime.now().isoformat()}).eq("id", request.vendorRequestId).execute()
+        db.table("vendor_requests").update({"approval_email_sent_at": datetime.now().isoformat()}).eq("id", request.vendorRequestId).execute()
 
         emails_sent = 0
         has_contract = contract_attachment is not None

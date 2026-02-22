@@ -126,6 +126,25 @@ class TableQuery:
         self._filters.append(("ilike", column, pattern))
         return self
 
+    def not_is_(self, column: str, value: Any) -> 'TableQuery':
+        """Filter for NOT NULL: .not_is_("col", "null") means col IS NOT NULL"""
+        self._filters.append(("not_is", column, value))
+        return self
+
+    def filter(self, column: str, operator: str, value: Any) -> 'TableQuery':
+        """
+        Supabase-compatible .filter() method.
+        Maps to internal filter types.
+        """
+        op_map = {"eq": "eq", "neq": "neq", "gt": "gt", "gte": "gte",
+                  "lt": "lt", "lte": "lte", "is": "is", "ilike": "ilike"}
+        internal_op = op_map.get(operator, operator)
+        if internal_op == "is" and (value == "null" or value is None):
+            self._filters.append(("is", column, None))
+        else:
+            self._filters.append((internal_op, column, value))
+        return self
+
     def or_(self, filter_string: str) -> 'TableQuery':
         """
         Supabase-style OR filter string, e.g.:
@@ -198,6 +217,11 @@ class TableQuery:
                     result = [r for r in result if r.get(col) is None]
                 else:
                     result = [r for r in result if r.get(col) is not None]
+            elif op == "not_is":
+                if val is None or val == "null":
+                    result = [r for r in result if r.get(col) is not None]
+                else:
+                    result = [r for r in result if r.get(col) is None]
             elif op == "ilike":
                 pattern = val.replace("%", ".*")
                 regex = re.compile(pattern, re.IGNORECASE)
@@ -338,7 +362,8 @@ class TableQuery:
             inserted.append(new_item)
 
         self._store._save_table(self._table_name, rows)
-        return QueryResult(data=inserted if len(inserted) > 1 else inserted[0])
+        # Always return list to match Supabase PostgREST behavior
+        return QueryResult(data=inserted)
 
     def _exec_update(self) -> QueryResult:
         rows = self._store._load_table(self._table_name)
@@ -389,7 +414,8 @@ class TableQuery:
                 result.append(new_item)
 
         self._store._save_table(self._table_name, rows)
-        return QueryResult(data=result if len(result) > 1 else result[0])
+        # Always return list to match Supabase PostgREST behavior
+        return QueryResult(data=result)
 
     def _exec_delete(self) -> QueryResult:
         rows = self._store._load_table(self._table_name)

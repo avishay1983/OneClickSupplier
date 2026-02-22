@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from database import get_supabase_admin
+from db import get_db
 import uuid
 from utils.email import send_email_via_smtp
 import os
@@ -40,9 +40,9 @@ async def list_requests(
     List vendor requests with filtering.
     Replaces: supabase.from('vendor_requests').select('*')
     """
-    supabase = get_supabase_admin()
+    db = get_db()
     
-    query = supabase.table("vendor_requests").select("*").order("created_at", desc=True)
+    query = db.table("vendor_requests").select("*").order("created_at", desc=True)
     
     if status and status != 'all':
         query = query.eq("status", status)
@@ -66,7 +66,7 @@ async def create_request(request: VendorRequestCreate):
     Create a new vendor request and send email.
     Replaces: supabase.from('vendor_requests').insert(...)
     """
-    supabase = get_supabase_admin()
+    db = get_db()
     
     secure_token = str(uuid.uuid4())
     # Calculate expiry
@@ -105,7 +105,7 @@ async def create_request(request: VendorRequestCreate):
         })
         
     try:
-        res = supabase.table("vendor_requests").insert(db_data).execute()
+        res = db.table("vendor_requests").insert(db_data).execute()
         
         if not res.data:
             raise HTTPException(status_code=500, detail="Failed to create request in DB")
@@ -153,17 +153,17 @@ async def get_dashboard_stats():
     """
     Get stats for the dashboard and migration progress.
     """
-    supabase = get_supabase_admin()
+    db = get_db()
     
     # Simple counts
     # Note: efficient counting in Supabase/Postgrest usually requires head=true and count=exact
     # The python client method: .select("*", count="exact").execute().count
     
     try:
-        total = supabase.table("vendor_requests").select("*", count="exact", head=True).execute().count
-        pending = supabase.table("vendor_requests").select("*", count="exact", head=True).eq("status", "with_vendor").execute().count
-        waiting = supabase.table("vendor_requests").select("*", count="exact", head=True).eq("status", "submitted").execute().count
-        approved = supabase.table("vendor_requests").select("*", count="exact", head=True).eq("status", "approved").execute().count
+        total = db.table("vendor_requests").select("*", count="exact", head=True).execute().count
+        pending = db.table("vendor_requests").select("*", count="exact", head=True).eq("status", "with_vendor").execute().count
+        waiting = db.table("vendor_requests").select("*", count="exact", head=True).eq("status", "submitted").execute().count
+        approved = db.table("vendor_requests").select("*", count="exact", head=True).eq("status", "approved").execute().count
         
         # Mock migration stats for the progress bar
         # 7 out of 10 services migrated

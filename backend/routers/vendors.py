@@ -9,7 +9,8 @@ from email.mime.multipart import MIMEMultipart
 import base64
 import httpx
 
-from database import get_supabase, get_supabase_admin
+from db import get_db
+from storage import get_storage
 
 router = APIRouter(prefix="/api/vendors", tags=["vendors"])
 
@@ -95,7 +96,7 @@ def send_handler_notification(handler_email: str, handler_name: str, vendor_name
 
 @router.post("/form")
 async def vendor_form_api(request: VendorFormRequest, background_tasks: BackgroundTasks):
-    supabase = get_supabase_admin() # Need admin to query by secure_token potentially bypassing RLS or complex policies
+    db = get_db() # Need admin to query by secure_token potentially bypassing RLS or complex policies
 
     action = request.action
     token = request.token
@@ -108,7 +109,7 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
 
     # Fetch vendor request by token
     try:
-        response = supabase.table("vendor_requests").select("*").eq("secure_token", token).maybe_single().execute()
+        response = db.table("vendor_requests").select("*").eq("secure_token", token).maybe_single().execute()
         # PostgREST returns 'data' inside result. In supabase-py/postgrest-py, execute() returns APIResponse(data=..., count=...)
         # But we are using our custom SyncPostgrestClient which returns raw response or whatever... 
         # Wait, our custom client returns the requests.Response object content? 
@@ -139,7 +140,7 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
     # Handle Actions
     if action == 'get':
         # Get documents
-        docs_response = supabase.table("vendor_documents").select("*").eq("vendor_request_id", vendor_request["id"]).execute()
+        docs_response = db.table("vendor_documents").select("*").eq("vendor_request_id", vendor_request["id"]).execute()
         docs = docs_response.data if docs_response.data else []
         
         return {
@@ -149,7 +150,7 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
         }
 
     elif action == 'get-documents':
-         docs_response = supabase.table("vendor_documents").select("*").eq("vendor_request_id", vendor_request["id"]).execute()
+         docs_response = db.table("vendor_documents").select("*").eq("vendor_request_id", vendor_request["id"]).execute()
          docs = docs_response.data if docs_response.data else []
          return {"success": True, "documents": docs}
 
@@ -162,7 +163,7 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
         data["updated_at"] = datetime.utcnow().isoformat()
         
         try:
-            update_response = supabase.table("vendor_requests").update(data).eq("id", vendor_request["id"]).execute()
+            update_response = db.table("vendor_requests").update(data).eq("id", vendor_request["id"]).execute()
             # Check for error? postgrest-py throws on error usually?
             return {"success": True}
         except Exception as e:
@@ -176,7 +177,7 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
         update_data["updated_at"] = datetime.utcnow().isoformat()
         
         try:
-            supabase.table("vendor_requests").update(update_data).eq("id", vendor_request["id"]).execute()
+            db.table("vendor_requests").update(update_data).eq("id", vendor_request["id"]).execute()
             
             # Send notification to handler
             if vendor_request.get("handler_email"):
@@ -227,12 +228,13 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
         
         try:
              # DB Delete
-             supabase.table("vendor_documents").delete().eq("vendor_request_id", vendor_request["id"]).eq("document_type", document_type).execute()
+             db.table("vendor_documents").delete().eq("vendor_request_id", vendor_request["id"]).eq("document_type", document_type).execute()
              
              # Storage Delete
              try:
                 # Assuming bucket is 'vendor_documents'
-                supabase.storage.from_('vendor_documents').remove([file_path])
+                storage = get_storage()
+                storage.from_('vendor_documents').remove([file_path])
              except Exception as se:
                  print(f"Warning: Failed to delete file from storage: {se}")
                  # We don't fail the request if storage delete fails, as DB record is gone
@@ -255,13 +257,13 @@ async def submit_quote(
     description: str = Form(None),
     file: UploadFile = File(None)
 ):
-    supabase = get_supabase_admin()
+    db = get_db()
 
     print(f"Vendor quote submission: token={token}, amount={amount}, file={file.filename if file else 'None'}")
 
     # Validate token and get quote
     try:
-        response = supabase.table("vendor_quotes").select("*, vendor_requests(vendor_name, vendor_email, handler_name, handler_email)").eq("quote_secure_token", token).maybe_single().execute()
+        response = db.table("vendor_quotes").select("*, vendor_requests(vendor_name, vendor_email, handler_name, handler_email)").eq("quote_secure_token", token).maybe_single().execute()
         
         quote = response.data if response.data else None
         
@@ -291,11 +293,10 @@ async def submit_quote(
         try:
             content = await file.read()
             # Upload to storage
-            supabase.storage.from_("vendor_documents").upload(
+            storage = get_storage()
+            storage.from_("vendor_documents").upload(
                 file_path,
-                content,
-                content_type=file.content_type,
-                upsert=True
+                content
             )
             file_name = file.filename
         except Exception as e:
@@ -314,7 +315,7 @@ async def submit_quote(
             "status": "pending_handler"
         }
         
-        supabase.table("vendor_quotes").update(update_data).eq("id", quote["id"]).execute()
+        db.table("vendor_quotes").update(update_data).eq("id", quote["id"]).execute()
         
     except Exception as e:
         print(f"Update error: {e}")
@@ -325,14 +326,14 @@ async def submit_quote(
 # 5. Get Quote Details (for Vendor)
 @router.get("/quote/{token}")
 async def get_quote_details(token: str):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     if not token:
         raise HTTPException(status_code=400, detail="Token is required")
         
     try:
         # Fetch quote with vendor details
-        response = supabase.table("vendor_quotes").select(
+        response = db.table("vendor_quotes").select(
             "id, file_path, file_name, description, amount, quote_date, status, vendor_submitted, vendor_submitted_at, quote_link_sent_at, created_at, vp_approved, procurement_manager_approved, quote_secure_token, vendor_requests(vendor_name, vendor_email, company_id)"
         ).eq("quote_secure_token", token).maybe_single().execute()
         
@@ -389,13 +390,13 @@ class SendQuoteEmailRequest(BaseModel):
 
 @router.post("/send-quote-request")
 async def send_quote_request_email(request: SendQuoteEmailRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     print(f"Sending quote request to {request.vendorEmail} for quote {request.quoteId}")
     
     try:
         # Verify quote exists
-        res = supabase.table("vendor_quotes").select("quote_secure_token").eq("id", request.quoteId).maybe_single().execute()
+        res = db.table("vendor_quotes").select("quote_secure_token").eq("id", request.quoteId).maybe_single().execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Quote not found")
             
@@ -403,7 +404,7 @@ async def send_quote_request_email(request: SendQuoteEmailRequest):
         token = quote["quote_secure_token"]
         
         # Update sent time
-        supabase.table("vendor_quotes").update({
+        db.table("vendor_quotes").update({
             "quote_link_sent_at": datetime.utcnow().isoformat()
         }).eq("id", request.quoteId).execute()
         
@@ -511,10 +512,10 @@ async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
     Replaces: supabase.functions.invoke('send-quote-approval-email')
     """
     try:
-        supabase = get_supabase_admin()
+        db = get_db()
         
         # Get the quote's secure token
-        response = supabase.table("vendor_quotes").select("quote_secure_token, file_path").eq("id", request.quoteId).maybe_single().execute()
+        response = db.table("vendor_quotes").select("quote_secure_token, file_path").eq("id", request.quoteId).maybe_single().execute()
         
         if not response.data:
             raise HTTPException(status_code=404, detail="Quote not found")
@@ -580,7 +581,7 @@ class VendorStatusRequest(BaseModel):
 
 @router.post("/status")
 async def get_vendor_status(request: VendorStatusRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     token = request.token
     
     print(f"Fetching vendor status for token: {token}")
@@ -590,7 +591,7 @@ async def get_vendor_status(request: VendorStatusRequest):
         
     try:
         # We can reuse the same token validation logic or just query
-        response = supabase.table('vendor_requests').select('vendor_name, status, created_at, updated_at').eq('secure_token', token).maybe_single().execute()
+        response = db.table('vendor_requests').select('vendor_name, status, created_at, updated_at').eq('secure_token', token).maybe_single().execute()
         
         data = response.data if response.data else None
         
@@ -615,7 +616,7 @@ class VerifyOtpRequest(BaseModel):
 
 @router.post("/verify-otp")
 async def verify_vendor_otp(request: VerifyOtpRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     token = request.token
     otp = request.otp
 
@@ -626,7 +627,7 @@ async def verify_vendor_otp(request: VerifyOtpRequest):
 
     try:
         # Fetch request
-        response = supabase.table("vendor_requests").select("id, otp_code, otp_expires_at, expires_at").eq("secure_token", token).maybe_single().execute()
+        response = db.table("vendor_requests").select("id, otp_code, otp_expires_at, expires_at").eq("secure_token", token).maybe_single().execute()
         
         vendor_request = response.data if response.data else None
 
@@ -662,7 +663,7 @@ async def verify_vendor_otp(request: VerifyOtpRequest):
             "otp_expires_at": None
         }
         
-        supabase.table("vendor_requests").update(update_data).eq("id", vendor_request["id"]).execute()
+        db.table("vendor_requests").update(update_data).eq("id", vendor_request["id"]).execute()
         
         print("OTP verified successfully")
         return {"success": True, "message": "אימות בוצע בהצלחה"}
@@ -681,7 +682,7 @@ class SendOtpRequest(BaseModel):
 
 @router.post("/send-otp")
 async def send_vendor_otp(request: SendOtpRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     token = request.token
 
     if not token:
@@ -689,7 +690,7 @@ async def send_vendor_otp(request: SendOtpRequest):
 
     try:
         # Get vendor request
-        response = supabase.table("vendor_requests").select("id, vendor_email, vendor_name, expires_at, otp_verified, status").eq("secure_token", token).maybe_single().execute()
+        response = db.table("vendor_requests").select("id, vendor_email, vendor_name, expires_at, otp_verified, status").eq("secure_token", token).maybe_single().execute()
         vendor_request = response.data if response.data else None
 
         if not vendor_request:
@@ -707,7 +708,7 @@ async def send_vendor_otp(request: SendOtpRequest):
         otp_expires_at = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
 
         # Update DB
-        supabase.table("vendor_requests").update({
+        db.table("vendor_requests").update({
             "otp_code": otp_code,
             "otp_expires_at": otp_expires_at,
             "otp_verified": False
@@ -752,7 +753,7 @@ class SendVendorEmailRequest(BaseModel):
 
 @router.post("/send-email")
 async def send_vendor_email_endpoint(request: SendVendorEmailRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     vendor_name = request.vendorName
     vendor_email = request.vendorEmail
@@ -760,7 +761,7 @@ async def send_vendor_email_endpoint(request: SendVendorEmailRequest):
     
     if request.vendorRequestId and (not vendor_name or not vendor_email):
         try:
-             response = supabase.table("vendor_requests").select("vendor_name, vendor_email, secure_token").eq("id", request.vendorRequestId).maybe_single().execute()
+             response = db.table("vendor_requests").select("vendor_name, vendor_email, secure_token").eq("id", request.vendorRequestId).maybe_single().execute()
              if response.data:
                  vendor_name = response.data["vendor_name"]
                  vendor_email = response.data["vendor_email"]
@@ -795,17 +796,17 @@ class RejectRequest(BaseModel):
 
 @router.post("/reject")
 async def reject_vendor(request: RejectRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     try:
-        response = supabase.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
+        response = db.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="Request not found")
         
         vendor_request = response.data
         
         # Update status
-        supabase.table("vendor_requests").update({
+        db.table("vendor_requests").update({
             "status": "rejected",
             "rejection_reason": request.reason
         }).eq("id", request.vendorRequestId).execute()
@@ -841,17 +842,17 @@ class ConfirmRequest(BaseModel):
 
 @router.post("/confirm")
 async def confirm_vendor(request: ConfirmRequest):
-    supabase = get_supabase_admin()
+    db = get_db()
     
     try:
-        response = supabase.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
+        response = db.table("vendor_requests").select("*").eq("id", request.vendorRequestId).maybe_single().execute()
         if not response.data:
             raise HTTPException(status_code=404, detail="Request not found")
             
         vendor_request = response.data
         
         # Update status
-        supabase.table("vendor_requests").update({
+        db.table("vendor_requests").update({
             "status": "approved"
         }).eq("id", request.vendorRequestId).execute()
 
@@ -872,7 +873,7 @@ async def confirm_vendor(request: ConfirmRequest):
              """
              send_email_via_smtp(vendor_request["vendor_email"], "בקשתך אושרה - ברוכים הבאים!", html_content)
              
-             supabase.table("vendor_requests").update({"receipts_link_sent_at": datetime.utcnow().isoformat()}).eq("id", request.vendorRequestId).execute()
+             db.table("vendor_requests").update({"receipts_link_sent_at": datetime.utcnow().isoformat()}).eq("id", request.vendorRequestId).execute()
 
         return {"success": True}
 

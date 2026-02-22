@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from database import get_supabase_admin
+from db import get_db
 from datetime import datetime, timedelta
 from utils.email import send_email_via_smtp
 import os
@@ -12,11 +12,11 @@ router = APIRouter(prefix="/api/cron", tags=["cron"])
 @router.post("/send-expiry-reminder")
 async def send_expiry_reminder():
     print("send-expiry-reminder job started", flush=True)
-    supabase = get_supabase_admin()
+    db = get_db()
     
     try:
         # 1. Get Settings
-        settings_response = supabase.table("app_settings").select("setting_key, setting_value").execute()
+        settings_response = db.table("app_settings").select("setting_key, setting_value").execute()
         settings_map = {item['setting_key']: item['setting_value'] for item in settings_response.data or []}
         
         reminder_hours = int(settings_map.get("expiry_reminder_hours", 24))
@@ -33,11 +33,11 @@ async def send_expiry_reminder():
         
         reminder_threshold = now + timedelta(hours=reminder_hours)
         
-        response = supabase.table("vendor_requests")\
+        response = db.table("vendor_requests")\
             .select("id, vendor_name, vendor_email, secure_token, expires_at")\
             .in_("status", ["with_vendor", "resent"])\
             .filter("expiry_reminder_sent_at", "is", "null")\
-            .not_.is_("expires_at", "null")\
+            .not_is_("expires_at", "null")\
             .lte("expires_at", reminder_threshold.isoformat())\
             .gt("expires_at", now.isoformat())\
             .execute()
@@ -100,7 +100,7 @@ async def send_expiry_reminder():
                 send_email_via_smtp(req["vendor_email"], subject, email_html)
                 
                 # Update DB
-                supabase.table("vendor_requests").update({
+                db.table("vendor_requests").update({
                     "expiry_reminder_sent_at": datetime.utcnow().isoformat()
                 }).eq("id", req["id"]).execute()
                 
