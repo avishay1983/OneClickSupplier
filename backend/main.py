@@ -7,7 +7,7 @@ from auth.jwt_auth import get_current_user
 import os
 from pathlib import Path
 
-from routers import users, vendors, documents, receipts, cron, admin, auth_router
+from routers import users, vendors, documents, receipts, cron, admin, auth_router, data_router
 
 app = FastAPI(title="Lovable Supplier Backend")
 
@@ -19,6 +19,7 @@ app.include_router(receipts.router)
 app.include_router(cron.router)
 app.include_router(admin.router)
 app.include_router(auth_router.router)
+app.include_router(data_router.router)
 print("All routers included.")
 
 # Configure CORS
@@ -50,6 +51,31 @@ async def serve_file(bucket: str, file_path: str):
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(str(full_path))
+
+@app.post("/api/files/{bucket}/upload")
+async def upload_file(bucket: str, request: Request):
+    """Upload a file to local storage."""
+    from fastapi import HTTPException, UploadFile, File, Form
+    form = await request.form()
+    file = form.get("file")
+    path = form.get("path", "")
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    content = await file.read()
+    from storage import get_storage
+    storage = get_storage()
+    storage.from_(bucket).upload(str(path), content)
+    return {"success": True, "path": str(path)}
+
+@app.post("/api/files/{bucket}/remove")
+async def remove_files(bucket: str, request: Request):
+    """Remove files from local storage."""
+    body = await request.json()
+    paths = body.get("paths", [])
+    from storage import get_storage
+    storage = get_storage()
+    storage.from_(bucket).remove(paths)
+    return {"success": True}
 
 
 @app.get("/api/test-email")
