@@ -4,12 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from db import get_db
 from auth.jwt_auth import get_current_user
+from dotenv import load_dotenv
 import os
 from pathlib import Path
+
+# Load environment variables before anything else
+load_dotenv()
 
 from routers import users, vendors, documents, receipts, cron, admin, auth_router, data_router
 
 app = FastAPI(title="Lovable Supplier Backend")
+
 
 # Include all routers
 app.include_router(users.router)

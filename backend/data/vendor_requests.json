@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "vendor_name": "מוסך",
+    "vendor_email": "avishay.elankry@gmail.com",
+    "secure_token": "012abe2d-8560-48d2-b684-09287b0dce0c",
+    "status": "with_vendor",
+    "payment_terms": "שוטף + 60",
+    "expires_at": "2026-03-01T21:32:41.167311",
+    "handler_name": "Avishay.elankry@gmail.com",
+    "handler_email": "Avishay.elankry@gmail.com",
+    "vendor_type": "general",
+    "requires_vp_approval": true,
+    "requires_contract_signature": true,
+    "id": "547a4ca4-97a0-4e25-98d4-4b94e0822247",
+    "created_at": "2026-02-22T21:32:41.167540+00:00",
+    "updated_at": "2026-02-22T21:32:41.167540+00:00"
+  }
+]

@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "fc2e21fa-867b-42d3-a2b8-94898a32f01b",
+    "email": "Avishay.elankry@gmail.com",
+    "full_name": "אבישי אלנקרי",
+    "is_approved": true,
+    "created_at": "2026-02-22T21:18:10.019112+00:00",
+    "updated_at": "2026-02-22T21:18:10.019112+00:00"
+  }
+]

@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "fc2e21fa-867b-42d3-a2b8-94898a32f01b",
+    "email": "Avishay.elankry@gmail.com",
+    "password_hash": "8c50efe3274d09ea07f0247b363926ec:fPy9Fqpmm2ReTtj1RCIsqXbiWy4UbZV88X86GoP8NWc=",
+    "created_at": "2026-02-22T21:18:10.019112+00:00",
+    "updated_at": "2026-02-22T21:18:10.019112+00:00"
+  }
+]
