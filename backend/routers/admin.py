@@ -114,17 +114,46 @@ async def create_request(request: VendorRequestCreate):
         frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
         link = f"{frontend_url}/vendor/{secure_token}"
         
-        email_html = f"""
-        <div dir="rtl" style="font-family: Arial, sans-serif;">
-            <h2>שלום {request.vendor_name},</h2>
-            <p>הוזמנת להירשם כספק במערכת "ספק בקליק".</p>
-            <p>אנא לחץ על הקישור הבא למילוי הפרטים:</p>
-            <a href="{link}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
-                מעבר לטופס הרישום
-            </a>
-            <p>תודה,<br>צוות ביטוח ישיר</p>
+        email_html = f"""<!DOCTYPE html>
+        <html dir="rtl" lang="he">
+        <head>
+        <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="background: #1a2b5f; color: white; padding: 25px; text-align: center;">
+        <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 10px;" />
+        <h1 style="margin: 0; font-size: 22px; color: white;">הזמנה לרישום ספק</h1>
         </div>
-        """
+        <div style="padding: 30px;">
+        <p style="margin: 12px 0; font-size: 18px;">שלום {request.vendor_name},</p>
+        <p style="margin: 12px 0;">הוזמנת להירשם כספק במערכת <strong>"ספק בקליק"</strong> של ביטוח ישיר.</p>
+        <div style="background: #f0f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>מה נדרש ממך:</strong></p>
+        <ul style="margin: 0; padding-right: 20px; color: #444;">
+        <li style="margin-bottom: 6px;">מילוי פרטי הספק (שם, כתובת, פרטי בנק)</li>
+        <li style="margin-bottom: 6px;">העלאת מסמכים נדרשים</li>
+        <li>אימות באמצעות קוד חד-פעמי</li>
+        </ul>
+        </div>
+        <p style="margin: 12px 0;">אנא לחץ על הכפתור למטה למילוי הפרטים:</p>
+        <div style="text-align: center; margin: 25px 0;">
+        <a href="{link}" style="display: inline-block; background: #2563eb; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">מעבר לטופס הרישום</a>
+        </div>
+        <div style="background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; padding: 12px; margin: 20px 0;">
+        <p style="margin: 0; font-size: 13px; color: #854d0e;">⚠️ הקישור הזה הוא אישי ומאובטח. אנא אל תשתף אותו עם אחרים.</p>
+        </div>
+        <p style="margin: 12px 0;">במידה ויש לך שאלות, אנא פנה לאיש הקשר שלך בחברה.</p>
+        <p style="margin: 20px 0 5px 0;">תודה,</p>
+        <p style="margin: 0; font-weight: bold; color: #1a2b5f;">צוות ביטוח ישיר</p>
+        </div>
+        <div style="text-align: center; padding: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+        <p style="margin: 0;">© ביטוח ישיר - כל הזכויות שמורות</p>
+        <p style="margin: 5px 0 0 0;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
+        </div>
+        </div>
+        </body>
+        </html>"""
         
         email_sent = False
         email_error_msg = None

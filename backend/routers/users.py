@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from db import get_db
 from storage import get_storage
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, EmailStr
 import smtplib
 from email.mime.text import MIMEText
@@ -15,7 +15,7 @@ from typing import Optional, List
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 # helper to load env with default
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:8080")
 
 def create_html_response(title: str, message: str, success: bool) -> str:
     bg_color = "#22c55e" if success else "#ef4444"
@@ -549,22 +549,29 @@ async def send_manager_approval(request: SendManagerApprovalRequest):
             </head>
             <body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
             <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
-            <h1 style="margin: 0; text-align: center; color: white;">{ 'חוזה לחתימה - הקמת ספק' if has_contract else 'אישור הקמת ספק' }</h1>
+            <div style="background: #1a2b5f; color: white; padding: 25px; text-align: center;">
+            <img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 10px;" />
+            <h1 style="margin: 0; font-size: 22px; color: white;">{ 'חוזה לחתימה - הקמת ספק' if has_contract else 'אישור הקמת ספק' }</h1>
             </div>
             <div style="padding: 30px;">
-            <p style="margin: 12px 0;">שלום {recipient_name},</p>
+            <p style="margin: 12px 0; font-size: 18px;">שלום {recipient_name},</p>
             <p style="margin: 12px 0;">{ 'ספק חדש דורש את חתימתך על החוזה המצורף.' if has_contract else 'ספק חדש השלים את מילוי טופס הקמת הספק ומחכה לאישורך.' }</p>
             <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
             <h3 style="margin: 0 0 15px 0; color: #1a2b5f;">פרטי הספק:</h3>
             <table style="width: 100%; border-collapse: collapse;">
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>שם הספק:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{vendor_request.get('vendor_name')}</td></tr>
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>מייל:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{vendor_request.get('vendor_email')}</td></tr>
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>ח.פ/ע.מ:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">{vendor_request.get('company_id') or '-'}</td></tr>
+            <tr><td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555; width: 120px;">שם הספק:</td><td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{vendor_request.get('vendor_name')}</td></tr>
+            <tr><td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">מייל:</td><td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{vendor_request.get('vendor_email')}</td></tr>
+            <tr><td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">ח.פ/ע.מ:</td><td style="padding: 10px 12px; border-bottom: 1px solid #eee;">{vendor_request.get('company_id') or '-'}</td></tr>
             </table>
             </div>
             {action_section}
-            <p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
+            <p style="margin: 12px 0;">במידה ויש לך שאלות, אנא פנה למטפל בתהליך.</p>
+            <p style="margin: 20px 0 5px 0;">תודה,</p>
+            <p style="margin: 0; font-weight: bold; color: #1a2b5f;">צוות ביטוח ישיר</p>
+            </div>
+            <div style="text-align: center; padding: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+            <p style="margin: 0;">© ביטוח ישיר - כל הזכויות שמורות</p>
+            <p style="margin: 5px 0 0 0;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
             </div>
             </div>
             </body>

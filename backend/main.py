@@ -6,6 +6,10 @@ from db import get_db
 from auth.jwt_auth import get_current_user
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from routers import users, vendors, documents, receipts, cron, admin, auth_router, data_router
 
@@ -26,7 +30,7 @@ print("All routers included.")
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:8080", "http://localhost:5173"],
+    allow_origins=[frontend_url, "http://localhost:8080", "http://localhost:8081", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

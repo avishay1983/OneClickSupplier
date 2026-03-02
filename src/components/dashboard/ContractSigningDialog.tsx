@@ -54,7 +54,7 @@ export function ContractSigningDialog({
   const [userRole, setUserRole] = useState<'ceo' | 'procurement' | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
-  
+
   // Signature position states
   const [debugMode, setDebugMode] = useState(false);
   const [debugPreviewUrl, setDebugPreviewUrl] = useState<string | null>(null);
@@ -66,6 +66,9 @@ export function ContractSigningDialog({
   useEffect(() => {
     if (!open) {
       setSignerRole(null);
+      setDebugMode(false);
+      setDebugPreviewUrl(null);
+      setCustomSignaturePosition(null);
       if (signaturePadRef.current) {
         signaturePadRef.current.off();
         signaturePadRef.current = null;
@@ -75,10 +78,10 @@ export function ContractSigningDialog({
 
   useEffect(() => {
     if (!open || !vendorRequestId) return;
-    
+
     // Reset signerRole when dialog opens
     setSignerRole(null);
-    
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -94,10 +97,10 @@ export function ContractSigningDialog({
           onOpenChange(false);
           return;
         }
-        
+
         const user = session.user;
         let currentUserEmail = user?.email || '';
-        
+
         if (user) {
           currentUserEmail = user.email || '';
           const { data: profile } = await supabase
@@ -112,7 +115,7 @@ export function ContractSigningDialog({
         const { data: settings } = await supabase
           .from('app_settings')
           .select('setting_key, setting_value');
-        
+
         const settingsMap: Record<string, string> = {};
         settings?.forEach((s) => {
           settingsMap[s.setting_key] = s.setting_value;
@@ -150,7 +153,7 @@ export function ContractSigningDialog({
           .maybeSingle();
 
         if (error) throw error;
-        
+
         if (!data) {
           console.error('Vendor request not found:', vendorRequestId);
           toast({
@@ -187,44 +190,51 @@ export function ContractSigningDialog({
     fetchData();
   }, [open, vendorRequestId]);
 
-  // Initialize signature pad when role is selected
+  // Auto-load PDF preview and initialize signature pad when role is selected
   useEffect(() => {
-    if (!signerRole || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const container = canvas.parentElement;
-    
-    if (!container) return;
-    
-    // Get container dimensions
-    const rect = container.getBoundingClientRect();
-    
-    // Set canvas dimensions
-    canvas.width = rect.width;
-    canvas.height = 200;
-    
-    console.log('Canvas dimensions set:', { width: canvas.width, height: canvas.height });
-    
-    // Destroy previous instance if exists
-    if (signaturePadRef.current) {
-      signaturePadRef.current.off();
+    if (!signerRole) return;
+
+    // Auto-load PDF preview for position picking
+    if (!debugPreviewUrl && signatureStatus?.contractFilePath) {
+      toggleDebugMode();
     }
-    
-    // Initialize SignaturePad
-    signaturePadRef.current = new SignaturePad(canvas, {
-      backgroundColor: 'rgb(255, 255, 255)',
-      penColor: 'rgb(0, 0, 100)',
-      minWidth: 0.5,
-      maxWidth: 2.5,
-      throttle: 16,
-    });
-    
-    // Clear to set background
-    signaturePadRef.current.clear();
-    
-    console.log('SignaturePad initialized:', signaturePadRef.current);
-    
+
+    // Initialize signature pad after a short delay to allow DOM to render
+    const timer = setTimeout(() => {
+      if (!canvasRef.current) return;
+
+      const canvas = canvasRef.current;
+      const container = canvas.parentElement;
+
+      if (!container) return;
+
+      // Get container dimensions
+      const rect = container.getBoundingClientRect();
+
+      // Set canvas dimensions
+      canvas.width = rect.width;
+      canvas.height = 200;
+
+      // Destroy previous instance if exists
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+      }
+
+      // Initialize SignaturePad
+      signaturePadRef.current = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: 'rgb(0, 0, 100)',
+        minWidth: 0.5,
+        maxWidth: 2.5,
+        throttle: 16,
+      });
+
+      // Clear to set background
+      signaturePadRef.current.clear();
+    }, 300);
+
     return () => {
+      clearTimeout(timer);
       if (signaturePadRef.current) {
         signaturePadRef.current.off();
       }
@@ -261,7 +271,7 @@ export function ContractSigningDialog({
     try {
       // Get signature as PNG
       const signatureDataUrl = signaturePadRef.current.toDataURL('image/png');
-      
+
       // Download the existing PDF with cache busting
       const cacheBuster = `?t=${Date.now()}`;
       const { data: pdfData, error: downloadError } = await supabase.storage
@@ -273,23 +283,23 @@ export function ContractSigningDialog({
       // Load PDF and add signature
       const pdfBytes = await pdfData.arrayBuffer();
       const pdfDoc = await PDFDocument.load(pdfBytes);
-      
+
       // Embed signature image
       const signatureImage = await pdfDoc.embedPng(signatureDataUrl);
-      
+
       // Get the first page
       const pages = pdfDoc.getPages();
       const lastPage = pages[pages.length - 1];
-      
+
       // Calculate signature position based on role or custom position
       const sigWidth = 100;
       const sigHeight = 40;
       const pageHeight = lastPage.getHeight();
       const pageWidth = lastPage.getWidth();
-      
+
       let xPosition: number;
       let yPosition: number;
-      
+
       // Check if custom position is set
       const actualPdfPos = getActualPdfPosition();
       if (actualPdfPos) {
@@ -305,9 +315,9 @@ export function ContractSigningDialog({
           xPosition = (pageWidth - sigWidth) / 2;
         }
       }
-      
+
       console.log('Adding signature at position:', { x: xPosition, y: yPosition, pageWidth, pageHeight, signerRole });
-      
+
       // Draw signature
       lastPage.drawImage(signatureImage, {
         x: xPosition,
@@ -315,7 +325,7 @@ export function ContractSigningDialog({
         width: sigWidth,
         height: sigHeight,
       });
-      
+
       // Add date below signature
       const dateStr = new Date().toLocaleDateString('en-GB');
       lastPage.drawText(dateStr, {
@@ -328,13 +338,13 @@ export function ContractSigningDialog({
       // Save the modified PDF
       const modifiedPdfBytes = await pdfDoc.save();
       console.log('Modified PDF size:', modifiedPdfBytes.byteLength, 'bytes');
-      
+
       const modifiedPdfBlob = new Blob([new Uint8Array(modifiedPdfBytes)], { type: 'application/pdf' });
       console.log('Blob size:', modifiedPdfBlob.size, 'bytes');
-      
+
       // Upload the signed PDF (overwrite existing file directly)
       console.log('Uploading to path:', signatureStatus.contractFilePath);
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vendor_documents')
         .update(signatureStatus.contractFilePath, modifiedPdfBlob, {
@@ -379,25 +389,25 @@ export function ContractSigningDialog({
 
       // Check if all required signatures are complete
       const requiresVp = signatureStatus.requiresVpApproval;
-      
+
       // Determine if the request is now fully signed
       let isFullySigned = false;
       if (requiresVp) {
         // Both VP and procurement must sign
         isFullySigned = (signerRole === 'ceo' && signatureStatus.procurementSigned) ||
-                       (signerRole === 'procurement' && signatureStatus.ceoSigned);
+          (signerRole === 'procurement' && signatureStatus.ceoSigned);
       } else {
         // Only procurement needs to sign (VP not required)
         isFullySigned = signerRole === 'procurement';
       }
-      
+
       if (isFullySigned) {
         // Update status to approved
         await supabase
           .from('vendor_requests')
           .update({ status: 'approved' })
           .eq('id', vendorRequestId);
-        
+
         // Send approval email to vendor with receipts link
         try {
           console.log('All signatures complete, sending approval email to vendor...');
@@ -464,7 +474,7 @@ export function ContractSigningDialog({
     try {
       const timestamp = Date.now();
       console.log('Downloading contract:', signatureStatus.contractFilePath);
-      
+
       const cacheBuster = `?t=${Date.now()}`;
       const { data, error } = await supabase.storage
         .from('vendor_documents')
@@ -517,7 +527,7 @@ export function ContractSigningDialog({
 
     const pdfjsLib = (window as any).pdfjsLib;
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    
+
     return pdfjsLib;
   };
 
@@ -558,26 +568,26 @@ export function ContractSigningDialog({
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const lastPageNum = pdf.numPages;
       const page = await pdf.getPage(lastPageNum);
-      
+
       const scale = 1.5;
       const viewport = page.getViewport({ scale });
-      
+
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Could not get canvas context');
-      
+
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      
+
       await page.render({
         canvasContext: context,
         viewport: viewport,
       }).promise;
-      
+
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
       setDebugPreviewUrl(imageDataUrl);
       setDebugMode(true);
-      
+
       // Set initial signature position if not set
       if (!customSignaturePosition) {
         setCustomSignaturePosition({
@@ -606,10 +616,10 @@ export function ContractSigningDialog({
   // Handle drag move
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging || !debugImageRef.current) return;
-    
+
     const rect = debugImageRef.current.getBoundingClientRect();
     let clientX: number, clientY: number;
-    
+
     if ('touches' in e) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
@@ -617,14 +627,14 @@ export function ContractSigningDialog({
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    
+
     // Keep within bounds
     const boundedX = Math.max(0, Math.min(x, rect.width - 100));
     const boundedY = Math.max(0, Math.min(y, rect.height - 40));
-    
+
     setCustomSignaturePosition({
       x: boundedX,
       y: boundedY,
@@ -640,27 +650,27 @@ export function ContractSigningDialog({
   // Convert screen position to PDF position
   const getActualPdfPosition = () => {
     if (!customSignaturePosition || !debugImageRef.current) return null;
-    
+
     const imageRect = debugImageRef.current.getBoundingClientRect();
-    
+
     // Standard A4 PDF dimensions
     const pdfWidth = 595.276;
     const pdfHeight = 841.89;
-    
+
     // Calculate scale factors
     const scaleX = pdfWidth / imageRect.width;
     const scaleY = pdfHeight / imageRect.height;
-    
+
     // Convert position - PDF uses bottom-left origin
     const pdfX = customSignaturePosition.x * scaleX;
     const pdfY = pdfHeight - (customSignaturePosition.y * scaleY) - 40; // 40 is sig height
-    
+
     return { x: pdfX, y: pdfY };
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]" dir="rtl">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>חתימה על הצעת מחיר - {vendorName}</DialogTitle>
           <DialogDescription>
@@ -678,25 +688,90 @@ export function ContractSigningDialog({
             <p className="text-muted-foreground">הספק עדיין לא העלה הצעת מחיר חתומה</p>
           </div>
         ) : signerRole ? (
-          // Signature pad view
+          // Combined signing view: position picker + signature pad
           <div className="space-y-4">
             <div className="text-center mb-2">
               <p className="font-medium text-lg">חתימה על המסמך</p>
               <p className="text-sm text-muted-foreground">{userName}</p>
             </div>
-            
-            <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '200px' }}>
-              <canvas
-                ref={canvasRef}
-                style={{ 
-                  width: '100%', 
-                  height: '200px',
-                  cursor: 'crosshair',
-                  touchAction: 'none'
-                }}
-              />
-            </div>
-            
+
+            {/* Step 1: Signature position picker */}
+            {debugPreviewUrl ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    שלב 1: קביעת מיקום חתימה
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    גרור את התיבה הירוקה למיקום הרצוי של החתימה על המסמך
+                  </p>
+                  <div
+                    className="relative border rounded-lg overflow-hidden bg-gray-100 cursor-crosshair"
+                    style={{ maxHeight: '250px', overflowY: 'auto' }}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                  >
+                    <img
+                      ref={debugImageRef}
+                      src={debugPreviewUrl}
+                      className="w-full"
+                      alt="PDF Preview"
+                      draggable={false}
+                    />
+                    {customSignaturePosition && (
+                      <div
+                        className="absolute border-2 border-green-500 bg-green-200/50 cursor-move"
+                        style={{
+                          left: customSignaturePosition.x,
+                          top: customSignaturePosition.y,
+                          width: '100px',
+                          height: '40px',
+                        }}
+                        onMouseDown={handleDragStart}
+                        onTouchStart={handleDragStart}
+                      >
+                        <span className="text-xs text-green-700 p-1">חתימה</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="mr-2 text-sm text-muted-foreground">טוען תצוגת מסמך...</span>
+              </div>
+            )}
+
+            {/* Step 2: Signature pad */}
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Pen className="h-4 w-4 text-primary" />
+                  שלב 2: חתימה
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '200px' }}>
+                  <canvas
+                    ref={canvasRef}
+                    style={{
+                      width: '100%',
+                      height: '200px',
+                      cursor: 'crosshair',
+                      touchAction: 'none'
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -708,7 +783,11 @@ export function ContractSigningDialog({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setSignerRole(null)}
+                onClick={() => {
+                  setSignerRole(null);
+                  setDebugMode(false);
+                  setDebugPreviewUrl(null);
+                }}
               >
                 ביטול
               </Button>
@@ -743,9 +822,9 @@ export function ContractSigningDialog({
                     <h4 className="font-medium">הצעת מחיר {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתומה' : 'מהספק'}</h4>
                     <p className="text-sm text-muted-foreground">
                       {signatureStatus.requiresVpApproval ? (
-                        signatureStatus.ceoSigned && signatureStatus.procurementSigned 
-                          ? 'כל החתימות הושלמו' 
-                          : signatureStatus.ceoSigned 
+                        signatureStatus.ceoSigned && signatureStatus.procurementSigned
+                          ? 'כל החתימות הושלמו'
+                          : signatureStatus.ceoSigned
                             ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
                             : 'הורד את הצעת המחיר לצפייה'
                       ) : (
@@ -761,76 +840,11 @@ export function ContractSigningDialog({
                     <Download className="h-4 w-4" />
                     הורדה
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={toggleDebugMode}
-                    className="gap-2"
-                  >
-                    {debugMode ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <MapPin className="h-4 w-4" />
-                    )}
-                    קביעת מיקום חתימה
-                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Signature position picker */}
-            {debugMode && debugPreviewUrl && (
-              <Card className="mb-4">
-                <CardHeader className="flex flex-row items-center justify-between py-3">
-                  <CardTitle className="text-sm">קביעת מיקום חתימה</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setDebugMode(false)}>
-                    <EyeOff className="h-4 w-4 ml-1" />
-                    סגור
-                  </Button>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-muted-foreground mb-3">
-                    גרור את התיבה הירוקה למיקום הרצוי של החתימה
-                  </p>
-                  <div 
-                    className="relative border rounded-lg overflow-hidden bg-gray-100 cursor-crosshair"
-                    style={{ maxHeight: '300px', overflowY: 'auto' }}
-                    onMouseMove={handleDragMove}
-                    onMouseUp={handleDragEnd}
-                    onMouseLeave={handleDragEnd}
-                    onTouchMove={handleDragMove}
-                    onTouchEnd={handleDragEnd}
-                  >
-                    <img
-                      ref={debugImageRef}
-                      src={debugPreviewUrl}
-                      className="w-full"
-                      alt="PDF Preview"
-                      draggable={false}
-                    />
-                    {customSignaturePosition && (
-                      <div
-                        className="absolute border-2 border-green-500 bg-green-200/50 cursor-move"
-                        style={{
-                          left: customSignaturePosition.x,
-                          top: customSignaturePosition.y,
-                          width: '100px',
-                          height: '40px',
-                        }}
-                        onMouseDown={handleDragStart}
-                        onTouchStart={handleDragStart}
-                      >
-                        <span className="text-xs text-green-700 p-1">חתימה</span>
-                      </div>
-                    )}
-                  </div>
-                  {customSignaturePosition && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      מיקום: X={Math.round(customSignaturePosition.x)}, Y={Math.round(customSignaturePosition.y)}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+
 
             {/* VP Signature - show only to VP AND only if VP approval is required */}
             {signatureStatus.requiresVpApproval && userRole === 'ceo' && (
@@ -854,8 +868,8 @@ export function ContractSigningDialog({
                     </div>
                   </div>
                   {!signatureStatus.ceoSigned && (
-                    <Button 
-                      onClick={() => setSignerRole('ceo')} 
+                    <Button
+                      onClick={() => setSignerRole('ceo')}
                       className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
                       size="lg"
                     >
@@ -882,7 +896,7 @@ export function ContractSigningDialog({
                     <p className="text-muted-foreground">ממתין לחתימת הסמנכ"ל לפני שתוכל לחתום</p>
                   </div>
                 )}
-                
+
                 {/* Show signature section if VP approval is not required OR VP has signed */}
                 {(!signatureStatus.requiresVpApproval || signatureStatus.ceoSigned) && (
                   <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
@@ -905,8 +919,8 @@ export function ContractSigningDialog({
                         </div>
                       </div>
                       {!signatureStatus.procurementSigned && (
-                        <Button 
-                          onClick={() => setSignerRole('procurement')} 
+                        <Button
+                          onClick={() => setSignerRole('procurement')}
                           className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
                           size="lg"
                         >
@@ -925,7 +939,7 @@ export function ContractSigningDialog({
               <div className="text-center p-4 bg-warning/10 rounded-lg border border-warning/30">
                 <p className="text-warning-foreground">אינך מורשה לחתום על הסכם זה</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {signatureStatus.requiresVpApproval 
+                  {signatureStatus.requiresVpApproval
                     ? 'רק מנהל רכש או סמנכ"ל יכולים לחתום'
                     : 'רק מנהל רכש יכול לחתום'}
                 </p>

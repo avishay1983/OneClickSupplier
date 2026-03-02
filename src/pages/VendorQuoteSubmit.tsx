@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, CheckCircle, Loader2, FileText } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-const QUOTE_DETAILS_URL =
-  "https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-quote-details";
+// No hardcoded URL needed, using supabase.functions.invoke
 
 
 const VendorQuoteSubmit = () => {
@@ -36,16 +36,12 @@ const VendorQuoteSubmit = () => {
       }
 
       try {
-        const res = await fetch(QUOTE_DETAILS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
+        const { data: json, error: invokeError } = await supabase.functions.invoke('vendor-quote-details', {
+          body: { token },
         });
 
-        const json = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          setError(json.error || "הקישור לא נמצא או שפג תוקפו");
+        if (invokeError) {
+          setError(invokeError.message || "הקישור לא נמצא או שפג תוקפו");
           setLoading(false);
           return;
         }
@@ -79,18 +75,12 @@ const VendorQuoteSubmit = () => {
       formData.append("amount", amount);
       formData.append("description", description);
 
-      const response = await fetch(
-        "https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-quote-submit",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('vendor-quote-submit', {
+        body: formData,
+      });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "שגיאה בשליחת ההצעה");
+      if (invokeError) {
+        throw new Error(invokeError.message || "שגיאה בשליחת ההצעה");
       }
 
       setSubmitted(true);

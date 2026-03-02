@@ -58,6 +58,7 @@ class TableQuery:
         self._maybe_single = False
         self._count_mode: Optional[str] = None  # 'exact' | None
         self._head = False  # True = count only, no data
+        self._on_conflict: Optional[str] = None
 
     # --- Operation methods ---
 
@@ -78,9 +79,10 @@ class TableQuery:
         self._data = data
         return self
 
-    def upsert(self, data: Any) -> 'TableQuery':
+    def upsert(self, data: Any, on_conflict: Optional[str] = None) -> 'TableQuery':
         self._operation = "upsert"
         self._data = data if isinstance(data, list) else [data]
+        self._on_conflict = on_conflict
         return self
 
     def delete(self) -> 'TableQuery':
@@ -392,11 +394,24 @@ class TableQuery:
         rows = self._store._load_table(self._table_name)
         now = datetime.now(timezone.utc).isoformat()
 
+        # Parse on_conflict columns
+        conflict_cols = []
+        if self._on_conflict:
+            conflict_cols = [c.strip() for c in self._on_conflict.split(",")]
+
         result = []
         for item in self._data:
             item_id = item.get("id")
             existing = None
-            if item_id:
+            
+            # 1. Match by on_conflict columns if provided
+            if conflict_cols:
+                def match(row):
+                    return all(row.get(col) == item.get(col) for col in conflict_cols)
+                existing = next((r for r in rows if match(r)), None)
+            
+            # 2. Fallback to id if no on_conflict match or not provided
+            if not existing and item_id:
                 existing = next((r for r in rows if r.get("id") == item_id), None)
 
             if existing:

@@ -74,11 +74,11 @@ export default function VendorForm() {
   const [notFound, setNotFound] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [linkExpired, setLinkExpired] = useState(false);
-  
+
   // Step state: 1 = upload documents, 2 = fill form
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
-  
+
   // OTP verification states
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpValue, setOtpValue] = useState('');
@@ -87,7 +87,7 @@ export default function VendorForm() {
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
-  
+
   const [files, setFiles] = useState<Record<DocumentType, File | null>>({
     bookkeeping_cert: null,
     tax_cert: null,
@@ -143,7 +143,7 @@ export default function VendorForm() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // Map bank code to name for comparison
   const BANK_CODE_MAP: Record<string, string> = {
     '10': 'בנק לאומי',
@@ -271,9 +271,9 @@ export default function VendorForm() {
   // Check if file is DOC or DOCX
   const isWordFile = (file: File): boolean => {
     return file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           file.type === 'application/msword' ||
-           file.name.toLowerCase().endsWith('.docx') ||
-           file.name.toLowerCase().endsWith('.doc');
+      file.type === 'application/msword' ||
+      file.name.toLowerCase().endsWith('.docx') ||
+      file.name.toLowerCase().endsWith('.doc');
   };
 
   // Extract text from DOCX file
@@ -291,10 +291,10 @@ export default function VendorForm() {
   // Classify document type using AI
   const classifyDocument = useCallback(async (file: File, expectedType: DocumentType): Promise<{ isMatch: boolean; detectedTypeHebrew: string; reason: string } | null> => {
     console.log('[classifyDocument] Starting classification for:', file.name, 'Expected type:', expectedType);
-    
+
     try {
       let base64Data: string;
-      
+
       // Convert file to base64
       if (isPdfFile(file)) {
         console.log('[classifyDocument] Processing PDF file');
@@ -365,7 +365,7 @@ export default function VendorForm() {
         reason: data.reason || '',
       };
       console.log('[classifyDocument] Classification result:', result);
-      
+
       return result;
     } catch (err) {
       console.error('[classifyDocument] Document classification error:', err);
@@ -377,11 +377,11 @@ export default function VendorForm() {
   const handleFileSelectWithClassification = useCallback(async (docType: DocumentType, file: File) => {
     console.log('[handleFileSelectWithClassification] File selected:', file.name, 'for type:', docType);
     setIsClassifyingDocument(docType);
-    
+
     try {
       const result = await classifyDocument(file, docType);
       console.log('[handleFileSelectWithClassification] Classification result:', result);
-      
+
       if (result && !result.isMatch) {
         console.log('[handleFileSelectWithClassification] Mismatch detected! Showing dialog');
         // Show mismatch dialog
@@ -436,7 +436,7 @@ export default function VendorForm() {
   // Validate OCR extracted data against available options
   const validateOcrData = useCallback(async (data: Partial<typeof formData>): Promise<OcrValidationWarning[]> => {
     const warnings: OcrValidationWarning[] = [];
-    
+
     // Validate city
     if (data.city) {
       const cityExists = ISRAEL_CITIES.some(
@@ -451,7 +451,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     // Validate street exists in the city
     if (data.street && data.city) {
       const cityExists = ISRAEL_CITIES.includes(data.city);
@@ -460,7 +460,7 @@ export default function VendorForm() {
           const { data: streetData } = await supabase.functions.invoke('search-streets', {
             body: { city: data.city, query: data.street },
           });
-          
+
           if (streetData?.streets && Array.isArray(streetData.streets)) {
             const streetExists = streetData.streets.some(
               (s: string) => s === data.street || s.includes(data.street!) || data.street!.includes(s)
@@ -479,7 +479,7 @@ export default function VendorForm() {
         }
       }
     }
-    
+
     // Validate bank name
     if (data.bank_name) {
       const bankExists = BANK_NAMES.some(
@@ -494,7 +494,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     // Validate bank branch format
     if (data.bank_branch) {
       if (!validateBankBranch(data.bank_branch)) {
@@ -506,7 +506,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     // Validate bank account if bank is selected
     if (data.bank_account_number && data.bank_name) {
       const accountValidation = validateBankAccount(data.bank_account_number, data.bank_name);
@@ -519,7 +519,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     // Validate mobile phone format
     if (data.mobile) {
       const mobileRegex = /^05\d{8}$/;
@@ -532,7 +532,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     // Validate company ID (9 digits) - only if value looks like it should be a company ID
     if (data.company_id) {
       const companyIdClean = data.company_id.replace(/\D/g, '');
@@ -547,7 +547,7 @@ export default function VendorForm() {
         });
       }
     }
-    
+
     return warnings;
   }, []);
 
@@ -572,7 +572,7 @@ export default function VendorForm() {
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
     const isWord = isWordFile(file);
-    
+
     // Handle DOCX files by extracting text and sending to AI
     if (isWord) {
       const textContent = await extractTextFromDocx(file);
@@ -582,13 +582,13 @@ export default function VendorForm() {
       }
       return await extractDocumentDataFromText(textContent, documentType);
     }
-    
+
     if (!isImage && !isPdf) {
       return null;
     }
 
     let imageData: { base64: string; mimeType: string } | null = null;
-    
+
     if (isPdf) {
       imageData = await pdfToImage(file);
       if (!imageData) return null;
@@ -614,13 +614,13 @@ export default function VendorForm() {
   const processOcrOnBankFile = async (file: File): Promise<ExtractedBankData | null> => {
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
-    
+
     if (!isImage && !isPdf) {
       return null;
     }
 
     let imageData: { base64: string; mimeType: string } | null = null;
-    
+
     if (isPdf) {
       imageData = await pdfToImage(file);
       if (!imageData) return null;
@@ -645,7 +645,7 @@ export default function VendorForm() {
   // Check for mismatches between form data and extracted data
   const checkBankMismatch = useCallback((extracted: ExtractedBankData): boolean => {
     const formBankCode = getBankCodeFromName(formData.bank_name);
-    
+
     if (extracted.bank_number && formBankCode && extracted.bank_number !== formBankCode) {
       return true;
     }
@@ -661,10 +661,10 @@ export default function VendorForm() {
   // Handle bank document file selection with OCR (for step 2)
   const handleBankFileSelect = useCallback(async (file: File) => {
     setPendingBankFile(file);
-    
+
     const isImage = file.type.startsWith('image/');
     const isPdf = isPdfFile(file);
-    
+
     if (!isImage && !isPdf) {
       setFiles(prev => ({ ...prev, bank_confirmation: file }));
       setPendingBankFile(null);
@@ -672,9 +672,9 @@ export default function VendorForm() {
     }
 
     setIsExtractingOcr(true);
-    
+
     let imageData: { base64: string; mimeType: string } | null = null;
-    
+
     if (isPdf) {
       toast({
         title: 'ממיר PDF לתמונה...',
@@ -714,14 +714,14 @@ export default function VendorForm() {
 
     const extracted = await extractBankDetailsFromBase64(imageData.base64, imageData.mimeType);
     setIsExtractingOcr(false);
-    
+
     const hasFormData = formData.bank_name || formData.bank_branch || formData.bank_account_number;
-    
+
     if (extracted && !extracted.error) {
       setExtractedBankData(extracted);
-      
+
       const noDataExtracted = !extracted.bank_number && !extracted.branch_number && !extracted.account_number;
-      
+
       if (noDataExtracted && hasFormData) {
         setShowMismatchDialog(true);
       } else if (hasFormData && checkBankMismatch(extracted)) {
@@ -729,7 +729,7 @@ export default function VendorForm() {
       } else {
         setFiles(prev => ({ ...prev, bank_confirmation: file }));
         setPendingBankFile(null);
-        
+
         if (!hasFormData && !noDataExtracted) {
           toast({
             title: 'נתוני בנק זוהו',
@@ -781,31 +781,31 @@ export default function VendorForm() {
   const handleAutoFillFromDocument = () => {
     if (extractedBankData) {
       const updates: Partial<typeof formData> = {};
-      
+
       if (extractedBankData.bank_number) {
         const bankName = getBankNameFromCode(extractedBankData.bank_number);
         if (bankName) {
           updates.bank_name = bankName;
         }
       }
-      
+
       if (extractedBankData.branch_number) {
         updates.bank_branch = extractedBankData.branch_number;
       }
-      
+
       if (extractedBankData.account_number) {
         updates.bank_account_number = extractedBankData.account_number;
       }
-      
+
       setFormData(prev => ({ ...prev, ...updates }));
-      
+
       if (pendingBankFile) {
         setFiles(prev => ({ ...prev, bank_confirmation: pendingBankFile }));
       }
-      
+
       setShowMismatchDialog(false);
       setPendingBankFile(null);
-      
+
       toast({
         title: 'הנתונים עודכנו',
         description: 'פרטי הבנק עודכנו בהתאם למסמך שהועלה',
@@ -818,7 +818,7 @@ export default function VendorForm() {
     // Validate all documents are uploaded
     const requiredDocs: DocumentType[] = ['bookkeeping_cert', 'tax_cert', 'bank_confirmation', 'invoice_screenshot'];
     const missingDocs = requiredDocs.filter(doc => !files[doc] && !existingDocuments[doc]);
-    
+
     if (missingDocs.length > 0) {
       toast({
         title: 'מסמכים חסרים',
@@ -829,7 +829,7 @@ export default function VendorForm() {
     }
 
     setIsProcessingOcr(true);
-    
+
     try {
       toast({
         title: 'מעבד מסמכים...',
@@ -838,7 +838,7 @@ export default function VendorForm() {
 
       // Process OCR on all new files
       const ocrPromises: Promise<{ docType: DocumentType; data: ExtractedDocumentData | null }>[] = [];
-      
+
       for (const docType of requiredDocs) {
         const file = files[docType];
         if (file) {
@@ -849,23 +849,23 @@ export default function VendorForm() {
       }
 
       const ocrResults = await Promise.all(ocrPromises);
-      
+
       console.log('OCR Results:', ocrResults);
-      
+
       // Merge all extracted data - later documents override earlier ones for same fields
       const mergedData: Partial<typeof formData> = {};
       let extractedFieldsCount = 0;
-      
+
       for (const { docType, data } of ocrResults) {
         console.log(`Processing OCR result for ${docType}:`, data);
         if (!data) continue;
-        
+
         // Company ID
         if (data.company_id && !mergedData.company_id) {
           mergedData.company_id = data.company_id;
           extractedFieldsCount++;
         }
-        
+
         // Phone numbers
         if (data.phone && !mergedData.phone) {
           mergedData.phone = data.phone;
@@ -875,7 +875,7 @@ export default function VendorForm() {
           mergedData.mobile = data.mobile;
           extractedFieldsCount++;
         }
-        
+
         // Address
         if (data.city && !mergedData.city) {
           mergedData.city = data.city;
@@ -893,7 +893,7 @@ export default function VendorForm() {
           mergedData.postal_code = data.postal_code;
           extractedFieldsCount++;
         }
-        
+
         // Bank details (prefer from bank_confirmation document)
         if (docType === 'bank_confirmation' || !mergedData.bank_name) {
           if (data.bank_number) {
@@ -916,7 +916,7 @@ export default function VendorForm() {
             extractedFieldsCount++;
           }
         }
-        
+
         // Store bank data for extracted tags
         if (docType === 'bank_confirmation' && (data.bank_number || data.branch_number || data.account_number)) {
           setExtractedBankData({
@@ -927,13 +927,13 @@ export default function VendorForm() {
           });
         }
       }
-      
+
       console.log('Merged OCR data:', mergedData);
       console.log('Extracted fields count:', extractedFieldsCount);
-      
+
       // Apply merged data to form - OCR data from NEW files overrides existing values
       const finalUpdates: Partial<typeof formData> = {};
-      
+
       // For newly uploaded documents, allow OCR data to override existing form values
       if (mergedData.company_id) finalUpdates.company_id = mergedData.company_id;
       if (mergedData.phone) finalUpdates.phone = mergedData.phone;
@@ -945,14 +945,14 @@ export default function VendorForm() {
       if (mergedData.bank_name) finalUpdates.bank_name = mergedData.bank_name;
       if (mergedData.bank_branch) finalUpdates.bank_branch = mergedData.bank_branch;
       if (mergedData.bank_account_number) finalUpdates.bank_account_number = mergedData.bank_account_number;
-      
+
       console.log('Final updates to apply:', finalUpdates);
       console.log('Current formData before update:', formData);
-      
+
       // Validate OCR data before applying
       const warnings = await validateOcrData(finalUpdates);
       setOcrValidationWarnings(warnings);
-      
+
       // Also set errors state for immediate visual feedback (red border)
       if (warnings.length > 0) {
         const newErrors: Record<string, string> = {};
@@ -960,19 +960,19 @@ export default function VendorForm() {
           newErrors[warning.field] = warning.message;
         });
         setErrors(prev => ({ ...prev, ...newErrors }));
-        
+
         console.log('OCR validation warnings:', warnings);
       }
-      
+
       const appliedFieldsCount = Object.keys(finalUpdates).length;
-      
+
       if (appliedFieldsCount > 0) {
         setFormData(prev => {
           const newData = { ...prev, ...finalUpdates };
           console.log('New formData after update:', newData);
           return newData;
         });
-        
+
         // Show appropriate toast based on validation results
         if (warnings.length === 0) {
           toast({
@@ -1001,13 +1001,22 @@ export default function VendorForm() {
           description: 'הנתונים שזוהו כבר קיימים בטופס',
         });
       } else {
-        toast({
-          title: 'לא זוהו נתונים',
-          description: 'לא ניתן היה לחלץ נתונים מהמסמכים - יש למלא ידנית',
-          variant: 'destructive',
-        });
+        // Check if form already has data (from a previous extraction or manual entry)
+        const hasExistingData = formData.company_id || formData.phone || formData.mobile || formData.bank_name || formData.bank_account_number;
+        if (hasExistingData) {
+          toast({
+            title: 'הנתונים כבר מולאו',
+            description: 'נתונים כבר קיימים בטופס. ניתן לעדכן ידנית במידת הצורך.',
+          });
+        } else {
+          toast({
+            title: 'לא זוהו נתונים',
+            description: 'לא ניתן היה לחלץ נתונים מהמסמכים - יש למלא ידנית',
+            variant: 'destructive',
+          });
+        }
       }
-      
+
       setCurrentStep(2);
     } catch (error) {
       console.error('OCR processing error:', error);
@@ -1024,17 +1033,17 @@ export default function VendorForm() {
 
   const sendOtp = async () => {
     if (!token) return;
-    
+
     setIsSendingOtp(true);
     setOtpError(null);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('send-vendor-otp', {
         body: { token },
       });
-      
+
       if (error) throw error;
-      
+
       if (data?.error) {
         if (data.error === 'expired') {
           setLinkExpired(true);
@@ -1043,7 +1052,7 @@ export default function VendorForm() {
         }
         return;
       }
-      
+
       setOtpSent(true);
       setMaskedEmail(data.maskedEmail);
       toast({
@@ -1060,17 +1069,17 @@ export default function VendorForm() {
 
   const verifyOtp = async () => {
     if (!token || otpValue.length !== 6) return;
-    
+
     setIsVerifyingOtp(true);
     setOtpError(null);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke('verify-vendor-otp', {
         body: { token, otp: otpValue },
       });
-      
+
       if (error) throw error;
-      
+
       if (data?.error) {
         if (data.error === 'expired') {
           setLinkExpired(true);
@@ -1086,7 +1095,7 @@ export default function VendorForm() {
         }
         return;
       }
-      
+
       setOtpVerified(true);
       toast({
         title: 'אימות הצליח',
@@ -1103,13 +1112,13 @@ export default function VendorForm() {
   useEffect(() => {
     const fetchRequest = async () => {
       if (!token) return;
-      
+
       if (!isSupabaseConfigured) {
         setNotFound(true);
         setIsLoading(false);
         return;
       }
-      
+
       try {
         // Use vendor-form-api edge function (uses service role, bypasses RLS)
         const { data: response, error } = await supabase.functions.invoke('vendor-form-api', {
@@ -1117,40 +1126,40 @@ export default function VendorForm() {
         });
 
         if (error) throw error;
-        
+
         if (response?.error === 'not_found') {
           setNotFound(true);
           setIsLoading(false);
           return;
         }
-        
+
         if (response?.error === 'expired') {
           setLinkExpired(true);
           setIsLoading(false);
           return;
         }
-        
+
         if (!response?.request) {
           setNotFound(true);
           setIsLoading(false);
           return;
         }
-        
+
         const data = response.request;
         const docs = response.documents || [];
-        
+
         // OTP is verified only if previously verified AND status is not 'resent'
         // When status is 'resent', vendor must re-verify via OTP
         if (data.otp_verified && data.status !== 'resent') {
           setOtpVerified(true);
         }
-        
+
         if (data.status === 'submitted' || data.status === 'approved' || data.status === 'first_review') {
           setSubmitted(true);
           setRequest(data as VendorRequest);
         } else {
           setRequest(data as VendorRequest);
-          
+
           setFormData({
             company_id: data.company_id || '',
             phone: data.phone || '',
@@ -1216,10 +1225,10 @@ export default function VendorForm() {
 
     for (const errorKey of errorFields) {
       const fieldId = fieldIdMap[errorKey] || errorKey;
-      const element = document.getElementById(fieldId) || 
-                     document.querySelector(`[name="${fieldId}"]`) ||
-                     document.querySelector(`[data-field="${errorKey}"]`);
-      
+      const element = document.getElementById(fieldId) ||
+        document.querySelector(`[name="${fieldId}"]`) ||
+        document.querySelector(`[data-field="${errorKey}"]`);
+
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         // Focus the element if it's an input
@@ -1254,11 +1263,11 @@ export default function VendorForm() {
 
     const hasStreet = formData.street.trim();
     const hasPOBox = formData.po_box.trim();
-    
+
     if (!hasStreet && !hasPOBox) {
       newErrors.address = 'יש למלא רחוב או ת.ד';
     }
-    
+
     if (!formData.city.trim()) {
       newErrors.city = 'עיר היא שדה חובה';
     } else if (!ISRAEL_CITIES.includes(formData.city)) {
@@ -1293,18 +1302,18 @@ export default function VendorForm() {
     }
 
     setErrors(newErrors);
-    
+
     // Scroll to first error if validation fails
     if (Object.keys(newErrors).length > 0) {
       setTimeout(() => scrollToFirstError(newErrors), 100);
     }
-    
+
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm() || !request || !token) return;
 
     setIsSubmitting(true);
@@ -1316,7 +1325,7 @@ export default function VendorForm() {
           uploadFormData.append('token', token);
           uploadFormData.append('documentType', docType);
           uploadFormData.append('file', file);
-          
+
           if (docType === 'bank_confirmation' && extractedBankData && !extractedBankData.error) {
             uploadFormData.append('extractedTags', JSON.stringify({
               bank_number: extractedBankData.bank_number,
@@ -1324,17 +1333,13 @@ export default function VendorForm() {
               account_number: extractedBankData.account_number,
             }));
           }
-          
-          const response = await fetch(
-            `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
-            {
-              method: 'POST',
-              body: uploadFormData,
-            }
-          );
-          
-          if (!response.ok) {
-            console.error('Upload error for', docType);
+
+          const { data: uploadResponse, error: uploadError } = await supabase.functions.invoke('vendor-upload', {
+            body: uploadFormData,
+          });
+
+          if (uploadError) {
+            console.error('Upload error for', docType, uploadError);
           }
         }
       }
@@ -1345,31 +1350,27 @@ export default function VendorForm() {
         contractFormData.append('token', token);
         contractFormData.append('documentType', 'contract');
         contractFormData.append('file', contractFile);
-        
-        const contractResponse = await fetch(
-          `https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-upload`,
-          {
-            method: 'POST',
-            body: contractFormData,
-          }
-        );
-        
-        if (!contractResponse.ok) {
-          console.error('Upload error for contract');
+
+        const { data: contractResponse, error: contractError } = await supabase.functions.invoke('vendor-upload', {
+          body: contractFormData,
+        });
+
+        if (contractError) {
+          console.error('Upload error for contract', contractError);
         }
       }
 
       // Submit the form using vendor-form-api edge function
       const { data: response, error } = await supabase.functions.invoke('vendor-form-api', {
-        body: { 
-          action: 'submit', 
+        body: {
+          action: 'submit',
           token,
-          data: formData 
+          data: formData
         },
       });
 
       if (error) throw error;
-      
+
       if (response?.error) {
         throw new Error(response.message || 'שגיאה בשליחת הטופס');
       }
@@ -1439,7 +1440,7 @@ export default function VendorForm() {
 
   if (submitted) {
     const statusLink = `/vendor-status/${token}`;
-    
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full text-center">
@@ -1449,7 +1450,7 @@ export default function VendorForm() {
             <p className="text-muted-foreground mb-4">
               תודה על מילוי הטופס. הפרטים שלך נקלטו במערכת ויטופלו בהקדם.
             </p>
-            
+
             {request?.requires_contract_signature && (
               <div className="mt-4 p-3 bg-success/10 border border-success/30 rounded-lg">
                 <CheckCircle className="h-6 w-6 mx-auto text-success mb-1" />
@@ -1457,11 +1458,11 @@ export default function VendorForm() {
                 <p className="text-xs text-muted-foreground">ממתין לחתימות סמנכ"ל ומנהל רכש</p>
               </div>
             )}
-            
+
             <p className="text-muted-foreground mb-4 mt-4">
               שלחנו לך מייל עם לינק למעקב אחר סטטוס הבקשה.
             </p>
-            <a 
+            <a
               href={statusLink}
               className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
@@ -1496,9 +1497,9 @@ export default function VendorForm() {
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4">
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
+              <img
+                src="/images/bituach-yashir-logo.png"
+                alt="ביטוח ישיר"
                 className="h-12 w-auto mx-auto"
               />
             </div>
@@ -1583,9 +1584,9 @@ export default function VendorForm() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img 
-                src="/images/bituach-yashir-logo.png" 
-                alt="ביטוח ישיר" 
+              <img
+                src="/images/bituach-yashir-logo.png"
+                alt="ביטוח ישיר"
                 className="h-10 w-auto"
               />
               <div className="border-r border-white/20 pr-4">
@@ -1700,7 +1701,7 @@ export default function VendorForm() {
                       />
                     </div>
                   ))}
-                  
+
                   {/* Price Quote Upload - if required */}
                   {request?.requires_contract_signature && (
                     <div className="relative">
@@ -1785,15 +1786,15 @@ export default function VendorForm() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">התקדמות העלאה</span>
                     <span className="text-sm text-muted-foreground">{uploadedDocsCount} מתוך {totalDocs} מסמכים</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all duration-300" 
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(uploadedDocsCount / totalDocs) * 100}%` }}
                     />
                   </div>
@@ -1824,7 +1825,7 @@ export default function VendorForm() {
         ) : (
           /* Step 2: Fill Form */
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {/* Basic Info */}
             <Card>
               <CardHeader>
@@ -2228,13 +2229,12 @@ export default function VendorForm() {
                     const inputId = `replace-${docType}-bottom`;
                     return (
                       <div key={docType} className="relative group">
-                        <label 
+                        <label
                           htmlFor={inputId}
-                          className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                            hasDoc 
-                              ? 'bg-success/10 hover:bg-success/20 border border-success/20' 
-                              : 'bg-muted/50 hover:bg-muted'
-                          }`}
+                          className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${hasDoc
+                            ? 'bg-success/10 hover:bg-success/20 border border-success/20'
+                            : 'bg-muted/50 hover:bg-muted'
+                            }`}
                         >
                           {hasDoc ? (
                             <CheckCircle className="h-4 w-4 text-success" />
@@ -2268,13 +2268,12 @@ export default function VendorForm() {
                   {/* Price Quote - same styling as other documents */}
                   {request?.requires_contract_signature && (
                     <div className="relative group">
-                      <label 
+                      <label
                         htmlFor="replace-contract-bottom"
-                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                          (contractFile || request?.contract_file_path)
-                            ? 'bg-success/10 hover:bg-success/20 border border-success/20' 
-                            : 'bg-muted/50 hover:bg-muted'
-                        }`}
+                        className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${(contractFile || request?.contract_file_path)
+                          ? 'bg-success/10 hover:bg-success/20 border border-success/20'
+                          : 'bg-muted/50 hover:bg-muted'
+                          }`}
                       >
                         {(contractFile || request?.contract_file_path) ? (
                           <CheckCircle className="h-4 w-4 text-success" />

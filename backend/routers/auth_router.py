@@ -88,6 +88,19 @@ async def signup(request: SignupRequest):
     }
     db.table("profiles").insert(profile_data).execute()
 
+    # Create pending approval record (replaces Supabase trigger)
+    approval_data = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_email": request.email,
+        "user_name": request.full_name or "",
+        "status": "pending",
+        "approval_token": str(uuid.uuid4()),
+        "created_at": now,
+        "updated_at": now,
+    }
+    db.table("pending_approvals").insert(approval_data).execute()
+
     # Generate token
     token = create_access_token(user_id, request.email)
 

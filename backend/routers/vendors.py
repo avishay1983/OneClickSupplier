@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, status
+from fastapi import APIRouter, HTTPException, BackgroundTasks, status, UploadFile, File, Form, Request
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -30,7 +30,7 @@ def send_handler_notification(handler_email: str, handler_name: str, vendor_name
         print("No handler email provided")
         return
 
-    dashboard_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com") + "/"
+    dashboard_url = os.environ.get("FRONTEND_URL", "http://localhost:8080") + "/"
     
     html_content = f"""
 <!DOCTYPE html>
@@ -410,7 +410,7 @@ async def send_quote_request_email(request: SendQuoteEmailRequest):
         
         # Build Link
         # Access frontend url from env or default
-        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
         quote_link = f"{frontend_url}/vendor-quote/{token}"
         
         # Build Email
@@ -523,7 +523,7 @@ async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
         quote = response.data
         
         # Build the approval link
-        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
         approval_link = f"{frontend_url}/quote-approval/{quote['quote_secure_token']}?type={request.approvalType}"
         
         amount_display = f"₪{request.amount:,.0f}" if request.amount else "לא צוין"
@@ -610,6 +610,107 @@ async def get_vendor_status(request: VendorStatusRequest):
         print(f"Error checking status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- Vendor Receipts Data ---
+@router.post("/receipts-data")
+async def get_vendor_receipts_data(request: VendorStatusRequest):
+    """
+    Returns vendor data + receipts for the vendor receipts page.
+    Replaces: supabase.functions.invoke('vendor-receipts-data')
+    """
+    db = get_db()
+    token = request.token
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required")
+
+    try:
+        # Get vendor data
+        response = db.table('vendor_requests').select('id, vendor_name, status, secure_token').eq('secure_token', token).maybe_single().execute()
+        vendor = response.data
+
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+
+        # Get receipts for this vendor
+        receipts_response = db.table('vendor_receipts').select('*').eq('vendor_request_id', vendor['id']).order('created_at', desc=True).execute()
+
+        return {
+            "vendor": {
+                "id": vendor['id'],
+                "vendor_name": vendor['vendor_name'],
+                "status": vendor['status'],
+            },
+            "receipts": receipts_response.data or []
+        }
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error fetching receipts data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Vendor Receipt Upload ---
+import uuid
+
+@router.post("/receipt-upload")
+async def upload_vendor_receipt(
+    token: str = Form(...),
+    amount: str = Form(...),
+    receiptDate: str = Form(...),
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None)
+):
+    """
+    Uploads a receipt for a vendor.
+    Replaces: supabase.functions.invoke('vendor-receipt-upload')
+    """
+    db = get_db()
+    storage = get_storage()
+
+    try:
+        # Get vendor
+        response = db.table('vendor_requests').select('id, vendor_name').eq('secure_token', token).maybe_single().execute()
+        vendor = response.data
+
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Vendor not found")
+
+        vendor_id = vendor['id']
+
+        # Upload file
+        file_content = await file.read()
+        file_extension = os.path.splitext(file.filename)[1]
+        timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+        storage_path = f"receipts/{vendor_id}/receipt_{timestamp}{file_extension}"
+
+        storage.from_("vendor_documents").upload(storage_path, file_content)
+
+        # Insert receipt record
+        now = datetime.now(timezone.utc).isoformat()
+        receipt_id = str(uuid.uuid4())
+
+        receipt_data = {
+            "id": receipt_id,
+            "vendor_request_id": vendor_id,
+            "file_path": storage_path,
+            "file_name": file.filename,
+            "amount": float(amount),
+            "receipt_date": receiptDate,
+            "description": description,
+            "status": "pending",
+            "created_at": now,
+        }
+
+        db.table("vendor_receipts").insert(receipt_data).execute()
+
+        return {"success": True, "receipt": receipt_data}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error uploading receipt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 class VerifyOtpRequest(BaseModel):
     token: str
     otp: str
@@ -636,15 +737,27 @@ async def verify_vendor_otp(request: VerifyOtpRequest):
 
         # Check link expiration
         if vendor_request.get("expires_at"):
-             expires_at = datetime.fromisoformat(vendor_request["expires_at"].replace('Z', '+00:00'))
-             if expires_at < datetime.now(expires_at.tzinfo):
+             expires_at_str = vendor_request["expires_at"]
+             if 'Z' in expires_at_str:
+                 expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
+             else:
+                 # Support older formats without Z, assuming UTC
+                 expires_at = datetime.fromisoformat(expires_at_str).replace(tzinfo=timezone.utc)
+             
+             if expires_at < datetime.now(timezone.utc):
                  raise HTTPException(status_code=410, detail="הלינק פג תוקף")
 
         # Check OTP expiration
         if vendor_request.get("otp_expires_at"):
-             otp_expires_at = datetime.fromisoformat(vendor_request["otp_expires_at"].replace('Z', '+00:00'))
-             if otp_expires_at < datetime.now(otp_expires_at.tzinfo):
-                 print("OTP has expired")
+             otp_expires_at_str = vendor_request["otp_expires_at"]
+             if 'Z' in otp_expires_at_str:
+                 otp_expires_at = datetime.fromisoformat(otp_expires_at_str.replace('Z', '+00:00'))
+             else:
+                 # If no timezone info, assume it's UTC (as it should be)
+                 otp_expires_at = datetime.fromisoformat(otp_expires_at_str).replace(tzinfo=timezone.utc)
+             
+             if otp_expires_at < datetime.now(timezone.utc):
+                 print(f"OTP has expired. Stored: {otp_expires_at}, Now: {datetime.now(timezone.utc)}")
                  raise HTTPException(status_code=400, detail="קוד האימות פג תוקף, יש לבקש קוד חדש")
 
         # Master OTP
@@ -705,7 +818,7 @@ async def send_vendor_otp(request: SendOtpRequest):
         # Generate OTP
         import random
         otp_code = str(random.randint(100000, 999999))
-        otp_expires_at = (datetime.utcnow() + timedelta(minutes=10)).isoformat()
+        otp_expires_at = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
 
         # Update DB
         db.table("vendor_requests").update({
@@ -715,11 +828,15 @@ async def send_vendor_otp(request: SendOtpRequest):
         }).eq("id", vendor_request["id"]).execute()
 
         # Send Email
-        html_content = f"""
-<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="he">
-<head><meta charset="UTF-8"></head>
+<head>
+<meta charset="UTF-8">
+</head>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; direction: rtl; text-align: right;">
+<div style="margin-bottom: 20px; background-color: #1a2b5f; padding: 20px; border-radius: 8px 8px 0 0; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto;" />
+</div>
 <h1 style="color: #1a365d; text-align: right;">קוד אימות</h1>
 <p style="text-align: right;">שלום {vendor_request['vendor_name']},</p>
 <p style="text-align: right;">קוד האימות שלך להיכנס לטופס הספק הוא:</p>
@@ -727,9 +844,9 @@ async def send_vendor_otp(request: SendOtpRequest):
 <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">{otp_code}</span>
 </div>
 <p style="color: #718096; text-align: right;">הקוד תקף ל-10 דקות בלבד.</p>
+<p style="text-align: right;">אם לא ביקשת קוד זה, התעלם מהודעה זו.</p>
 </body>
-</html>
-        """
+</html>"""
         
         send_email_via_smtp(vendor_request["vendor_email"], "קוד אימות לטופס ספק", html_content)
         
@@ -765,7 +882,7 @@ async def send_vendor_email_endpoint(request: SendVendorEmailRequest):
              if response.data:
                  vendor_name = response.data["vendor_name"]
                  vendor_email = response.data["vendor_email"]
-                 frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+                 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
                  secure_link = f"{frontend_url}/vendor/{response.data['secure_token']}"
         except Exception as e:
             print(f"Error fetching detail for email: {e}")
@@ -775,16 +892,45 @@ async def send_vendor_email_endpoint(request: SendVendorEmailRequest):
 
     subject = "נדרשים תיקונים בטופס הספק" if request.includeReason else "בקשה להקמת ספק - נדרשים פרטים"
     
-    html_content = f"""
-<!DOCTYPE html>
+    reason_section = f"""
+<div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 15px; margin: 20px 0;">
+<p style="margin: 0 0 10px 0; font-weight: bold; color: #92400e;">הערה מהמטפל:</p>
+<p style="margin: 0; color: #78350f;">{request.reason}</p>
+</div>
+<p style="margin: 12px 0;">אנא תקן את הפרטים בטופס ושלח מחדש.</p>""" if (request.includeReason and request.reason) else ""
+
+    body_content = f"""
+<p style="margin: 12px 0;">הטופס שהגשת נבדק ונמצאו פרטים שדורשים תיקון.</p>
+{reason_section}
+""" if request.includeReason else """
+<p style="margin: 12px 0;">התקבלה בקשה להקמתך כספק במערכת שלנו.</p>
+<p style="margin: 12px 0;">על מנת להשלים את תהליך ההקמה, אנא לחץ על הכפתור למטה ומלא את הפרטים הנדרשים.</p>
+"""
+
+    html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="he">
-<body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px;">
-<h2>שלום {vendor_name},</h2>
-{'<p>הטופס שהגשת נבדק ונמצאו פרטים שדורשים תיקון:</p><p><strong>' + (request.reason or '') + '</strong></p>' if request.includeReason else '<p>התקבלה בקשה להקמתך כספק.</p>'}
-<p>אנא לחץ על הקישור להמשך:</p>
-<a href="{secure_link}">מעבר לטופס</a>
-</body></html>
-    """
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+<h1 style="margin: 0; text-align: center; color: white;">{"נדרשים תיקונים בטופס" if request.includeReason else "בקשה להקמת ספק"}</h1>
+</div>
+<div style="padding: 30px;">
+<p style="margin: 12px 0;">שלום {vendor_name},</p>
+{body_content}
+<p style="margin: 12px 0;">הקישור הזה הוא אישי ומאובטח. אנא אל תשתף אותו עם אחרים.</p>
+<p style="margin: 12px 0;">במידה ויש לך שאלות, אנא פנה לאיש הקשר שלך בחברה.</p>
+<div style="text-align: center; margin: 25px 0;">
+<a href="{secure_link}" style="display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">{"עדכון טופס ספק" if request.includeReason else "מילוי טופס ספק"}</a>
+</div>
+<p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים.</p>
+</div>
+</div>
+</body>
+</html>"""
     
     send_email_via_smtp(vendor_email, subject, html_content)
     return {"success": True}
@@ -812,19 +958,66 @@ async def reject_vendor(request: RejectRequest):
         }).eq("id", request.vendorRequestId).execute()
         
         # Send Email
-        frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
         status_url = f"{frontend_url}/vendor-status/{vendor_request['secure_token']}"
+        
+        handler_name = vendor_request.get('handler_name') or "הנציג המטפל בתיק"
         
         html_content = f"""
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
-<body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px;">
-<h2>בקשתך להקמה כספק נדחתה</h2>
-<p>שלום {vendor_request['vendor_name']},</p>
-<p>לצערינו בקשתך נדחתה.</p>
-<p>סיבה: {request.reason}</p>
-<a href="{status_url}">צפה בסטטוס</a>
-</body></html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; direction: rtl;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #1a2b5f; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">ביטוח ישיר</h1>
+      <p style="color: #93c5fd; margin: 5px 0 0 0; font-size: 14px;">מערכת הקמת ספקים</p>
+    </div>
+    
+    <div style="background-color: white; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h2 style="color: #dc2626; margin-top: 0; text-align: right;">בקשתך להקמה כספק נדחתה</h2>
+      
+      <p style="text-align: right; color: #374151; line-height: 1.6;">
+        שלום {vendor_request['vendor_name']},
+      </p>
+      
+      <p style="text-align: right; color: #374151; line-height: 1.6;">
+        אנו מצטערים להודיע כי בקשתך להקמה כספק בביטוח ישיר נדחתה.
+      </p>
+      
+      <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="text-align: right; color: #374151; line-height: 1.6; margin: 0;">
+          סיבת הדחייה: <strong>{request.reason}</strong>
+        </p>
+      </div>
+      
+      <div style="background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="text-align: right; color: #374151; line-height: 1.6; margin: 0;">
+          לפרטים נוספים, אנא פנה ל<strong>{handler_name}</strong> - הנציג המטפל בתיק שלך.
+        </p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{status_url}" style="display: inline-block; background-color: #1a2b5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          צפה בסטטוס הבקשה
+        </a>
+      </div>
+      
+      <p style="text-align: right; color: #6b7280; font-size: 14px; margin-top: 30px;">
+        בברכה,<br>
+        צוות ביטוח ישיר
+      </p>
+    </div>
+    
+    <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+      <p>© 2024 ביטוח ישיר. כל הזכויות שמורות.</p>
+    </div>
+  </div>
+</body>
+</html>
         """
         
         send_email_via_smtp(vendor_request["vendor_email"], "בקשתך נדחתה - ביטוח ישיר", html_content)
@@ -857,20 +1050,40 @@ async def confirm_vendor(request: ConfirmRequest):
         }).eq("id", request.vendorRequestId).execute()
 
         if request.sendReceiptsLink:
-             frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+             frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
              receipts_link = f"{frontend_url}/vendor-receipts/{vendor_request['secure_token']}"
              
-             html_content = f"""
-<!DOCTYPE html>
+             html_content = f"""<!DOCTYPE html>
 <html dir="rtl" lang="he">
-<body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px;">
-<h2>בקשתך אושרה!</h2>
-<p>שלום {vendor_request['vendor_name']},</p>
-<p>אנו שמחים להודיע כי בקשתך אושרה.</p>
-<p>להעלאת חשבוניות:</p>
-<a href="{receipts_link}">מערכת קבלות</a>
-</body></html>
-             """
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; direction: rtl; text-align: right; margin: 0; padding: 20px; background-color: #f5f5f5;">
+<div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+<div style="background: #1a2b5f; color: white; padding: 20px; text-align: right;">
+<img src="https://www.555.co.il/resources/images/BY737X463.png" alt="ביטוח ישיר" style="max-width: 150px; height: auto; margin-bottom: 15px;" />
+<h1 style="margin: 0; text-align: center; color: white;">ברוכים הבאים למשפחה! 🌟</h1>
+</div>
+<div style="padding: 30px;">
+<div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
+<div style="font-size: 40px; margin-bottom: 10px;">✨</div>
+<p style="margin: 0; font-size: 18px; color: #1e40af; font-weight: bold;">שמחים שהצטרפת אלינו!</p>
+<p style="margin: 8px 0 0 0; color: #475569;">אנחנו מתרגשים לקבל אותך כחלק מצוות הספקים שלנו</p>
+</div>
+<p style="margin: 12px 0;">שלום {vendor_request['vendor_name']},</p>
+<p style="margin: 12px 0;">בקשתך להצטרף כספק של ביטוח ישיר <strong style="color: #16a34a;">אושרה בהצלחה!</strong></p>
+<p style="margin: 12px 0;">מעתה תוכל להעלות קבלות להתחשבנות דרך הקישור הבא:</p>
+<div style="text-align: center; margin: 25px 0;">
+<a href="{receipts_link}" style="display: inline-block; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3);">📄 העלאת קבלות</a>
+</div>
+<p style="margin: 12px 0; color: #64748b; font-size: 14px;">שמור על קישור זה - תוכל להשתמש בו בכל פעם שתרצה להעלות קבלות חדשות.</p>
+<div style="border-top: 1px solid #e2e8f0; margin-top: 25px; padding-top: 20px;">
+<p style="margin: 0; font-size: 12px; color: #94a3b8;">הודעה זו נשלחה באופן אוטומטי ממערכת הקמת ספקים של ביטוח ישיר.</p>
+</div>
+</div>
+</div>
+</body>
+</html>"""
              send_email_via_smtp(vendor_request["vendor_email"], "בקשתך אושרה - ברוכים הבאים!", html_content)
              
              db.table("vendor_requests").update({"receipts_link_sent_at": datetime.utcnow().isoformat()}).eq("id", request.vendorRequestId).execute()
@@ -935,4 +1148,111 @@ async def search_streets(request: SearchStreetsRequest):
     except Exception as e:
         print(f"Error searching streets: {e}")
         return {"streets": [], "error": str(e)}
+
+@router.post("/upload")
+async def vendor_upload(
+    token: str = Form(...),
+    documentType: str = Form(...),
+    file: UploadFile = File(...),
+    extractedTags: Optional[str] = Form(None)
+):
+    db = get_db()
+    from storage import get_storage
+    storage = get_storage()
+    
+    print(f"Processing upload for token: {token}, type: {documentType}")
+    
+    try:
+        # 1. Fetch vendor request
+        response = db.table("vendor_requests").select("id").eq("secure_token", token).maybe_single().execute()
+        vendor_request = response.data
+        
+        if not vendor_request:
+            raise HTTPException(status_code=404, detail="Request not found")
+            
+        vendor_id = vendor_request["id"]
+        
+        # 2. Delete existing document of same type
+        try:
+            existing_docs = db.table("vendor_documents") \
+                .select("file_path") \
+                .eq("vendor_request_id", vendor_id) \
+                .eq("document_type", documentType) \
+                .execute()
+            
+            if existing_docs.data:
+                file_paths = [doc["file_path"] for doc in existing_docs.data]
+                try:
+                    storage.from_("vendor_documents").remove(file_paths)
+                except Exception as se:
+                    print(f"Warning: Failed to delete old files from storage: {se}")
+                
+                db.table("vendor_documents") \
+                    .delete() \
+                    .eq("vendor_request_id", vendor_id) \
+                    .eq("document_type", documentType) \
+                    .execute()
+        except Exception as de:
+            print(f"Warning: Error cleaning up existing docs: {de}")
+        
+        # 3. Prepare file path - handle contract uploads separately
+        file_content = await file.read()
+        file_extension = os.path.splitext(file.filename)[1]
+        timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+        
+        if documentType == "contract":
+            storage_path = f"contracts/{vendor_id}/contract_{timestamp}{file_extension}"
+        else:
+            storage_path = f"{vendor_id}/{documentType}_{timestamp}{file_extension}"
+        
+        storage.from_("vendor_documents").upload(storage_path, file_content)
+        
+        # 4. For contract uploads, update vendor_requests table
+        if documentType == "contract":
+            now = datetime.now(timezone.utc).isoformat()
+            db.table("vendor_requests").update({
+                "contract_file_path": storage_path,
+                "contract_uploaded_at": now,
+            }).eq("id", vendor_id).execute()
+        else:
+            # 5. For non-contract docs, insert/update in vendor_documents table
+            now = datetime.now(timezone.utc).isoformat()
+            
+            doc_data = {
+                "vendor_request_id": vendor_id,
+                "document_type": documentType,
+                "file_name": file.filename,
+                "file_path": storage_path,
+                "updated_at": now
+            }
+            
+            if extractedTags:
+                try:
+                    import json
+                    tags = json.loads(extractedTags)
+                    doc_data["extracted_data"] = tags
+                except:
+                    pass
+
+            # Check for existing document of this type for this request
+            existing_doc = db.table("vendor_documents") \
+                .select("id") \
+                .eq("vendor_request_id", vendor_id) \
+                .eq("document_type", documentType) \
+                .maybe_single().execute()
+                
+            if existing_doc.data:
+                db.table("vendor_documents").update(doc_data).eq("id", existing_doc.data["id"]).execute()
+            else:
+                doc_data["id"] = str(uuid.uuid4())
+                doc_data["created_at"] = now
+                db.table("vendor_documents").insert(doc_data).execute()
+            
+        return {"success": True, "path": storage_path}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error in vendor_upload: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

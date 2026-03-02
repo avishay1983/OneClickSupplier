@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Body
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import os
 from db import get_db
 from storage import get_storage
@@ -150,7 +150,7 @@ async def send_receipts_link(request: SendLinkRequest):
 
     # Generate Link
     token = vendor["secure_token"]
-    frontend_url = os.environ.get("FRONTEND_URL", "https://oneclicksupplier.onrender.com")
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
     link = f"{frontend_url}/vendor-onboarding?token={token}&step=receipts" 
     # Or maybe a dedicated /vendor-receipts/{token} route? 
     # Based on "send-receipts-link" implementation in edge functions likely goes to onboarding or dedicated page.

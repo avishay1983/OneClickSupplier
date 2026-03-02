@@ -28,13 +28,13 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { 
-  Loader2, 
-  FileText, 
-  Download, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Loader2,
+  FileText,
+  Download,
+  CheckCircle,
+  XCircle,
+  Clock,
   RefreshCw,
   Search,
   Receipt,
@@ -93,13 +93,13 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       const formattedReceipts = (data || []).map((r: any) => ({
         ...r,
-        vendor_name: r.vendor_requests.vendor_name,
-        vendor_email: r.vendor_requests.vendor_email,
+        vendor_name: r.vendor_requests?.vendor_name || r.vendor_name || 'לא ידוע',
+        vendor_email: r.vendor_requests?.vendor_email || r.vendor_email || '',
       }));
-      
+
       setReceipts(formattedReceipts);
     } catch (error) {
       console.error('Error fetching receipts:', error);
@@ -280,7 +280,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
           onClick={() => setStatusFilter('all')}
         >
@@ -294,7 +294,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md border-warning ${statusFilter === 'pending' ? 'ring-2 ring-warning' : ''}`}
           onClick={() => setStatusFilter('pending')}
         >
@@ -308,7 +308,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'approved' ? 'ring-2 ring-success' : ''}`}
           onClick={() => setStatusFilter('approved')}
         >
@@ -324,7 +324,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
             </div>
           </CardContent>
         </Card>
-        <Card 
+        <Card
           className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'rejected' ? 'ring-2 ring-destructive' : ''}`}
           onClick={() => setStatusFilter('rejected')}
         >
@@ -405,7 +405,7 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
                   {filteredReceipts.map((receipt) => {
                     const statusConfig = STATUS_CONFIG[receipt.status];
                     const StatusIcon = statusConfig.icon;
-                    
+
                     return (
                       <TableRow key={receipt.id}>
                         <TableCell>
@@ -520,8 +520,8 @@ export function AllReceiptsView({ currentUserName }: AllReceiptsViewProps) {
             <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
               ביטול
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleReject}
               disabled={isUpdating || !rejectionReason.trim()}
             >

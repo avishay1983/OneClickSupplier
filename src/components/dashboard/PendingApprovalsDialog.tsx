@@ -95,20 +95,23 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   const handleApproval = async (approval: PendingApproval, action: 'approve' | 'reject') => {
     setProcessingId(approval.id);
     try {
-      const supabaseUrl = 'https://ijyqtemnhlbamxmgjuzp.supabase.co';
       const isAdmin = adminFlags[approval.id] || false;
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/approve-user?token=${approval.approval_token}&action=${action}&format=json&isAdmin=${isAdmin}`
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke('approve-user', {
+        body: {
+          token: approval.approval_token,
+          action: action,
+          format: 'json',
+          isAdmin: isAdmin,
+        }
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process approval');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to process approval');
       }
 
       toast({
         title: action === 'approve' ? 'המשתמש אושר' : 'המשתמש נדחה',
-        description: action === 'approve' 
+        description: action === 'approve'
           ? `${approval.user_email} יכול כעת להתחבר למערכת${isAdmin ? ' כמנהל מערכת' : ''}`
           : `${approval.user_email} הוסר מהמערכת`,
       });
@@ -142,9 +145,9 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: approval.user_id, role: 'admin' });
-        
+
         if (error) throw error;
-        
+
         toast({
           title: 'הרשאות עודכנו',
           description: `${approval.user_email} קיבל הרשאות מנהל`,
@@ -156,15 +159,15 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
           .delete()
           .eq('user_id', approval.user_id)
           .eq('role', 'admin');
-        
+
         if (error) throw error;
-        
+
         toast({
           title: 'הרשאות עודכנו',
           description: `הרשאות מנהל הוסרו מ-${approval.user_email}`,
         });
       }
-      
+
       fetchApprovals();
     } catch (error: any) {
       console.error('Error updating admin role:', error);
@@ -192,10 +195,10 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
   };
 
   const pendingCount = approvals.filter(a => a.status === 'pending').length;
-  
+
   const filteredApprovals = approvals.filter(a => {
     const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       a.user_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (a.user_name && a.user_name.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesStatus && matchesSearch;
@@ -287,7 +290,7 @@ export function PendingApprovalsDialog({ open, onOpenChange }: PendingApprovalsD
                               checked={adminFlags[approval.id] || false}
                               onCheckedChange={() => toggleAdminFlag(approval.id)}
                             />
-                            <label 
+                            <label
                               htmlFor={`admin-${approval.id}`}
                               className="text-xs flex items-center gap-1 cursor-pointer"
                             >

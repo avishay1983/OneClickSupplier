@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "id": "a9c6582b-9afd-4bc2-9962-2507253e9ff3",
+    "vendor_request_id": "f931ed52-5070-4185-81e5-074ef54c0390",
+    "file_path": "receipts/f931ed52-5070-4185-81e5-074ef54c0390/receipt_1772394698537.pdf",
+    "file_name": "חשבונית מס.pdf",
+    "amount": 100.01,
+    "receipt_date": "2026-03-04",
+    "description": null,
+    "status": "approved",
+    "created_at": "2026-03-01T19:51:38.540434+00:00",
+    "updated_at": "2026-03-01T20:33:14.368037+00:00",
+    "reviewed_by": "avishay",
+    "reviewed_at": "2026-03-01T20:33:14.048Z",
+    "rejection_reason": null
+  }
+]

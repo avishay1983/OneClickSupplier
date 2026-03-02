@@ -61,6 +61,11 @@ const FUNCTION_ENDPOINT_MAP: Record<string, { url: string; method?: string }> = 
     "send-receipt-status": { url: "/api/receipts/status", method: "POST" },
     "send-handler-notification": { url: "/api/vendors/send-handler-notification", method: "POST" },
     "approve-user": { url: "/api/users/approve", method: "POST" },
+    "vendor-upload": { url: "/api/vendors/upload", method: "POST" },
+    "vendor-quote-details": { url: "/api/vendors/status", method: "POST" }, // Reuses status logic for simple data
+    "vendor-quote-submit": { url: "/api/vendors/form", method: "POST" }, // Reuses form logic for submission
+    "vendor-receipts-data": { url: "/api/vendors/receipts-data", method: "POST" },
+    "vendor-receipt-upload": { url: "/api/vendors/receipt-upload", method: "POST" },
 };
 
 // --- Functions API (replaces supabase.functions.invoke) ---
@@ -264,6 +269,27 @@ const storageApi = {
                 }
             },
 
+            async update(path: string, file: File | Blob, options?: any) {
+                // update is the same as upload with upsert=true
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("path", path);
+                formData.append("upsert", "true");
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/files/${bucket}/upload`, {
+                        method: "POST",
+                        headers: getAuthHeaders(),
+                        body: formData,
+                    });
+                    const data = await response.json().catch(() => null);
+                    if (!response.ok) return { data: null, error: { message: data?.detail || "Update failed" } };
+                    return { data: { path }, error: null };
+                } catch (err: any) {
+                    return { data: null, error: { message: err.message } };
+                }
+            },
+
             async download(path: string) {
                 try {
                     const response = await fetch(`${API_BASE}/api/files/${bucket}/${path}`, {
@@ -344,7 +370,7 @@ const authApi = {
             if (!response.ok) return { data: { user: null, session: null }, error: { message: data.detail } };
 
             setToken(data.access_token);
-            const user = data.user;
+            const user = { ...data.user, user_metadata: { full_name: data.user?.full_name || "" } };
             const session = { access_token: data.access_token, user };
             notifyAuthChange("SIGNED_IN", session);
             return { data: { user, session }, error: null };
@@ -377,7 +403,8 @@ const authApi = {
                 setToken(null);
                 return { data: { session: null }, error: null };
             }
-            const user = await response.json();
+            const rawUser = await response.json();
+            const user = { ...rawUser, user_metadata: { full_name: rawUser.full_name || "" } };
             return {
                 data: { session: { access_token: _accessToken, user } },
                 error: null,
@@ -396,7 +423,8 @@ const authApi = {
                 headers: getAuthHeaders(),
             });
             if (!response.ok) return { data: { user: null }, error: { message: "Not authenticated" } };
-            const user = await response.json();
+            const rawUser = await response.json();
+            const user = { ...rawUser, user_metadata: { full_name: rawUser.full_name || "" } };
             return { data: { user }, error: null };
         } catch (err: any) {
             return { data: { user: null }, error: { message: err.message } };
@@ -460,6 +488,24 @@ export const supabase = {
     from: (table: string) => new QueryBuilder(table),
     auth: authApi,
     storage: storageApi,
+    // Realtime stubs (no-op since Python backend doesn't support realtime)
+    channel(name: string) {
+        const channelObj: any = {
+            on(_event: string, _config: any, _callback?: any) {
+                return channelObj;
+            },
+            subscribe() {
+                return channelObj;
+            },
+            unsubscribe() {
+                return channelObj;
+            },
+        };
+        return channelObj;
+    },
+    removeChannel(_channel: any) {
+        // no-op
+    },
 };
 
 export const isSupabaseConfigured = true;

@@ -219,7 +219,7 @@ export default function Dashboard() {
       // Use the new Admin Service
       await adminService.createRequest({
         ...data,
-        handler_name: user?.user_metadata?.full_name || user?.email, // Fallback if name is empty
+        handler_name: data.handler_name || currentUserName || user?.user_metadata?.full_name || user?.email,
         handler_email: user?.email
       });
 

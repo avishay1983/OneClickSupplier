@@ -63,28 +63,12 @@ export default function VendorReceipts() {
       }
 
       try {
-        // Use edge function to fetch vendor data (bypasses RLS for public access)
-        const response = await fetch(
-          'https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-receipts-data',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token }),
-          }
-        );
+        const { data: result, error: invokeError } = await supabase.functions.invoke('vendor-receipts-data', {
+          body: { token },
+        });
 
-        const result = await response.json();
-
-        if (!response.ok || result.error === 'not_found') {
-          setNotFound(true);
-          setIsLoading(false);
-          return;
-        }
-
-        if (result.error) {
-          console.error('Error fetching vendor data:', result.error);
+        if (invokeError) {
+          console.error('Error fetching vendor data:', invokeError);
           setNotFound(true);
           setIsLoading(false);
           return;
@@ -115,7 +99,7 @@ export default function VendorReceipts() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!file || !amount || !receiptDate || !vendor || !token) {
       toast({
         title: 'שגיאה',
@@ -138,22 +122,16 @@ export default function VendorReceipts() {
         formData.append('description', description);
       }
 
-      const response = await fetch(
-        'https://ijyqtemnhlbamxmgjuzp.supabase.co/functions/v1/vendor-receipt-upload',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('vendor-receipt-upload', {
+        body: formData,
+      });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to upload receipt');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to upload receipt');
       }
 
       setReceipts([result.receipt as Receipt, ...receipts]);
-      
+
       // Reset form
       setFile(null);
       setAmount('');
@@ -249,9 +227,9 @@ export default function VendorReceipts() {
       <header className="bg-primary border-b border-primary/20 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <img 
-              src="/images/bituach-yashir-logo.png" 
-              alt="ביטוח ישיר" 
+            <img
+              src="/images/bituach-yashir-logo.png"
+              alt="ביטוח ישיר"
               className="h-10 w-auto"
             />
             <div className="border-r border-white/20 pr-4">
@@ -387,7 +365,7 @@ export default function VendorReceipts() {
                 {receipts.map((receipt) => {
                   const statusConfig = STATUS_CONFIG[receipt.status];
                   const StatusIcon = statusConfig.icon;
-                  
+
                   return (
                     <div
                       key={receipt.id}
@@ -404,7 +382,7 @@ export default function VendorReceipts() {
                             </Badge>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            סכום: ₪{receipt.amount.toLocaleString()} | 
+                            סכום: ₪{receipt.amount.toLocaleString()} |
                             תאריך: {format(new Date(receipt.receipt_date), 'dd/MM/yyyy', { locale: he })}
                             {receipt.description && ` | ${receipt.description}`}
                           </div>
