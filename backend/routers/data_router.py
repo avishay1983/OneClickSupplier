@@ -37,6 +37,7 @@ class DataQuery(BaseModel):
     maybe_single: bool = False
     count: Optional[str] = None
     head: bool = False
+    on_conflict: Optional[str] = None
 
 
 @router.post("/{table}")
@@ -56,7 +57,7 @@ async def query_table(table: str, query: DataQuery):
         elif query.operation == "delete":
             q = q.delete()
         elif query.operation == "upsert":
-            q = q.upsert(query.body)
+            q = q.upsert(query.body, on_conflict=query.on_conflict)
         else:
             raise HTTPException(status_code=400, detail=f"Unknown operation: {query.operation}")
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -59,12 +59,16 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   FileCheck,
-  Send
+  Send,
+  UserPlus
 } from 'lucide-react';
 
 import { InBrowserTestRunner } from '@/components/crm/InBrowserTestRunner';
 import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
 import { VendorQuotesView } from '@/components/crm/VendorQuotesView';
+import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
+import { adminService } from '@/services/admin.service';
+import { VendorRequest } from '@/types/vendor';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -192,13 +196,22 @@ export default function CRM() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<string>('vendors');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'vendors';
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    setSearchParams({ tab: val });
+  };
   const [showTestVendors, setShowTestVendors] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isVP, setIsVP] = useState(false);
   const [isProcurementManager, setIsProcurementManager] = useState(false);
   
   const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
+  const [registrations, setRegistrations] = useState<VendorRequest[]>([]);
+  const [isRegistrationsLoading, setIsRegistrationsLoading] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
@@ -225,7 +238,9 @@ export default function CRM() {
           .select('full_name')
           .eq('id', user.id)
           .maybeSingle();
-        setCurrentUserName(profile?.full_name || user.email || 'משתמש');
+        // Prioritize full_name from profile, then metadata, then generic 'משתמש'
+        // Avoid using user.email as it's not a name.
+        setCurrentUserName(profile?.full_name || user.user_metadata?.full_name || 'משתמש');
       }
     };
     getUserName();
@@ -253,11 +268,11 @@ export default function CRM() {
         const { data: settings } = await supabase
           .from('app_settings')
           .select('setting_key, setting_value')
-          .in('setting_key', ['vp_email', 'procurement_manager_email']);
+          .in('setting_key', ['vp_email', 'car_manager_email']);
 
         if (settings) {
           const vpEmail = settings.find(s => s.setting_key === 'vp_email')?.setting_value;
-          const pmEmail = settings.find(s => s.setting_key === 'procurement_manager_email')?.setting_value;
+          const pmEmail = settings.find(s => s.setting_key === 'car_manager_email')?.setting_value;
           
           setIsVP(user.email.toLowerCase() === vpEmail?.toLowerCase());
           setIsProcurementManager(user.email.toLowerCase() === pmEmail?.toLowerCase());
@@ -270,8 +285,22 @@ export default function CRM() {
   useEffect(() => {
     if (user) {
       fetchVendors();
+      fetchRegistrations();
     }
   }, [user]);
+
+  const fetchRegistrations = async () => {
+    setIsRegistrationsLoading(true);
+    try {
+      const data = await adminService.getRequests();
+      // Filter out approved ones since they are in the 'vendors' tab
+      setRegistrations(data.filter(r => r.status !== 'approved'));
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+    } finally {
+      setIsRegistrationsLoading(false);
+    }
+  };
 
   const fetchVendors = async () => {
     if (!isSupabaseConfigured) {
@@ -646,11 +675,15 @@ export default function CRM() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="vendors" className="gap-2">
               <Building2 className="h-4 w-4" />
               ספקים
+            </TabsTrigger>
+            <TabsTrigger value="registrations" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              בקשות רישום
             </TabsTrigger>
             <TabsTrigger value="quotes" className="gap-2">
               <FileCheck className="h-4 w-4" />
@@ -661,6 +694,27 @@ export default function CRM() {
               קבלות ספקים
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="registrations">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <UserPlus className="h-6 w-6 text-primary" />
+                  בקשות רישום ספקים ממתינות
+                </h2>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <VendorRequestsTable 
+                    requests={registrations} 
+                    isLoading={isRegistrationsLoading} 
+                    onRefresh={fetchRegistrations}
+                    currentUserName={currentUserName}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="vendors">
             {/* Stats Cards */}

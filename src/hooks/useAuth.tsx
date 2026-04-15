@@ -79,11 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Check admin status when user changes
+  // Check admin status and sync profile name when user changes
   useEffect(() => {
+    const syncProfileName = async (user: User) => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (profile && !profile.full_name) {
+          const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
+          // Only sync if metadata name exists and is not an email
+          if (metadataName && !metadataName.includes('@')) {
+            console.log('Syncing profile name from metadata:', metadataName);
+            await supabase
+              .from('profiles')
+              .update({ full_name: metadataName })
+              .eq('id', user.id);
+          }
+        }
+      } catch (err) {
+        console.error('Error syncing profile name:', err);
+      }
+    };
+
     if (user) {
       setTimeout(() => {
         checkAdminStatus();
+        syncProfileName(user);
       }, 0);
     } else {
       setIsAdmin(false);

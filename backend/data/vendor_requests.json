@@ -68,7 +68,7 @@
     "vendor_name": "יוסף",
     "vendor_email": "avishay.elankry@gmail.com",
     "secure_token": "f509a2bf-1a0d-4eb2-a072-e1b9f3f0b03a",
-    "status": "first_review",
+    "status": "submitted",
     "payment_terms": "שוטף + 60",
     "expires_at": "2026-03-09T09:45:39.404Z",
     "handler_name": "Avishay.elankry@gmail.com",
@@ -78,7 +78,7 @@
     "requires_contract_signature": true,
     "id": "b5162659-0dd0-46ab-8372-a35e630ca351",
     "created_at": "2026-03-02T05:20:08.226605+00:00",
-    "updated_at": "2026-03-02T10:27:20.589988+00:00",
+    "updated_at": "2026-04-12T15:49:32.482674+00:00",
     "otp_verified": true,
     "otp_code": null,
     "otp_expires_at": null,
@@ -100,7 +100,11 @@
     "bank_branch": "435",
     "bank_account_number": "4561243",
     "payment_method": "check",
-    "handler_rejection_reason": "חסר מסמכים"
+    "handler_rejection_reason": "חסר מסמכים",
+    "first_review_approved": true,
+    "first_review_approved_at": "2026-04-12T15:49:32.448Z",
+    "first_review_approved_by": "avishay",
+    "approval_email_sent_at": "2026-04-12T18:49:32.482161"
   },
   {
     "vendor_name": "רוני",
@@ -122,9 +126,9 @@
     "vendor_name": "משה",
     "vendor_email": "avishay.elankry@gmail.com",
     "secure_token": "355f597a-4df1-4942-9248-4c3f67130e9a",
-    "status": "with_vendor",
+    "status": "resent",
     "payment_terms": "שוטף + 60",
-    "expires_at": "2026-03-09T08:23:43.678114",
+    "expires_at": "2026-04-20T17:46:17.121Z",
     "handler_name": "avishay",
     "handler_email": "Avishay.elankry@gmail.com",
     "vendor_type": "general",
@@ -132,7 +136,9 @@
     "requires_contract_signature": true,
     "id": "d4c65d6f-97f7-41cd-9a20-81303cbb75c3",
     "created_at": "2026-03-02T08:23:43.678596+00:00",
-    "updated_at": "2026-03-02T08:23:43.678596+00:00"
+    "updated_at": "2026-04-13T17:46:17.124533+00:00",
+    "otp_verified": false,
+    "otp_code": null
   },
   {
     "vendor_name": "משה",

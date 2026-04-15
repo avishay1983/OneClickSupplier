@@ -1,0 +1,13 @@
+[
+  {
+    "setting_key": "k1",
+    "setting_value": "updated_v1",
+    "id": "1",
+    "updated_at": "2026-04-13T18:39:43.598688+00:00"
+  },
+  {
+    "setting_key": "k2",
+    "setting_value": "v2",
+    "id": "2"
+  }
+]

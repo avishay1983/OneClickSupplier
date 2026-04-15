@@ -40,7 +40,7 @@ function notifyAuthChange(event: string, session: any) {
 }
 
 // --- Edge Function mapping ---
-const FUNCTION_ENDPOINT_MAP: Record<string, { url: string; method?: string }> = {
+const FUNCTION_ENDPOINT_MAP: Record<string, { url: string; method?: string; urlTemplate?: string; tokenField?: string }> = {
     "vendor-form-api": { url: "/api/vendors/form", method: "POST" },
     "vendor-status": { url: "/api/vendors/status", method: "POST" },
     "search-streets": { url: "/api/vendors/search-streets", method: "POST" },
@@ -62,8 +62,8 @@ const FUNCTION_ENDPOINT_MAP: Record<string, { url: string; method?: string }> = 
     "send-handler-notification": { url: "/api/vendors/send-handler-notification", method: "POST" },
     "approve-user": { url: "/api/users/approve", method: "POST" },
     "vendor-upload": { url: "/api/vendors/upload", method: "POST" },
-    "vendor-quote-details": { url: "/api/vendors/status", method: "POST" }, // Reuses status logic for simple data
-    "vendor-quote-submit": { url: "/api/vendors/form", method: "POST" }, // Reuses form logic for submission
+    "vendor-quote-details": { url: "/api/vendors/quote", method: "GET", urlTemplate: "/api/vendors/quote/{token}", tokenField: "token" },
+    "vendor-quote-submit": { url: "/api/vendors/quote-submit", method: "POST" },
     "vendor-receipts-data": { url: "/api/vendors/receipts-data", method: "POST" },
     "vendor-receipt-upload": { url: "/api/vendors/receipt-upload", method: "POST" },
 };
@@ -75,11 +75,25 @@ const functionsApi = {
         if (!mapping) {
             console.warn(`[supabase-shim] Unknown function: ${functionName}, trying /api/${functionName}`);
         }
-        const url = `${API_BASE}${mapping?.url ?? `/api/${functionName}`}`;
+
+        // Handle URL templates (e.g., /api/vendors/quote/{token})
+        let resolvedUrl = mapping?.url ?? `/api/${functionName}`;
+        let body = options?.body;
+        if (mapping?.urlTemplate && mapping?.tokenField && body && !(body instanceof FormData)) {
+            const tokenValue = body[mapping.tokenField];
+            if (tokenValue) {
+                resolvedUrl = mapping.urlTemplate.replace(`{${mapping.tokenField}}`, encodeURIComponent(tokenValue));
+                // Remove the token field from body since it's now in the URL
+                const { [mapping.tokenField]: _removed, ...restBody } = body;
+                body = Object.keys(restBody).length > 0 ? restBody : undefined;
+            }
+        }
+
+        const url = `${API_BASE}${resolvedUrl}`;
         const method = mapping?.method ?? "POST";
 
         try {
-            const isFormData = options?.body instanceof FormData;
+            const isFormData = body instanceof FormData;
             const headers: Record<string, string> = {
                 ...getAuthHeaders(),
             };
@@ -90,7 +104,7 @@ const functionsApi = {
             const response = await fetch(url, {
                 method,
                 headers,
-                body: isFormData ? options!.body : options?.body ? JSON.stringify(options.body) : undefined,
+                body: isFormData ? body : body ? JSON.stringify(body) : undefined,
             });
 
             const responseData = await response.json().catch(() => null);
@@ -124,13 +138,16 @@ class QueryBuilder {
     private _maybeSingle = false;
     private _count: string | null = null;
     private _head = false;
+    private _onConflict: string | null = null;
 
     constructor(table: string) {
         this._table = table;
     }
 
     select(columns = "*", options?: { count?: string; head?: boolean }) {
-        this._operation = "select";
+        if (!this._operation || this._operation === "select") {
+            this._operation = "select";
+        }
         this._columns = columns;
         if (options?.count) this._count = options.count;
         if (options?.head) this._head = true;
@@ -154,9 +171,10 @@ class QueryBuilder {
         return this;
     }
 
-    upsert(data: any) {
+    upsert(data: any, options?: { onConflict?: string }) {
         this._operation = "upsert";
         this._body = data;
+        if (options?.onConflict) this._onConflict = options.onConflict;
         return this;
     }
 
@@ -198,6 +216,7 @@ class QueryBuilder {
             operation: this._operation,
             columns: this._columns,
             filters: this._filters,
+            on_conflict: this._onConflict,
         };
 
         if (this._body !== null) payload.body = this._body;

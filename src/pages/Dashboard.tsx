@@ -58,7 +58,9 @@ export default function Dashboard() {
           setIsApproved(false);
         } else {
           setIsApproved(profile?.is_approved ?? false);
-          setCurrentUserName(profile?.full_name || user.email || 'משתמש');
+          // Prioritize full_name from profile, then metadata, then generic 'משתמש'
+          // Avoid using user.email as it's not a name.
+          setCurrentUserName(profile?.full_name || user.user_metadata?.full_name || 'משתמש');
         }
       } catch (error) {
         console.error('Error checking approval:', error);
@@ -219,7 +221,8 @@ export default function Dashboard() {
       // Use the new Admin Service
       await adminService.createRequest({
         ...data,
-        handler_name: data.handler_name || currentUserName || user?.user_metadata?.full_name || user?.email,
+        // Ensure handler_name is not an email. Prioritize provided name, then currentUserName.
+        handler_name: data.handler_name || (currentUserName && !currentUserName.includes('@') ? currentUserName : (user?.user_metadata?.full_name || 'נציג')),
         handler_email: user?.email
       });
 

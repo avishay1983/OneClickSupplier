@@ -16,7 +16,6 @@ import ManagerApprovalResult from "./pages/ManagerApprovalResult";
 import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
 import VendorQuoteSubmit from "./pages/VendorQuoteSubmit";
-import QuoteApproval from "./pages/QuoteApproval";
 
 import MigrationProgress from "./pages/MigrationProgress";
 
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/vendor-status/:token" element={<VendorStatus />} />
             <Route path="/vendor-receipts/:token" element={<VendorReceipts />} />
             <Route path="/vendor-quote/:token" element={<VendorQuoteSubmit />} />
-            <Route path="/quote-approval/:token" element={<QuoteApproval />} />
             <Route path="/documentation" element={<SystemDocumentation />} />
             <Route path="/database-docs" element={<DatabaseDocumentation />} />
             <Route path="/manager-approval-result" element={<ManagerApprovalResult />} />

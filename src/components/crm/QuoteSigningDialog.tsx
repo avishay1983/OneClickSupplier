@@ -13,24 +13,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SignaturePad from 'signature_pad';
 import { PDFDocument, rgb } from 'pdf-lib';
+import { ENDPOINTS, getHeaders } from '@/config/api';
 
-interface ContractSigningDialogProps {
+interface QuoteSigningDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendorRequestId: string | null;
+  quoteId: string | null;
   vendorName: string;
   onSignComplete?: () => void;
 }
 
 interface SignatureStatus {
-  ceoSigned: boolean;
-  ceoSignedAt: string | null;
-  ceoSignedBy: string | null;
-  procurementSigned: boolean;
-  procurementSignedAt: string | null;
-  procurementSignedBy: string | null;
-  contractFilePath: string | null;
-  requiresVpApproval: boolean;
+  vpApproved: boolean;
+  vpApprovedAt: string | null;
+  vpApprovedBy: string | null;
+  procurementApproved: boolean;
+  procurementApprovedAt: string | null;
+  procurementApprovedBy: string | null;
+  file_path: string | null;
+  requiresVpApproval: true;
 }
 
 interface SignaturePosition {
@@ -39,13 +40,13 @@ interface SignaturePosition {
   page: number;
 }
 
-export function ContractSigningDialog({
+export function QuoteSigningDialog({
   open,
   onOpenChange,
-  vendorRequestId,
+  quoteId,
   vendorName,
   onSignComplete,
-}: ContractSigningDialogProps) {
+}: QuoteSigningDialogProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSigning, setIsSigning] = useState(false);
   const [signatureStatus, setSignatureStatus] = useState<SignatureStatus | null>(null);
@@ -77,7 +78,7 @@ export function ContractSigningDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!open || !vendorRequestId) return;
+    if (!open || !quoteId) return;
 
     // Reset signerRole when dialog opens
     setSignerRole(null);
@@ -103,12 +104,6 @@ export function ContractSigningDialog({
 
         if (user) {
           currentUserEmail = user.email || '';
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .maybeSingle();
-          if (!profile) console.log('no profile found');
         }
 
         // Get app settings to determine user role
@@ -125,12 +120,12 @@ export function ContractSigningDialog({
         const procurementEmail = settingsMap.car_manager_email?.toLowerCase().trim();
         const userEmailLower = currentUserEmail.toLowerCase().trim();
 
-        console.log('ContractSigningDialog - Email comparison:', {
+        console.log('QuoteSigningDialog - Email comparison:', {
           userEmailLower,
           vpEmail,
           procurementEmail,
-          isVp: userEmailLower === vpEmail,
-          isProcurement: userEmailLower === procurementEmail
+          isVp: vpEmail && userEmailLower === vpEmail,
+          isProcurement: procurementEmail && userEmailLower === procurementEmail
         });
 
         // Get profile name to use as fallback
@@ -143,11 +138,11 @@ export function ContractSigningDialog({
         let resolvedUserName = profile?.full_name || currentUserEmail || 'משתמש';
 
         // Determine user's role based on their email
-        if (userEmailLower === vpEmail) {
-          console.log('Setting userRole to ceo');
-          setUserRole('ceo');
+        if (vpEmail && userEmailLower === vpEmail) {
+          console.log('Setting userRole to vp');
+          setUserRole('vp');
           if (settingsMap.vp_name) resolvedUserName = settingsMap.vp_name;
-        } else if (userEmailLower === procurementEmail) {
+        } else if (procurementEmail && userEmailLower === procurementEmail) {
           console.log('Setting userRole to procurement');
           setUserRole('procurement');
           if (settingsMap.car_manager_name) resolvedUserName = settingsMap.car_manager_name;
@@ -160,15 +155,15 @@ export function ContractSigningDialog({
 
         // Get contract status
         const { data, error } = await supabase
-          .from('vendor_requests')
-          .select('ceo_signed, ceo_signed_at, ceo_signed_by, procurement_manager_signed, procurement_manager_signed_at, procurement_manager_signed_by, contract_file_path, requires_vp_approval')
-          .eq('id', vendorRequestId)
+          .from('vendor_quotes')
+          .select('vp_approved, vp_approved_at, vp_approved_by, procurement_manager_approved, procurement_manager_approved_at, procurement_manager_approved_by, file_path, status')
+          .eq('id', quoteId)
           .maybeSingle();
 
         if (error) throw error;
 
         if (!data) {
-          console.error('Vendor request not found:', vendorRequestId);
+          console.error('Vendor request not found:', quoteId);
           toast({
             title: 'שגיאה',
             description: 'לא נמצאה בקשת הספק',
@@ -179,14 +174,14 @@ export function ContractSigningDialog({
         }
 
         setSignatureStatus({
-          ceoSigned: data.ceo_signed || false,
-          ceoSignedAt: data.ceo_signed_at,
-          ceoSignedBy: data.ceo_signed_by,
-          procurementSigned: data.procurement_manager_signed || false,
-          procurementSignedAt: data.procurement_manager_signed_at,
-          procurementSignedBy: data.procurement_manager_signed_by,
-          contractFilePath: data.contract_file_path,
-          requiresVpApproval: data.requires_vp_approval !== false,
+          vpApproved: data.vp_approved || false,
+          vpApprovedAt: data.vp_approved_at,
+          vpApprovedBy: data.vp_approved_by,
+          procurementApproved: data.procurement_manager_approved || false,
+          procurementApprovedAt: data.procurement_manager_approved_at,
+          procurementApprovedBy: data.procurement_manager_approved_by,
+          file_path: data.file_path,
+          requiresVpApproval: true,
         });
       } catch (error) {
         console.error('Error fetching contract status:', error);
@@ -201,14 +196,14 @@ export function ContractSigningDialog({
     };
 
     fetchData();
-  }, [open, vendorRequestId]);
+  }, [open, quoteId]);
 
   // Auto-load PDF preview and initialize signature pad when role is selected
   useEffect(() => {
     if (!signerRole) return;
 
     // Auto-load PDF preview for position picking
-    if (!debugPreviewUrl && signatureStatus?.contractFilePath) {
+    if (!debugPreviewUrl && signatureStatus?.file_path) {
       toggleDebugMode();
     }
 
@@ -271,7 +266,7 @@ export function ContractSigningDialog({
       return;
     }
 
-    if (!vendorRequestId || !signatureStatus?.contractFilePath) {
+    if (!quoteId || !signatureStatus?.file_path) {
       toast({
         title: 'שגיאה',
         description: 'לא נמצאה הצעת מחיר לחתימה',
@@ -289,7 +284,7 @@ export function ContractSigningDialog({
       const cacheBuster = `?t=${Date.now()}`;
       const { data: pdfData, error: downloadError } = await supabase.storage
         .from('vendor_documents')
-        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
+        .download(`${signatureStatus.file_path}${cacheBuster}`);
 
       if (downloadError) throw downloadError;
 
@@ -322,7 +317,7 @@ export function ContractSigningDialog({
       } else {
         // Default position based on role
         yPosition = 520;
-        if (signerRole === 'ceo') {
+        if (signerRole === 'vp') {
           xPosition = 50;
         } else {
           xPosition = (pageWidth - sigWidth) / 2;
@@ -356,11 +351,11 @@ export function ContractSigningDialog({
       console.log('Blob size:', modifiedPdfBlob.size, 'bytes');
 
       // Upload the signed PDF (overwrite existing file directly)
-      console.log('Uploading to path:', signatureStatus.contractFilePath);
+      console.log('Uploading to path:', signatureStatus.file_path);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('vendor_documents')
-        .update(signatureStatus.contractFilePath, modifiedPdfBlob, {
+        .update(signatureStatus.file_path, modifiedPdfBlob, {
           cacheControl: '0',
         });
 
@@ -369,30 +364,52 @@ export function ContractSigningDialog({
 
       // Update database with signature info
       const updateData: Record<string, unknown> = {};
-      if (signerRole === 'ceo') {
-        updateData.ceo_signed = true;
-        updateData.ceo_signed_at = new Date().toISOString();
-        updateData.ceo_signed_by = userName;
+      if (signerRole === 'vp') {
+        updateData.vp_approved = true;
+        updateData.vp_approved_at = new Date().toISOString();
+        updateData.vp_approved_by = userName;
+        // MUST update status to move it to procurement manager!
+        updateData.status = 'pending_procurement';
       } else {
-        updateData.procurement_manager_signed = true;
-        updateData.procurement_manager_signed_at = new Date().toISOString();
-        updateData.procurement_manager_signed_by = userName;
+        updateData.procurement_manager_approved = true;
+        updateData.procurement_manager_approved_at = new Date().toISOString();
+        updateData.procurement_manager_approved_by = userName;
       }
 
       const { error: updateError } = await supabase
-        .from('vendor_requests')
+        .from('vendor_quotes')
         .update(updateData)
-        .eq('id', vendorRequestId);
+        .eq('id', quoteId);
 
       if (updateError) throw updateError;
 
       // If VP (CEO) just signed, send email to procurement manager
-      if (signerRole === 'ceo') {
+      if (signerRole === 'vp') {
         try {
           console.log('VP signed, sending email to procurement manager...');
-          await supabase.functions.invoke('send-manager-approval', {
-            body: { vendorRequestId, targetRole: 'procurement_manager' },
-          });
+          const { data: settings } = await supabase
+            .from('app_settings')
+            .select('setting_key, setting_value')
+            .in('setting_key', ['car_manager_email', 'car_manager_name']);
+
+          const procurementEmail = settings?.find(s => s.setting_key === 'car_manager_email')?.setting_value?.trim() || '';
+          const procurementName = settings?.find(s => s.setting_key === 'car_manager_name')?.setting_value?.trim() || 'מנהל רכש';
+
+          if (procurementEmail) {
+            await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
+              method: 'POST',
+              headers: getHeaders(),
+              body: JSON.stringify({
+                quoteId: quoteId,
+                approverEmail: procurementEmail,
+                approverName: procurementName,
+                vendorName: vendorName,
+                amount: 0,
+                description: 'המשך אישור לאחר סמנכ"ל',
+                approvalType: 'procurement_manager',
+              }),
+            });
+          }
           console.log('Email sent to procurement manager');
         } catch (emailError) {
           console.error('Error sending email to procurement manager:', emailError);
@@ -407,8 +424,8 @@ export function ContractSigningDialog({
       let isFullySigned = false;
       if (requiresVp) {
         // Both VP and procurement must sign
-        isFullySigned = (signerRole === 'ceo' && signatureStatus.procurementSigned) ||
-          (signerRole === 'procurement' && signatureStatus.ceoSigned);
+        isFullySigned = (signerRole === 'vp' && signatureStatus.procurementApproved) ||
+          (signerRole === 'procurement' && signatureStatus.vpApproved);
       } else {
         // Only procurement needs to sign (VP not required)
         isFullySigned = signerRole === 'procurement';
@@ -417,25 +434,12 @@ export function ContractSigningDialog({
       if (isFullySigned) {
         // Update status to approved
         await supabase
-          .from('vendor_requests')
+          .from('vendor_quotes')
           .update({ status: 'approved' })
-          .eq('id', vendorRequestId);
+          .eq('id', quoteId);
 
-        // Send approval email to vendor with receipts link
-        try {
-          console.log('All signatures complete, sending approval email to vendor...');
-          const { error: emailError } = await supabase.functions.invoke('send-vendor-confirmation', {
-            body: { vendorRequestId, sendReceiptsLink: true },
-          });
-          if (emailError) {
-            console.error('Error sending vendor approval email:', emailError);
-          } else {
-            console.log('Vendor approval email sent successfully');
-          }
-        } catch (emailError) {
-          console.error('Error invoking send-vendor-confirmation:', emailError);
-          // Don't fail the signing process if email fails
-        }
+        // No vendor email is required for quote approvals automatically like contracts.
+        console.log('Quote fully approved.');
       }
 
       toast({
@@ -459,13 +463,13 @@ export function ContractSigningDialog({
   };
 
   const handleViewContract = async () => {
-    if (!signatureStatus?.contractFilePath) return;
+    if (!signatureStatus?.file_path) return;
 
     try {
       const cacheBuster = `?t=${Date.now()}`;
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
+        .download(`${signatureStatus.file_path}${cacheBuster}`);
 
       if (error) throw error;
 
@@ -482,16 +486,16 @@ export function ContractSigningDialog({
   };
 
   const handleDownloadContract = async () => {
-    if (!signatureStatus?.contractFilePath) return;
+    if (!signatureStatus?.file_path) return;
 
     try {
       const timestamp = Date.now();
-      console.log('Downloading contract:', signatureStatus.contractFilePath);
+      console.log('Downloading contract:', signatureStatus.file_path);
 
       const cacheBuster = `?t=${Date.now()}`;
       const { data, error } = await supabase.storage
         .from('vendor_documents')
-        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
+        .download(`${signatureStatus.file_path}${cacheBuster}`);
 
       if (error) throw error;
 
@@ -552,7 +556,7 @@ export function ContractSigningDialog({
       return;
     }
 
-    if (!signatureStatus?.contractFilePath) {
+    if (!signatureStatus?.file_path) {
       toast({
         title: 'שגיאה',
         description: 'לא נמצא קובץ הצעת מחיר',
@@ -566,7 +570,7 @@ export function ContractSigningDialog({
       const cacheBuster = `?t=${Date.now()}`;
       const { data: pdfData, error } = await supabase.storage
         .from('vendor_documents')
-        .download(`${signatureStatus.contractFilePath}${cacheBuster}`);
+        .download(`${signatureStatus.file_path}${cacheBuster}`);
 
       if (error) throw error;
 
@@ -695,7 +699,7 @@ export function ContractSigningDialog({
           <div className="flex justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : !signatureStatus?.contractFilePath ? (
+        ) : !signatureStatus?.file_path ? (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">הספק עדיין לא העלה הצעת מחיר חתומה</p>
@@ -832,16 +836,16 @@ export function ContractSigningDialog({
                 <div className="flex items-center gap-3">
                   <FileText className="h-6 w-6 text-primary" />
                   <div>
-                    <h4 className="font-medium">הצעת מחיר {signatureStatus.ceoSigned || signatureStatus.procurementSigned ? 'חתומה' : 'מהספק'}</h4>
+                    <h4 className="font-medium">הצעת מחיר {signatureStatus.vpApproved || signatureStatus.procurementApproved ? 'חתומה' : 'מהספק'}</h4>
                     <p className="text-sm text-muted-foreground">
                       {signatureStatus.requiresVpApproval ? (
-                        signatureStatus.ceoSigned && signatureStatus.procurementSigned
+                        signatureStatus.vpApproved && signatureStatus.procurementApproved
                           ? 'כל החתימות הושלמו'
-                          : signatureStatus.ceoSigned
+                          : signatureStatus.vpApproved
                             ? 'נחתם ע"י סמנכ"ל - ממתין לחתימת מנהל רכש'
                             : 'הורד את הצעת המחיר לצפייה'
                       ) : (
-                        signatureStatus.procurementSigned
+                        signatureStatus.procurementApproved
                           ? 'נחתם ע"י מנהל רכש'
                           : 'הורד את הצעת המחיר לצפייה'
                       )}
@@ -860,29 +864,29 @@ export function ContractSigningDialog({
 
 
             {/* VP Signature - show only to VP AND only if VP approval is required */}
-            {signatureStatus.requiresVpApproval && userRole === 'ceo' && (
-              <div className={`p-4 border rounded-lg ${signatureStatus.ceoSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
+            {signatureStatus.requiresVpApproval && userRole === 'vp' && (
+              <div className={`p-4 border rounded-lg ${signatureStatus.vpApproved ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {signatureStatus.ceoSigned ? (
+                    {signatureStatus.vpApproved ? (
                       <CheckCircle className="h-6 w-6 text-success" />
                     ) : (
                       <Pen className="h-6 w-6 text-muted-foreground" />
                     )}
                     <div>
                       <h4 className="font-medium">חתימת סמנכ"ל</h4>
-                      {signatureStatus.ceoSigned ? (
+                      {signatureStatus.vpApproved ? (
                         <p className="text-sm text-success">
-                          נחתם ע"י {signatureStatus.ceoSignedBy} ב-{formatDate(signatureStatus.ceoSignedAt)}
+                          נחתם ע"י {signatureStatus.vpApprovedBy} ב-{formatDate(signatureStatus.vpApprovedAt)}
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
                       )}
                     </div>
                   </div>
-                  {!signatureStatus.ceoSigned && (
+                  {!signatureStatus.vpApproved && (
                     <Button
-                      onClick={() => setSignerRole('ceo')}
+                      onClick={() => setSignerRole('vp')}
                       className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
                       size="lg"
                     >
@@ -890,8 +894,8 @@ export function ContractSigningDialog({
                       לחתימה
                     </Button>
                   )}
-                  {signatureStatus.ceoSigned && (
-                    <Button onClick={() => setSignerRole('ceo')} className="gap-2" variant="outline">
+                  {signatureStatus.vpApproved && (
+                    <Button onClick={() => setSignerRole('vp')} className="gap-2" variant="outline">
                       <Pen className="h-4 w-4" />
                       חתום מחדש
                     </Button>
@@ -904,34 +908,34 @@ export function ContractSigningDialog({
             {userRole === 'procurement' && (
               <>
                 {/* If VP approval is required, show only after VP signed */}
-                {signatureStatus.requiresVpApproval && !signatureStatus.ceoSigned && (
+                {signatureStatus.requiresVpApproval && !signatureStatus.vpApproved && (
                   <div className="text-center p-4 bg-muted/50 rounded-lg border">
                     <p className="text-muted-foreground">ממתין לחתימת הסמנכ"ל לפני שתוכל לחתום</p>
                   </div>
                 )}
 
                 {/* Show signature section if VP approval is not required OR VP has signed */}
-                {(!signatureStatus.requiresVpApproval || signatureStatus.ceoSigned) && (
-                  <div className={`p-4 border rounded-lg ${signatureStatus.procurementSigned ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
+                {(!signatureStatus.requiresVpApproval || signatureStatus.vpApproved) && (
+                  <div className={`p-4 border rounded-lg ${signatureStatus.procurementApproved ? 'bg-success/10 border-success/30' : 'bg-background'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {signatureStatus.procurementSigned ? (
+                        {signatureStatus.procurementApproved ? (
                           <CheckCircle className="h-6 w-6 text-success" />
                         ) : (
                           <Pen className="h-6 w-6 text-muted-foreground" />
                         )}
                         <div>
                           <h4 className="font-medium">חתימת מנהל רכש</h4>
-                          {signatureStatus.procurementSigned ? (
+                          {signatureStatus.procurementApproved ? (
                             <p className="text-sm text-success">
-                              נחתם ע"י {signatureStatus.procurementSignedBy} ב-{formatDate(signatureStatus.procurementSignedAt)}
+                              נחתם ע"י {signatureStatus.procurementApprovedBy} ב-{formatDate(signatureStatus.procurementApprovedAt)}
                             </p>
                           ) : (
                             <p className="text-sm text-muted-foreground">ממתין לחתימה</p>
                           )}
                         </div>
                       </div>
-                      {!signatureStatus.procurementSigned && (
+                      {!signatureStatus.procurementApproved && (
                         <Button
                           onClick={() => setSignerRole('procurement')}
                           className="gap-2 text-lg px-6 py-3 h-auto animate-pulse hover:animate-none bg-primary hover:bg-primary/90 shadow-lg"
@@ -959,16 +963,16 @@ export function ContractSigningDialog({
               </div>
             )}
 
-            {/* Status summary - check based on requires_vp_approval */}
+            {/* Status summary - check based on status */}
             {signatureStatus.requiresVpApproval ? (
-              signatureStatus.ceoSigned && signatureStatus.procurementSigned && (
+              signatureStatus.vpApproved && signatureStatus.procurementApproved && (
                 <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
                   <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
                   <p className="font-medium text-success">ההסכם נחתם על ידי שני הצדדים</p>
                 </div>
               )
             ) : (
-              signatureStatus.procurementSigned && (
+              signatureStatus.procurementApproved && (
                 <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
                   <CheckCircle className="h-8 w-8 mx-auto text-success mb-2" />
                   <p className="font-medium text-success">ההסכם נחתם על ידי מנהל הרכש</p>

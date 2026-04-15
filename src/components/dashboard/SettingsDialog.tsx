@@ -23,8 +23,6 @@ interface AppSettings {
   car_manager_name: string;
   vp_email: string;
   vp_name: string;
-  procurement_manager_email: string;
-  procurement_manager_name: string;
 }
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
@@ -34,8 +32,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     car_manager_name: '',
     vp_email: '',
     vp_name: '',
-    procurement_manager_email: '',
-    procurement_manager_name: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,8 +57,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         car_manager_name: '',
         vp_email: '',
         vp_name: '',
-        procurement_manager_email: '',
-        procurement_manager_name: '',
       };
       
       (data as any[])?.forEach((item: any) => {
@@ -98,8 +92,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         { key: 'car_manager_name', value: settings.car_manager_name.trim() },
         { key: 'vp_email', value: settings.vp_email.trim() },
         { key: 'vp_name', value: settings.vp_name.trim() },
-        { key: 'procurement_manager_email', value: settings.procurement_manager_email.trim() },
-        { key: 'procurement_manager_name', value: settings.procurement_manager_name.trim() },
       ];
 
       for (const setting of settingsToSave) {
@@ -162,7 +154,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
           {/* Approval Emails */}
           <div className="space-y-4">
-            <h3 className="font-medium">כתובות מייל לאישור הקמת ספק</h3>
+            <h3 className="font-medium">כתובות מייל לאישור (חוזים והצעות מחיר)</h3>
             
             <div className="space-y-2">
               <Label htmlFor="carManagerName">שם מנהל רכש</Label>
@@ -216,9 +208,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               />
             </div>
 
-
             <p className="text-sm text-muted-foreground">
-              כתובות אלו יקבלו מייל עם כל פרטי הספק לאחר שליחת הטופס
+              כתובות אלו ישמשו לאישור הקמת ספקים חדשים ואישור הצעות מחיר
             </p>
           </div>
         </div>

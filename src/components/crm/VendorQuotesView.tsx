@@ -54,9 +54,11 @@ import {
   Mail,
   User,
   Settings,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Pen
 } from 'lucide-react';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
+import { QuoteSigningDialog } from './QuoteSigningDialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -131,6 +133,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<VendorQuote | null>(null);
+  const [signingQuote, setSigningQuote] = useState<VendorQuote | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [rejectType, setRejectType] = useState<'handler' | 'vp' | 'procurement'>('handler');
@@ -153,11 +156,12 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
 
       const formattedQuotes = (data || []).map((q: any) => ({
         ...q,
-        vendor_name: q.vendor_requests.vendor_name,
-        vendor_email: q.vendor_requests.vendor_email,
-        handler_name: q.vendor_requests.handler_name,
-        handler_email: q.vendor_requests.handler_email,
+        vendor_name: q.vendor_requests?.vendor_name || 'ספק לא ידוע',
+        vendor_email: q.vendor_requests?.vendor_email || '',
+        handler_name: q.vendor_requests?.handler_name || '',
+        handler_email: q.vendor_requests?.handler_email || '',
       }));
+
 
       setQuotes(formattedQuotes);
     } catch (error) {
@@ -251,17 +255,19 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       if (insertError) throw insertError;
 
       // Send email to vendor
-      const { error: emailError } = await supabase.functions.invoke('send-quote-request', {
-        body: {
+      const emailRes = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_REQUEST, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
           quoteId: quoteData.id,
           vendorEmail: selectedVendor.vendor_email,
           vendorName: selectedVendor.vendor_name,
           handlerName: currentUserName,
-        },
+        }),
       });
 
-      if (emailError) {
-        console.error('Email error:', emailError);
+      if (!emailRes.ok) {
+        console.error('Email error:', await emailRes.text());
         // Don't throw - the record was created successfully
       }
 
@@ -298,18 +304,21 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
     setResendingQuoteId(quote.id);
     try {
       // Send email to vendor
-      const { error: emailError } = await supabase.functions.invoke('send-quote-request', {
-        body: {
+      const emailRes = await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_REQUEST, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
           quoteId: quote.id,
           vendorEmail: quote.vendor_email,
           vendorName: quote.vendor_name,
           handlerName: currentUserName,
-        },
+        }),
       });
 
-      if (emailError) {
-        console.error('Email error:', emailError);
-        throw emailError;
+      if (!emailRes.ok) {
+        const errorText = await emailRes.text();
+        console.error('Email error:', errorText);
+        throw new Error(errorText);
       }
 
       toast({
@@ -383,14 +392,15 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       // Get VP email from settings
       const { data: settings } = await supabase
         .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'vp_email')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['vp_email', 'vp_name']);
 
       let emailState: 'sent' | 'not_configured' | 'failed' = 'sent';
       let emailErrorMessage = '';
 
-      const vpEmail = (settings?.setting_value ?? '').trim();
+      const vpEmail = settings?.find(s => s.setting_key === 'vp_email')?.setting_value?.trim() || '';
+      const vpName = settings?.find(s => s.setting_key === 'vp_name')?.setting_value?.trim() || 'סמנכ"ל';
+
       if (!vpEmail) {
         emailState = 'not_configured';
       } else {
@@ -400,7 +410,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
           body: JSON.stringify({
             quoteId: quote.id,
             approverEmail: vpEmail,
-            approverName: 'סמנכ"ל',
+            approverName: vpName,
             vendorName: quote.vendor_name,
             amount: quote.amount,
             description: quote.description,
@@ -448,11 +458,13 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       // Get VP email from settings
       const { data: settings } = await supabase
         .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'vp_email')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['vp_email', 'vp_name']);
 
-      if (!settings?.setting_value) {
+      const vpEmail = settings?.find(s => s.setting_key === 'vp_email')?.setting_value?.trim() || '';
+      const vpName = settings?.find(s => s.setting_key === 'vp_name')?.setting_value?.trim() || 'סמנכ"ל';
+
+      if (!vpEmail) {
         toast({
           title: 'שגיאה',
           description: 'לא הוגדרה כתובת מייל לסמנכ"ל בהגדרות',
@@ -467,8 +479,8 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         headers: getHeaders(),
         body: JSON.stringify({
           quoteId: quote.id,
-          approverEmail: settings.setting_value,
-          approverName: 'סמנכ"ל',
+          approverEmail: vpEmail,
+          approverName: vpName,
           vendorName: quote.vendor_name,
           amount: quote.amount,
           description: quote.description,
@@ -510,11 +522,13 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
       // Get procurement manager email from settings
       const { data: settings } = await supabase
         .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'procurement_manager_email')
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', ['procurement_manager_email', 'procurement_manager_name']);
 
-      if (!settings?.setting_value) {
+      const procurementEmail = settings?.find(s => s.setting_key === 'procurement_manager_email')?.setting_value?.trim() || '';
+      const procurementName = settings?.find(s => s.setting_key === 'procurement_manager_name')?.setting_value?.trim() || 'מנהל רכש';
+
+      if (!procurementEmail) {
         toast({
           title: 'שגיאה',
           description: 'לא הוגדרה כתובת מייל למנהל רכש בהגדרות',
@@ -529,8 +543,8 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         headers: getHeaders(),
         body: JSON.stringify({
           quoteId: quote.id,
-          approverEmail: settings.setting_value,
-          approverName: 'מנהל רכש',
+          approverEmail: procurementEmail,
+          approverName: procurementName,
           vendorName: quote.vendor_name,
           amount: quote.amount,
           description: quote.description,
@@ -566,95 +580,9 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
     }
   };
 
-  const handleVPApprove = async (quote: VendorQuote) => {
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('vendor_quotes')
-        .update({
-          vp_approved: true,
-          vp_approved_at: new Date().toISOString(),
-          vp_approved_by: currentUserName,
-          status: 'pending_procurement',
-        })
-        .eq('id', quote.id);
+  // Replaced by QuoteSigningDialog
 
-      if (error) throw error;
-
-      // Get procurement manager email from settings
-      const { data: settings } = await supabase
-        .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'procurement_manager_email')
-        .single();
-
-      if (settings?.setting_value) {
-        // Send email to procurement manager
-        await fetch(ENDPOINTS.ADMIN.SEND_QUOTE_APPROVAL_EMAIL, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            quoteId: quote.id,
-            approverEmail: settings.setting_value,
-            approverName: 'מנהל רכש',
-            vendorName: quote.vendor_name,
-            amount: quote.amount,
-            description: quote.description,
-            approvalType: 'procurement_manager',
-          }),
-        });
-      }
-
-      toast({
-        title: 'הצעת המחיר אושרה',
-        description: 'נשלח מייל למנהל רכש לאישור סופי',
-      });
-
-      fetchQuotes();
-    } catch (error) {
-      console.error('Error approving quote:', error);
-      toast({
-        title: 'שגיאה',
-        description: 'לא ניתן לאשר את ההצעה',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleProcurementApprove = async (quote: VendorQuote) => {
-    setIsUpdating(true);
-    try {
-      const { error } = await supabase
-        .from('vendor_quotes')
-        .update({
-          procurement_manager_approved: true,
-          procurement_manager_approved_at: new Date().toISOString(),
-          procurement_manager_approved_by: currentUserName,
-          status: 'approved',
-        })
-        .eq('id', quote.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'הצעת המחיר אושרה סופית',
-        description: 'ההצעה אושרה על ידי מנהל רכש',
-      });
-
-      fetchQuotes();
-    } catch (error) {
-      console.error('Error approving quote:', error);
-      toast({
-        title: 'שגיאה',
-        description: 'לא ניתן לאשר את ההצעה',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  // Replaced by QuoteSigningDialog
 
   const handleReject = async () => {
     if (!selectedQuote || !rejectionReason.trim()) {
@@ -948,7 +876,7 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                           {quote.amount ? `₪${quote.amount.toLocaleString()}` : '-'}
                         </TableCell>
                         <TableCell>
-                          {format(new Date(quote.quote_date), 'dd/MM/yyyy', { locale: he })}
+                          {quote.quote_date ? format(new Date(quote.quote_date), 'dd/MM/yyyy', { locale: he }) : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge className={statusConfig.color}>
@@ -1046,11 +974,11 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
-                                        onClick={() => handleVPApprove(quote)}
+                                        onClick={() => setSigningQuote(quote)}
                                         disabled={isUpdating}
                                       >
-                                        <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
-                                        אשר (סמנכ"ל)
+                                        <Pen className="h-4 w-4 ml-2 text-green-500" />
+                                        לחתימה (סמנכ"ל)
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onClick={() => {
@@ -1082,11 +1010,11 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
-                                        onClick={() => handleProcurementApprove(quote)}
+                                        onClick={() => setSigningQuote(quote)}
                                         disabled={isUpdating}
                                       >
-                                        <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
-                                        אשר (מנהל רכש)
+                                        <Pen className="h-4 w-4 ml-2 text-green-500" />
+                                        לחתימה (מנהל רכש)
                                       </DropdownMenuItem>
                                       <DropdownMenuItem
                                         onClick={() => {
@@ -1187,6 +1115,20 @@ export function VendorQuotesView({ currentUserName, currentUserEmail, isVP, isPr
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}
       />
+
+      {/* Signing Dialog */}
+      {signingQuote && (
+        <QuoteSigningDialog
+          open={!!signingQuote}
+          onOpenChange={(open) => !open && setSigningQuote(null)}
+          quoteId={signingQuote.id}
+          vendorName={signingQuote.vendor_name || 'ספק לא ידוע'}
+          onSignComplete={() => {
+            setSigningQuote(null);
+            fetchQuotes();
+          }}
+        />
+      )}
     </div>
   );
 }

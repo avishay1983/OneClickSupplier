@@ -89,6 +89,14 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  
+  const formatHandlerName = (name: string | null | undefined) => {
+    if (!name) return '-';
+    if (name.includes('@')) {
+      return 'נציג';
+    }
+    return name;
+  };
 
   // Get unique handler names for filter dropdown
   const uniqueHandlers = Array.from(new Set(requests.map(r => r.handler_name).filter(Boolean))) as string[];
@@ -352,7 +360,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
             <TableBody>
               {filteredAndSortedRequests.map((request) => (
                 <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell>{request.handler_name || '-'}</TableCell>
+                  <TableCell>{formatHandlerName(request.handler_name)}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{request.vendor_name}</span>
@@ -474,7 +482,7 @@ export function VendorRequestsTable({ requests, isLoading, onRefresh, currentUse
                           }}
                           className="h-auto min-h-7 px-2 py-1 text-[11px] bg-blue-600 hover:bg-blue-700 text-white animate-pulse whitespace-normal text-right"
                         >
-                          <span>ממתין ל{request.handler_name || 'אישור'}</span>
+                          <span>ממתין ל{formatHandlerName(request.handler_name)}</span>
                         </Button>
                       )}
 

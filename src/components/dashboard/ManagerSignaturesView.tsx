@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileSignature, Pen, Calendar, Building2, User, Clock, CheckCircle2, AlertCircle, FileText, DollarSign, Mail, Loader2 } from 'lucide-react';
 import { VendorRequest } from '@/types/vendor';
 import { ContractSigningDialog } from './ContractSigningDialog';
+import { QuoteSigningDialog } from '@/components/crm/QuoteSigningDialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,40 +42,43 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(true);
   const [resendingQuoteId, setResendingQuoteId] = useState<string | null>(null);
 
+  const [signingQuote, setSigningQuote] = useState<VendorQuote | null>(null);
+
   const roleName = role === 'vp' ? 'סמנכ"ל' : 'מנהל רכש';
+
+  const fetchPendingQuotes = async () => {
+    setIsLoadingQuotes(true);
+    try {
+      const statusFilter = role === 'vp' ? 'pending_vp' : 'pending_procurement';
+
+      const { data, error } = await supabase
+        .from('vendor_quotes')
+        .select(`
+          *,
+          vendor_requests!inner(vendor_name, vendor_email, handler_name)
+        `)
+        .eq('status', statusFilter)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedQuotes = (data || []).map((q: any) => ({
+        ...q,
+        vendor_name: q.vendor_requests.vendor_name,
+        vendor_email: q.vendor_requests.vendor_email,
+        handler_name: q.vendor_requests.handler_name,
+      }));
+
+      setPendingQuotes(formattedQuotes);
+    } catch (error) {
+      console.error('Error fetching pending quotes:', error);
+    } finally {
+      setIsLoadingQuotes(false);
+    }
+  };
 
   // Fetch pending quotes for this role
   useEffect(() => {
-    const fetchPendingQuotes = async () => {
-      setIsLoadingQuotes(true);
-      try {
-        const statusFilter = role === 'vp' ? 'pending_vp' : 'pending_procurement';
-
-        const { data, error } = await supabase
-          .from('vendor_quotes')
-          .select(`
-            *,
-            vendor_requests!inner(vendor_name, vendor_email, handler_name)
-          `)
-          .eq('status', statusFilter)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const formattedQuotes = (data || []).map((q: any) => ({
-          ...q,
-          vendor_name: q.vendor_requests.vendor_name,
-          vendor_email: q.vendor_requests.vendor_email,
-          handler_name: q.vendor_requests.handler_name,
-        }));
-
-        setPendingQuotes(formattedQuotes);
-      } catch (error) {
-        console.error('Error fetching pending quotes:', error);
-      } finally {
-        setIsLoadingQuotes(false);
-      }
-    };
 
     fetchPendingQuotes();
 
@@ -107,14 +111,18 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
   const handleResendQuoteEmail = async (quote: VendorQuote) => {
     setResendingQuoteId(quote.id);
     try {
-      const settingKey = role === 'vp' ? 'vp_email' : 'procurement_manager_email';
+      const emailSettingKey = role === 'vp' ? 'vp_email' : 'car_manager_email';
+      const nameSettingKey = role === 'vp' ? 'vp_name' : 'car_manager_name';
+
       const { data: settings } = await supabase
         .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', settingKey)
-        .single();
+        .select('setting_key, setting_value')
+        .in('setting_key', [emailSettingKey, nameSettingKey]);
 
-      if (!settings?.setting_value) {
+      const managerEmail = settings?.find(s => s.setting_key === emailSettingKey)?.setting_value?.trim() || '';
+      const managerNameSetting = settings?.find(s => s.setting_key === nameSettingKey)?.setting_value?.trim() || roleName;
+
+      if (!managerEmail) {
         toast({
           title: 'שגיאה',
           description: `לא הוגדרה כתובת מייל ל${roleName} בהגדרות`,
@@ -128,8 +136,8 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
         headers: getHeaders(),
         body: JSON.stringify({
           quoteId: quote.id,
-          approverEmail: settings.setting_value,
-          approverName: roleName,
+          approverEmail: managerEmail,
+          approverName: managerNameSetting,
           vendorName: quote.vendor_name,
           amount: quote.amount,
           description: quote.description,
@@ -156,9 +164,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
   };
 
   const openQuoteForSigning = (quote: VendorQuote) => {
-    const approvalType = role === 'vp' ? 'vp' : 'procurement_manager';
-    const url = `/quote-approval/${quote.quote_secure_token}?type=${approvalType}`;
-    window.open(url, '_blank');
+    setSigningQuote(quote);
   };
 
   const totalPending = pendingSignatures.length + pendingQuotes.length;
@@ -331,20 +337,7 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleResendQuoteEmail(quote)}
-                          disabled={resendingQuoteId === quote.id}
-                          className="gap-1"
-                        >
-                          {resendingQuoteId === quote.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Mail className="h-4 w-4" />
-                          )}
-                          שלח שוב
-                        </Button>
+
                         <Button
                           size="lg"
                           onClick={() => openQuoteForSigning(quote)}
@@ -476,6 +469,17 @@ export function ManagerSignaturesView({ role, managerName, pendingSignatures, on
           onRefresh();
           setContractDialogOpen(false);
           setSelectedRequest(null);
+        }}
+      />
+
+      <QuoteSigningDialog
+        open={!!signingQuote}
+        onOpenChange={(open) => !open && setSigningQuote(null)}
+        quoteId={signingQuote?.id || ''}
+        vendorName={signingQuote?.vendor_name || 'ספק לא ידוע'}
+        onSignComplete={() => {
+          setSigningQuote(null);
+          fetchPendingQuotes();
         }}
       />
     </div>

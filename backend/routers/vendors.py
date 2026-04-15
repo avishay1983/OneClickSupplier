@@ -8,6 +8,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import base64
 import httpx
+import traceback
+import re
 
 from db import get_db
 from storage import get_storage
@@ -30,7 +32,7 @@ def send_handler_notification(handler_email: str, handler_name: str, vendor_name
         print("No handler email provided")
         return
 
-    dashboard_url = os.environ.get("FRONTEND_URL", "http://localhost:8080") + "/"
+    dashboard_url = os.environ.get("FRONTEND_URL", "http://localhost:8080") + "/crm?tab=registrations"
     
     html_content = f"""
 <!DOCTYPE html>
@@ -250,76 +252,203 @@ async def vendor_form_api(request: VendorFormRequest, background_tasks: Backgrou
 
 from fastapi import UploadFile, File, Form
 
+# Helper: Send handler notification when a vendor submits a quote
+def send_handler_notification_for_quote(handler_email: str, handler_name: str, vendor_name: str, amount: str = None):
+    """
+    Sends a notification email to the handler when a vendor submits a quote.
+    """
+    if not handler_email:
+        print("No handler email provided for quote notification")
+        return
+
+    dashboard_url = os.environ.get("FRONTEND_URL", "http://localhost:8080") + "/crm?tab=quotes"
+    try:
+        clean_amount = str(amount).replace(",", "").replace("₪", "").strip() if amount else ""
+        amount_display = f"₪{float(clean_amount):,.0f}" if clean_amount else "לא צוין"
+    except (ValueError, TypeError):
+        amount_display = str(amount) or "לא צוין"
+
+    html_content = f"""
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
+<tr>
+<td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<tr>
+<td style="background: linear-gradient(135deg, #1a2b5f 0%, #2d4a8c 100%); padding: 30px; text-align: center;">
+<h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">ביטוח ישיר</h1>
+<p style="color: rgba(255,255,255,0.8); margin: 5px 0 0 0; font-size: 14px;">מערכת הקמת ספקים</p>
+</td>
+</tr>
+<tr>
+<td style="padding: 40px 30px;">
+<p style="font-size: 18px; color: #333333; margin: 0 0 20px 0; text-align: right;">
+שלום {handler_name or 'מטפל/ת'},
+</p>
+<div style="background-color: #e8f4fd; border-right: 4px solid #1a2b5f; padding: 20px; margin: 20px 0; border-radius: 4px;">
+<p style="font-size: 16px; color: #333333; margin: 0; text-align: right; font-weight: bold;">
+ספק <span style="color: #1a2b5f;">{vendor_name}</span> הגיש הצעת מחיר
+</p>
+<p style="font-size: 14px; color: #666666; margin: 10px 0 0 0; text-align: right;">
+סכום ההצעה: {amount_display}
+</p>
+</div>
+<p style="font-size: 14px; color: #666666; margin: 20px 0; text-align: right;">
+אנא היכנס/י למערכת כדי לבדוק את הצעת המחיר ולקבל החלטה.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center" style="padding: 20px 0;">
+<a href="{dashboard_url}" style="display: inline-block; background: linear-gradient(135deg, #1a2b5f 0%, #2d4a8c 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 6px; font-size: 16px; font-weight: bold;">
+כניסה למערכת
+</a>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+<tr>
+<td style="background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #e9ecef;">
+<p style="font-size: 12px; color: #999999; margin: 0; text-align: center;">
+הודעה זו נשלחה אוטומטית ממערכת הקמת ספקים של ביטוח ישיר
+</p>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</body>
+</html>
+    """
+
+    send_email_via_smtp(handler_email, f"הצעת מחיר חדשה מספק: {vendor_name}", html_content)
+
+
 @router.post("/quote-submit")
 async def submit_quote(
+    background_tasks: BackgroundTasks,
     token: str = Form(...),
     amount: str = Form(None),
     description: str = Form(None),
     file: UploadFile = File(None)
 ):
+    # TRACE: Start
+    print("DEBUG [submit_quote]: Starting submission")
+    
     db = get_db()
-
-    print(f"Vendor quote submission: token={token}, amount={amount}, file={file.filename if file else 'None'}")
 
     # Validate token and get quote
     try:
+        print(f"DEBUG [submit_quote]: Fetching quote for token: {token}")
         response = db.table("vendor_quotes").select("*, vendor_requests(vendor_name, vendor_email, handler_name, handler_email)").eq("quote_secure_token", token).maybe_single().execute()
         
         quote = response.data if response.data else None
         
         if not quote:
+             print("DEBUG [submit_quote]: Quote not found (404)")
              raise HTTPException(status_code=404, detail="הצעת המחיר לא נמצאה או שהלינק פג תוקף")
              
         if quote.get("vendor_submitted"):
+             print("DEBUG [submit_quote]: Quote already submitted (400)")
              raise HTTPException(status_code=400, detail="הצעת המחיר כבר הוגשה")
+
+        print(f"DEBUG [submit_quote]: Valid token for quote ID: {quote.get('id')}")
 
     except HTTPException as he:
         raise he
     except Exception as e:
-        print(f"Error fetching quote: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        print(f"Error fetching quote: {traceback.format_exc() if 'traceback' in globals() else e}")
+        raise HTTPException(status_code=500, detail=f"Database error while fetching quote: {str(e)}")
 
     # Handle File Upload
     file_path = quote.get("file_path")
     file_name = quote.get("file_name")
 
     if file:
+        print(f"DEBUG [submit_quote]: Handling file upload: {file.filename.encode('ascii', 'ignore').decode()}")
         file_ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
-        # Generate new filename
-        timestamp = int(datetime.utcnow().timestamp() * 1000)
+        # Generate new filename using UTC-aware timestamp
+        timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
         new_file_name = f"quote_{quote['id']}_{timestamp}.{file_ext}"
         file_path = f"quotes/{new_file_name}"
         
         try:
+            print("DEBUG [submit_quote]: Reading file content")
             content = await file.read()
             # Upload to storage
+            print(f"DEBUG [submit_quote]: Uploading to storage path: {file_path}")
             storage = get_storage()
             storage.from_("vendor_documents").upload(
                 file_path,
                 content
             )
             file_name = file.filename
+            print("DEBUG [submit_quote]: File uploaded successfully")
         except Exception as e:
             print(f"Upload error: {e}")
             raise HTTPException(status_code=500, detail="Failed to upload file")
 
     # Update Quote
     try:
+        print("DEBUG [submit_quote]: Updating database record")
+        # Clean amount: strip ₪, commas, and spaces
+        clean_amount = None
+        if amount:
+            try:
+                # Remove common currency formatting
+                import re
+                numeric_val = re.sub(r'[^\d.]', '', str(amount))
+                clean_amount = float(numeric_val) if numeric_val else None
+            except (ValueError, TypeError):
+                print(f"Error parsing amount '{amount}': {e}")
+                clean_amount = None
+
         update_data = {
             "file_path": file_path,
             "file_name": file_name,
-            "amount": float(amount) if amount else None,
+            "amount": clean_amount,
             "description": description,
             "vendor_submitted": True,
-            "vendor_submitted_at": datetime.utcnow().isoformat(),
+            "vendor_submitted_at": datetime.now(timezone.utc).isoformat(),
             "status": "pending_handler"
         }
         
         db.table("vendor_quotes").update(update_data).eq("id", quote["id"]).execute()
+        print("DEBUG [submit_quote]: Database update complete")
         
     except Exception as e:
         print(f"Update error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update quote")
+        raise HTTPException(status_code=500, detail=f"Update error: {str(e)}")
+
+    # Send notification email to handler
+    vendor_req = quote.get("vendor_requests") or {}
+    if isinstance(vendor_req, list) and len(vendor_req) > 0:
+        vendor_req = vendor_req[0]
+    
+    handler_email = vendor_req.get("handler_email")
+    handler_name = vendor_req.get("handler_name", "")
+    vendor_name = vendor_req.get("vendor_name", "")
+    
+    if handler_email:
+        try:
+            background_tasks.add_task(
+                send_handler_notification_for_quote,
+                handler_email,
+                handler_name,
+                vendor_name,
+                amount
+            )
+            print(f"Queued handler notification email to {handler_email}")
+        except Exception as e:
+            print(f"Error queuing background task: {e}")
+            # Don't fail the request if just the email notification fails
+            pass
 
     return {"success": True, "message": "הצעת המחיר נשלחה בהצלחה"}
 
@@ -390,9 +519,10 @@ class SendQuoteEmailRequest(BaseModel):
 
 @router.post("/send-quote-request")
 async def send_quote_request_email(request: SendQuoteEmailRequest):
+    print(f"DEBUG: Processing quote request for Quote ID: {request.quoteId}, Vendor: {request.vendorName.encode('ascii', 'replace').decode()}")
     db = get_db()
     
-    print(f"Sending quote request to {request.vendorEmail} for quote {request.quoteId}")
+    print(f"Sending quote request to {request.vendorEmail} for quote {request.quoteId}", flush=True)
     
     try:
         # Verify quote exists
@@ -522,9 +652,9 @@ async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
         
         quote = response.data
         
-        # Build the approval link
+        # Build the approval link pointing to the Dashboard for managers
         frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
-        approval_link = f"{frontend_url}/quote-approval/{quote['quote_secure_token']}?type={request.approvalType}"
+        approval_link = f"{frontend_url}/"
         
         amount_display = f"₪{request.amount:,.0f}" if request.amount else "לא צוין"
         description_display = request.description or "לא צוין"
@@ -554,7 +684,7 @@ async def send_quote_approval_email(request: SendQuoteApprovalEmailRequest):
 </div>
 
 <div style="background: #f0f9ff; border: 2px solid #0369a1; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-<a href="{approval_link}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold;">צפייה ואישור</a>
+<a href="{approval_link}" style="display: inline-block; background: #0369a1; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: bold;">היכנס למערכת כדי לחתום</a>
 </div>
 
 <p style="margin-top: 30px; font-size: 12px; color: #666;">הודעה זו נשלחה באופן אוטומטי ממערכת ניהול ספקים של ביטוח ישיר</p>

@@ -12,5 +12,12 @@
     "password_hash": "c01a57fcfefcb87551d983d281adeb57:k6lRzpmaAgGt+N1GDftzf+xqvaRbz5qW04c2QiUDreo=",
     "created_at": "2026-02-22T21:25:40.422583+00:00",
     "updated_at": "2026-02-22T21:25:40.422583+00:00"
+  },
+  {
+    "id": "2aeffd62-78e3-400e-ac3e-371990df3161",
+    "email": "admin@test.com",
+    "password_hash": "b8acdd9a00d73dc1a707c96d102bad01:o1vPrAZCoDTYYV8LHjx7R8jm6QRB8cUylZj7iBC/wik=",
+    "created_at": "2026-04-13T18:34:36.022195+00:00",
+    "updated_at": "2026-04-13T18:34:36.022195+00:00"
   }
 ]

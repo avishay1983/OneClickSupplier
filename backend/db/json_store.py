@@ -182,17 +182,23 @@ class TableQuery:
 
     def execute(self) -> QueryResult:
         if self._operation == "select":
-            return self._exec_select()
+            res = self._exec_select()
         elif self._operation == "insert":
-            return self._exec_insert()
+            res = self._exec_insert()
         elif self._operation == "update":
-            return self._exec_update()
+            res = self._exec_update()
         elif self._operation == "upsert":
-            return self._exec_upsert()
+            res = self._exec_upsert()
         elif self._operation == "delete":
-            return self._exec_delete()
+            res = self._exec_delete()
         else:
             raise ValueError(f"No operation specified. Call select/insert/update/delete before execute.")
+
+        # Post-process for single/maybe_single
+        if (self._single or self._maybe_single) and isinstance(res.data, list):
+            res.data = res.data[0] if res.data else None
+            
+        return res
 
     # --- Internal execution ---
 
@@ -270,15 +276,17 @@ class TableQuery:
 
         # Parse column spec — handle "col1, col2, relation(col1, col2)"
         cols = []
-        relation_pattern = re.compile(r'(\w+)\(([^)]+)\)')
+        relation_pattern = re.compile(r'([\w!]+)\(([^)]+)\)')
         
         # Extract relations first
         relations = {}
         clean_cols = self._columns
         for match in relation_pattern.finditer(self._columns):
-            rel_name = match.group(1)
+            full_rel_name = match.group(1)
+            # Strip !inner or other modifiers
+            rel_name = full_rel_name.split('!')[0]
             rel_cols = [c.strip() for c in match.group(2).split(",")]
-            relations[rel_name] = rel_cols
+            relations[full_rel_name] = (rel_name, rel_cols)
             clean_cols = clean_cols.replace(match.group(0), "")
         
         # Parse remaining columns
@@ -297,7 +305,7 @@ class TableQuery:
                     new_row[col] = row[col]
             
             # Handle relations (simplified — looks up in related table by foreign key)
-            for rel_name, rel_cols in relations.items():
+            for full_rel_name, (rel_name, rel_cols) in relations.items():
                 fk_col = f"{rel_name[:-1]}_id" if rel_name.endswith("s") else f"{rel_name}_id"
                 # Try common FK patterns
                 for possible_fk in [fk_col, f"{rel_name}_id", "vendor_request_id"]:
@@ -306,6 +314,7 @@ class TableQuery:
                         matched = [r for r in related if r.get("id") == row[possible_fk]]
                         if matched:
                             rel_data = {c: matched[0].get(c) for c in rel_cols}
+                            # Use clean name (without !inner) as the key
                             new_row[rel_name] = rel_data
                         else:
                             new_row[rel_name] = None
@@ -337,14 +346,6 @@ class TableQuery:
         if self._head:
             return QueryResult(data=[], count=total_count)
 
-        # Single/maybe_single
-        if self._single:
-            if len(rows) != 1:
-                raise ValueError(f"Expected exactly 1 row, got {len(rows)}")
-            return QueryResult(data=rows[0], count=total_count)
-        elif self._maybe_single:
-            return QueryResult(data=rows[0] if rows else None, count=total_count)
-
         return QueryResult(data=rows, count=total_count)
 
     def _exec_insert(self) -> QueryResult:
@@ -353,9 +354,16 @@ class TableQuery:
 
         inserted = []
         for item in self._data:
+            print(f"DEBUG: JsonStore inserting into {self._table_name}")
             new_item = dict(item)
             if "id" not in new_item:
                 new_item["id"] = str(uuid.uuid4())
+            
+            # Special handling for vendor_quotes: generate secure token if missing
+            if self._table_name == "vendor_quotes" and "quote_secure_token" not in new_item:
+                print("DEBUG: Generating quote_secure_token")
+                new_item["quote_secure_token"] = str(uuid.uuid4())
+                
             if "created_at" not in new_item:
                 new_item["created_at"] = now
             if "updated_at" not in new_item:
@@ -364,6 +372,12 @@ class TableQuery:
             inserted.append(new_item)
 
         self._store._save_table(self._table_name, rows)
+        
+        # Apply column selection if specified (for .insert().select())
+        if self._columns and self._columns != "*":
+            final_data = self._select_columns(inserted)
+            return QueryResult(data=final_data)
+            
         # Always return list to match Supabase PostgREST behavior
         return QueryResult(data=inserted)
 
@@ -384,53 +398,53 @@ class TableQuery:
 
         self._store._save_table(self._table_name, rows)
         
-        if self._single:
-            return QueryResult(data=updated[0] if updated else None)
-        elif self._maybe_single:
-            return QueryResult(data=updated[0] if updated else None)
+        # Apply column selection if specified
+        if self._columns and self._columns != "*":
+            final_data = self._select_columns(updated)
+            return QueryResult(data=final_data)
+            
         return QueryResult(data=updated)
 
     def _exec_upsert(self) -> QueryResult:
         rows = self._store._load_table(self._table_name)
         now = datetime.now(timezone.utc).isoformat()
-
-        # Parse on_conflict columns
-        conflict_cols = []
-        if self._on_conflict:
-            conflict_cols = [c.strip() for c in self._on_conflict.split(",")]
-
-        result = []
-        for item in self._data:
-            item_id = item.get("id")
-            existing = None
+        
+        upserted = []
+        # Support both single item and list for body
+        data_list = self._data if isinstance(self._data, list) else [self._data]
+        
+        on_conflict = self._on_conflict or "id"
+        
+        for item in data_list:
+            existing_idx = -1
+            for i, r in enumerate(rows):
+                if r.get(on_conflict) == item.get(on_conflict):
+                    existing_idx = i
+                    break
             
-            # 1. Match by on_conflict columns if provided
-            if conflict_cols:
-                def match(row):
-                    return all(row.get(col) == item.get(col) for col in conflict_cols)
-                existing = next((r for r in rows if match(r)), None)
-            
-            # 2. Fallback to id if no on_conflict match or not provided
-            if not existing and item_id:
-                existing = next((r for r in rows if r.get("id") == item_id), None)
-
-            if existing:
-                existing.update(item)
-                existing["updated_at"] = now
-                result.append(deepcopy(existing))
+            new_item = dict(item)
+            if "updated_at" not in new_item:
+                new_item["updated_at"] = now
+                
+            if existing_idx >= 0:
+                rows[existing_idx].update(new_item)
+                upserted.append(rows[existing_idx])
             else:
-                new_item = dict(item)
                 if "id" not in new_item:
                     new_item["id"] = str(uuid.uuid4())
                 if "created_at" not in new_item:
                     new_item["created_at"] = now
-                new_item["updated_at"] = now
                 rows.append(new_item)
-                result.append(new_item)
-
+                upserted.append(new_item)
+                
         self._store._save_table(self._table_name, rows)
-        # Always return list to match Supabase PostgREST behavior
-        return QueryResult(data=result)
+        
+        # Apply column selection if specified
+        if self._columns and self._columns != "*":
+            final_data = self._select_columns(upserted)
+            return QueryResult(data=final_data)
+            
+        return QueryResult(data=upserted)
 
     def _exec_delete(self) -> QueryResult:
         rows = self._store._load_table(self._table_name)

@@ -2,344 +2,50 @@
   {
     "setting_key": "master_otp_code",
     "setting_value": "11111",
-    "id": "b6bc2857-ad32-48a6-8e47-f2bc7a4ea4dc",
-    "created_at": "2026-03-01T19:10:42.768757+00:00",
-    "updated_at": "2026-03-01T19:10:42.768757+00:00"
+    "id": "b72b5a06-185b-4d5d-a63a-b9fdab58c7e5",
+    "created_at": "2026-04-12T15:50:18.069648+00:00",
+    "updated_at": "2026-04-15T09:57:47.721589+00:00"
   },
   {
     "setting_key": "car_manager_email",
     "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "1744c2d7-c89e-4e2e-8b5d-f07de85d2ebd",
-    "created_at": "2026-03-01T19:10:42.785207+00:00",
-    "updated_at": "2026-03-01T19:10:42.785207+00:00"
+    "id": "bace1d87-5216-4e47-996a-0a9d1b11b93e",
+    "created_at": "2026-04-12T15:50:18.082008+00:00",
+    "updated_at": "2026-04-15T09:57:47.742614+00:00"
   },
   {
     "setting_key": "car_manager_name",
     "setting_value": "שי ברעם",
-    "id": "3e9ecee2-d645-4398-ae38-9c7bc3a1190b",
-    "created_at": "2026-03-01T19:10:42.790946+00:00",
-    "updated_at": "2026-03-01T19:10:42.790946+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "c6171ece-7816-4783-8aff-e0d638f5798a",
-    "created_at": "2026-03-01T19:10:42.798186+00:00",
-    "updated_at": "2026-03-01T19:10:42.798186+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "9f13387d-84de-4838-8cdf-777bc7b2aeb8",
-    "created_at": "2026-03-01T19:10:42.804182+00:00",
-    "updated_at": "2026-03-01T19:10:42.804182+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "44bf4569-33b2-4398-baf5-8e049dabaeed",
-    "created_at": "2026-03-01T19:10:42.809152+00:00",
-    "updated_at": "2026-03-01T19:10:42.809152+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "075c5f73-41e4-4d71-9427-9347cc9c9af9",
-    "created_at": "2026-03-01T19:10:42.814094+00:00",
-    "updated_at": "2026-03-01T19:10:42.814094+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "55828555-8255-4291-af0d-4bbe95f0fc1e",
-    "created_at": "2026-03-01T19:12:33.433658+00:00",
-    "updated_at": "2026-03-01T19:12:33.433658+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "3e51a0a3-9c28-4233-b191-ec6231373f55",
-    "created_at": "2026-03-01T19:12:33.440297+00:00",
-    "updated_at": "2026-03-01T19:12:33.440297+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "f3f82fea-b3e6-464e-9d2f-56abc4679826",
-    "created_at": "2026-03-01T19:12:33.446279+00:00",
-    "updated_at": "2026-03-01T19:12:33.446279+00:00"
+    "id": "4108f7f9-9178-4232-9377-efda2aeac81a",
+    "created_at": "2026-04-12T15:50:18.088548+00:00",
+    "updated_at": "2026-04-15T09:57:47.754570+00:00"
   },
   {
     "setting_key": "vp_email",
     "setting_value": "avishay.elankry@gmail.com",
-    "id": "2b566e81-a7ea-4520-a7ef-65bef93c625f",
-    "created_at": "2026-03-01T19:12:33.452384+00:00",
-    "updated_at": "2026-03-01T19:12:33.452384+00:00"
+    "id": "0591189e-16b7-4612-bfea-c668efc0f923",
+    "created_at": "2026-04-12T15:50:18.096205+00:00",
+    "updated_at": "2026-04-15T09:57:47.772572+00:00"
   },
   {
     "setting_key": "vp_name",
     "setting_value": "רז ברטוב",
-    "id": "9194dc9c-cd6d-4d10-8d8c-21c5ceaad243",
-    "created_at": "2026-03-01T19:12:33.458626+00:00",
-    "updated_at": "2026-03-01T19:12:33.458626+00:00"
+    "id": "d161cd6d-2f3c-4e35-8643-9b3d299a1fb3",
+    "created_at": "2026-04-12T15:50:18.104397+00:00",
+    "updated_at": "2026-04-15T09:57:47.784847+00:00"
   },
   {
     "setting_key": "procurement_manager_email",
     "setting_value": "",
-    "id": "86fa51d9-c85b-42c7-b0ac-f8e96ba0858a",
-    "created_at": "2026-03-01T19:12:33.464276+00:00",
-    "updated_at": "2026-03-01T19:12:33.464276+00:00"
+    "id": "ee5212ac-f416-4b53-bf0c-1b35b8df35e0",
+    "created_at": "2026-04-12T15:50:18.110982+00:00",
+    "updated_at": "2026-04-13T18:55:19.573019+00:00"
   },
   {
     "setting_key": "procurement_manager_name",
     "setting_value": "",
-    "id": "f44f5b46-9306-435a-8a7e-14dfcd31bd17",
-    "created_at": "2026-03-01T19:12:33.471017+00:00",
-    "updated_at": "2026-03-01T19:12:33.471017+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "224f5c40-8549-468c-ac1f-12140425139b",
-    "created_at": "2026-03-01T19:21:10.319305+00:00",
-    "updated_at": "2026-03-01T19:21:10.319305+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "avishay.elankry@gmail.com",
-    "id": "082a1bde-10c2-4ec4-aef9-206261eee52b",
-    "created_at": "2026-03-01T19:21:10.324116+00:00",
-    "updated_at": "2026-03-01T19:21:10.324116+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "45d21742-92f8-425b-ad66-371ab4e3524e",
-    "created_at": "2026-03-01T19:21:10.328988+00:00",
-    "updated_at": "2026-03-01T19:21:10.328988+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "dca0b223-561e-4678-b6b2-fe82d4039c3c",
-    "created_at": "2026-03-01T19:21:10.334485+00:00",
-    "updated_at": "2026-03-01T19:21:10.334485+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "046ba01c-7dcc-44de-9a63-f7db52c9a615",
-    "created_at": "2026-03-01T19:21:10.339420+00:00",
-    "updated_at": "2026-03-01T19:21:10.339420+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "e0c21a79-8007-46a2-82bf-46f64e8650e0",
-    "created_at": "2026-03-01T19:21:10.344301+00:00",
-    "updated_at": "2026-03-01T19:21:10.344301+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "3c2e8a35-d2d4-4545-8037-bd0c47fd1475",
-    "created_at": "2026-03-01T19:21:10.349384+00:00",
-    "updated_at": "2026-03-01T19:21:10.349384+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "d2012b47-43fc-4b25-8124-84e1c216663a",
-    "created_at": "2026-03-02T10:28:08.771643+00:00",
-    "updated_at": "2026-03-02T10:28:08.771643+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "17af7ee4-da17-456f-94ec-fed3725c71d6",
-    "created_at": "2026-03-02T10:28:08.777594+00:00",
-    "updated_at": "2026-03-02T10:28:08.777594+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "630b9d00-7122-4e5f-9bee-e87363853045",
-    "created_at": "2026-03-02T10:28:08.783885+00:00",
-    "updated_at": "2026-03-02T10:28:08.783885+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "8194223d-c2d2-44cc-8dc8-5dceb54281fc",
-    "created_at": "2026-03-02T10:28:08.789310+00:00",
-    "updated_at": "2026-03-02T10:28:08.789310+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "94a40ef7-8033-4454-82fb-01565ecd90d5",
-    "created_at": "2026-03-02T10:28:08.795822+00:00",
-    "updated_at": "2026-03-02T10:28:08.795822+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "d4daa9e0-7da8-4b40-a254-bf8ed377a6a6",
-    "created_at": "2026-03-02T10:28:08.801487+00:00",
-    "updated_at": "2026-03-02T10:28:08.801487+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "babaf06e-c7da-4af5-bb81-98a7e4509eeb",
-    "created_at": "2026-03-02T10:28:08.807088+00:00",
-    "updated_at": "2026-03-02T10:28:08.807088+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "f3fbdf49-bbd9-4989-b18b-a3069e448584",
-    "created_at": "2026-03-02T10:32:27.918883+00:00",
-    "updated_at": "2026-03-02T10:32:27.918883+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "5cac9ded-f97c-4a05-8a2d-1f0660ba87d7",
-    "created_at": "2026-03-02T10:32:27.931369+00:00",
-    "updated_at": "2026-03-02T10:32:27.931369+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "6e1cb279-08b8-4f83-bb95-79b9794265c9",
-    "created_at": "2026-03-02T10:32:27.936632+00:00",
-    "updated_at": "2026-03-02T10:32:27.936632+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "avishay.elankry@gmail.com",
-    "id": "ec92ce1e-b05b-4715-a338-f89d72c21b61",
-    "created_at": "2026-03-02T10:32:27.942053+00:00",
-    "updated_at": "2026-03-02T10:32:27.942053+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "30d5bb51-e13b-49fb-88c0-f89ad4745a04",
-    "created_at": "2026-03-02T10:32:27.947962+00:00",
-    "updated_at": "2026-03-02T10:32:27.947962+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "1b7fb6a0-609a-4666-a1de-38a4f9939206",
-    "created_at": "2026-03-02T10:32:27.953518+00:00",
-    "updated_at": "2026-03-02T10:32:27.953518+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "2e1c6e38-926f-4861-a55c-c92a7fcce537",
-    "created_at": "2026-03-02T10:32:27.958731+00:00",
-    "updated_at": "2026-03-02T10:32:27.958731+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "504ee1f2-a2d1-4cd3-adff-f4ab4e88a637",
-    "created_at": "2026-03-02T10:33:54.592248+00:00",
-    "updated_at": "2026-03-02T10:33:54.592248+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "b5284a0f-622d-40c6-ae7f-166ccb2a3b16",
-    "created_at": "2026-03-02T10:33:54.597564+00:00",
-    "updated_at": "2026-03-02T10:33:54.597564+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "d6e73694-fffe-4425-917c-3a09702b367c",
-    "created_at": "2026-03-02T10:33:54.602466+00:00",
-    "updated_at": "2026-03-02T10:33:54.602466+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "avishay.elankry@gmail.com",
-    "id": "29d132c0-7061-49c9-bf90-5a4a9a90e63a",
-    "created_at": "2026-03-02T10:33:54.607803+00:00",
-    "updated_at": "2026-03-02T10:33:54.607803+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "f3bcac5b-b00c-48bb-a962-ce84a38721f3",
-    "created_at": "2026-03-02T10:33:54.613292+00:00",
-    "updated_at": "2026-03-02T10:33:54.613292+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "fecc12ec-e153-4d84-b081-9f8a40823b3e",
-    "created_at": "2026-03-02T10:33:54.618822+00:00",
-    "updated_at": "2026-03-02T10:33:54.618822+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "06f267db-c4d2-4e6e-9b7f-b016bb983705",
-    "created_at": "2026-03-02T10:33:54.624581+00:00",
-    "updated_at": "2026-03-02T10:33:54.624581+00:00"
-  },
-  {
-    "setting_key": "master_otp_code",
-    "setting_value": "11111",
-    "id": "d9fa44a7-e393-4e72-b448-86e24e56e9ed",
-    "created_at": "2026-03-02T10:47:09.363978+00:00",
-    "updated_at": "2026-03-02T10:47:09.363978+00:00"
-  },
-  {
-    "setting_key": "car_manager_email",
-    "setting_value": "avishay.elankry@gmail.com",
-    "id": "050683ce-480e-4212-ae72-0e342c2a7c2c",
-    "created_at": "2026-03-02T10:47:09.372026+00:00",
-    "updated_at": "2026-03-02T10:47:09.372026+00:00"
-  },
-  {
-    "setting_key": "car_manager_name",
-    "setting_value": "שי ברעם",
-    "id": "623abf81-8bdb-49b0-af6e-8a14daebeb9f",
-    "created_at": "2026-03-02T10:47:09.376757+00:00",
-    "updated_at": "2026-03-02T10:47:09.376757+00:00"
-  },
-  {
-    "setting_key": "vp_email",
-    "setting_value": "a.vishay.elankry@gmail.com",
-    "id": "6378bbc1-00e1-4f6a-a72e-a0a52c253cc5",
-    "created_at": "2026-03-02T10:47:09.382381+00:00",
-    "updated_at": "2026-03-02T10:47:09.382381+00:00"
-  },
-  {
-    "setting_key": "vp_name",
-    "setting_value": "רז ברטוב",
-    "id": "b9398840-7d2d-4c3d-aee5-70c0cb349ca5",
-    "created_at": "2026-03-02T10:47:09.389118+00:00",
-    "updated_at": "2026-03-02T10:47:09.389118+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_email",
-    "setting_value": "",
-    "id": "441a5f55-9589-4658-b3ce-12830fc78306",
-    "created_at": "2026-03-02T10:47:09.395777+00:00",
-    "updated_at": "2026-03-02T10:47:09.395777+00:00"
-  },
-  {
-    "setting_key": "procurement_manager_name",
-    "setting_value": "",
-    "id": "cd4f2075-bfa1-4c43-bf24-5d1ad6e64de3",
-    "created_at": "2026-03-02T10:47:09.401914+00:00",
-    "updated_at": "2026-03-02T10:47:09.401914+00:00"
+    "id": "822e8754-017a-423e-b0bb-2c5719a494dc",
+    "created_at": "2026-04-12T15:50:18.117281+00:00",
+    "updated_at": "2026-04-13T18:55:19.587133+00:00"
   }
 ]

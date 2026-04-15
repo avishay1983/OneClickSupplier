@@ -78,6 +78,26 @@ async def create_request(request: VendorRequestCreate):
     from datetime import timedelta
     expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
     
+    # Logic to ensure handler_name is a name and not an email
+    handler_name = request.handler_name
+    handler_email = request.handler_email
+    
+    if (not handler_name or (handler_name and "@" in handler_name)) and handler_email:
+        try:
+            # Attempt to find the full name from profiles if we only have an email
+            # We first try to get it from profiles (some setups have email in profile)
+            profile_res = db.table("profiles").select("full_name").ilike("email", handler_email).maybe_single().execute()
+            if profile_res.data and profile_res.data.get("full_name"):
+                handler_name = profile_res.data["full_name"]
+            
+            # If still an email or missing, use a generic placeholder
+            if not handler_name or "@" in handler_name:
+                handler_name = "נציג"
+        except Exception as e:
+            print(f"Error resolving handler name: {e}")
+            if not handler_name or "@" in handler_name:
+                handler_name = "נציג"
+
     # Prepare DB data
     db_data = {
         "vendor_name": request.vendor_name,
@@ -86,8 +106,8 @@ async def create_request(request: VendorRequestCreate):
         "status": "with_vendor",
         "payment_terms": "שוטף + 60",
         "expires_at": expires_at.isoformat(),
-        "handler_name": request.handler_name,
-        "handler_email": request.handler_email,
+        "handler_name": handler_name,
+        "handler_email": handler_email,
         "vendor_type": request.vendor_type,
         "requires_vp_approval": request.requires_vp_approval,
         "requires_contract_signature": True

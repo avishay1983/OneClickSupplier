@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse, FileResponse
 from db import get_db
 from auth.jwt_auth import get_current_user
 import os
@@ -27,6 +27,7 @@ app.include_router(data_router.router)
 print("All routers included.")
 
 # Configure CORS
+
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +36,37 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global Exception Handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    # Safely get the error message and traceback as ASCII-safe strings for printing on Windows
+    error_msg = str(exc).encode('ascii', 'ignore').decode()
+    tb_msg = traceback.format_exc().encode('ascii', 'ignore').decode()
+    
+    print(f"GLOBAL ERROR: {error_msg}")
+    print(tb_msg)
+    
+    # Ensure CORS headers are included even on error
+    response = JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False, 
+            "error": "Internal Server Error",
+            "message": str(exc),
+            "traceback": traceback.format_exc() if os.environ.get("DEBUG") == "true" else None
+        }
+    )
+    
+    # Add CORS headers manually to the error response
+    origin = request.headers.get("origin") or "*"
+    response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept"
+    
+    return response
 
 @app.get("/api/health")
 async def health_check():
