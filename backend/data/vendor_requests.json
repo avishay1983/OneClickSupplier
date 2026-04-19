@@ -154,7 +154,7 @@
     "requires_contract_signature": true,
     "id": "511f946f-514e-4e1c-b828-8faf618ac2cb",
     "created_at": "2026-03-02T09:32:40.206830+00:00",
-    "updated_at": "2026-03-02T10:47:53.930418+00:00",
+    "updated_at": "2026-04-19T15:51:50.875365+00:00",
     "otp_verified": true,
     "otp_code": null,
     "otp_expires_at": null,
@@ -186,6 +186,7 @@
     "procurement_manager_signed": true,
     "procurement_manager_signed_at": "2026-03-02T10:47:52.125Z",
     "procurement_manager_signed_by": "avishay",
-    "receipts_link_sent_at": "2026-03-02T10:47:53.929886"
+    "receipts_link_sent_at": "2026-03-02T10:47:53.929886",
+    "crm_status": "security_approved"
   }
 ]

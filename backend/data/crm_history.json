@@ -9,5 +9,16 @@
     "id": "c5ee221b-9549-4eb3-99c5-edd48f76abf1",
     "created_at": "2026-03-01T20:33:41.441967+00:00",
     "updated_at": "2026-03-01T20:33:41.441967+00:00"
+  },
+  {
+    "vendor_request_id": "511f946f-514e-4e1c-b828-8faf618ac2cb",
+    "action": "status_change",
+    "field_name": "crm_status",
+    "old_value": "active",
+    "new_value": "security_approved",
+    "changed_by": "אבישי",
+    "id": "2b31c487-e8b6-4aa8-85d2-9c1581375210",
+    "created_at": "2026-04-19T15:51:50.907408+00:00",
+    "updated_at": "2026-04-19T15:51:50.907408+00:00"
   }
 ]
