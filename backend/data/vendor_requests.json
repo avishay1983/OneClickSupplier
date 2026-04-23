@@ -188,5 +188,21 @@
     "procurement_manager_signed_by": "avishay",
     "receipts_link_sent_at": "2026-03-02T10:47:53.929886",
     "crm_status": "security_approved"
+  },
+  {
+    "vendor_name": "דוד ובניו",
+    "vendor_email": "avishay.elankry@gmail.com",
+    "secure_token": "cc47d03f-b80a-4626-95a0-311312aff4d1",
+    "status": "with_vendor",
+    "payment_terms": "שוטף + 60",
+    "expires_at": "2026-04-30T14:30:13.828393",
+    "handler_name": "אבישי אלנקרי",
+    "handler_email": "Avishay.elankry@gmail.com",
+    "vendor_type": "general",
+    "requires_vp_approval": true,
+    "requires_contract_signature": true,
+    "id": "df1d81aa-6e25-4e8b-a7c9-bcf3ace1018d",
+    "created_at": "2026-04-23T14:30:13.829366+00:00",
+    "updated_at": "2026-04-23T14:30:13.829366+00:00"
   }
 ]

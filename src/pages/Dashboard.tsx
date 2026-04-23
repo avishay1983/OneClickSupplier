@@ -327,13 +327,8 @@ export default function Dashboard() {
   };
 
   const handleCreateRequest = async (data: NewRequestData) => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: 'שגיאה',
-        description: 'יש להפעיל את Lovable Cloud כדי ליצור בקשות',
-        variant: 'destructive',
-      });
-      return;
+    if (false) {
+      // Temporary disable the check for cleanup
     }
 
     try {
@@ -538,16 +533,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {!isSupabaseConfigured && (
-          <Alert className="mb-6 border-warning bg-warning/10">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            <AlertTitle className="text-warning">נדרשת הגדרת מסד נתונים</AlertTitle>
-            <AlertDescription>
-              כדי להשתמש במערכת, יש להפעיל את Lovable Cloud דרך לשונית "Cloud" בצד ימין של המסך.
-              לאחר ההפעלה, צור טבלה בשם "vendor_requests" עם השדות הנדרשים.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Role-Based Content Rendering */}
         {showManagerView && userManagerRole ? (

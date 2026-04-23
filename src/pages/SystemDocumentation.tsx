@@ -24,9 +24,9 @@ const SystemDocumentation = () => {
 
 ---
 
-## 2. תשתית Backend - Supabase
+## 2. תשתית Backend - Python FastAPI
 
-### 2.1 בסיס נתונים (PostgreSQL)
+### 2.1 בסיס נתונים (JSON + Supabase fallback)
 
 | טבלה | תיאור | שדות עיקריים |
 |------|-------|---------------|
@@ -56,7 +56,7 @@ const SystemDocumentation = () => {
 
 ---
 
-## 3. Edge Functions - API Reference
+## 3. FastAPI Endpoints - API Reference
 
 ### 3.1 שליחת אימייל לספק
 \`\`\`
@@ -443,8 +443,8 @@ Response: { success: boolean }
 </div>
 
 <div class="section">
-<h2>2. תשתית Backend - Supabase</h2>
-<h3>2.1 בסיס נתונים (PostgreSQL)</h3>
+<h2>2. תשתית Backend - Python FastAPI</h2>
+<h3>2.1 בסיס נתונים (JSON + Supabase fallback)</h3>
 <table>
 <tr><th>טבלה</th><th>תיאור</th><th>שדות עיקריים</th></tr>
 <tr><td>vendor_requests</td><td>בקשות ספקים</td><td>id, vendor_name, vendor_email, status, secure_token, handler_name, vendor_type</td></tr>
@@ -475,7 +475,7 @@ Response: { success: boolean }
 </div>
 
 <div class="section">
-<h2>3. Edge Functions - API Reference</h2>
+<h2>3. FastAPI Endpoints - API Reference</h2>
 
 <h3>3.1 send-vendor-email - שליחת לינק טופס לספק</h3>
 <pre>Method: POST
@@ -744,11 +744,11 @@ Response: { success: boolean }</pre>
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SUPABASE EDGE FUNCTIONS                            │
+│                           PYTHON FASTAPI BACKEND                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              │
-│  │  Email Service  │  │   OCR Service   │  │  Form API       │              │
-│  │  • send-vendor- │  │  • extract-bank │  │  • vendor-form  │              │
-│  │    email        │  │    -details     │  │    -api         │              │
+│  │  Email Service  │  │   AI Service    │  │  Data API       │              │
+│  │  • SMTP (Gmail)  │  │  • OpenAI GPT-4o │  │  • JSON Store   │              │
+│  │  • Notifications│  │  • Gemini Flash  │  │  • Admin Routes │              │
 │  │  • send-otp     │  │  • extract-doc  │  │  • vendor-upload│              │
 │  │  • send-manager │  │    -data        │  │  • vendor-status│              │
 │  │    -approval    │  │  • extract-doc  │  │                 │              │

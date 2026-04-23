@@ -131,18 +131,24 @@
     "file_path": "quotes/quote_513978e6-5323-43e5-bb81-1fd2a01f6597_1776236824400.pdf",
     "file_name": "חוזה אספקת חולצות - ביטוח ישיר.pdf",
     "submitted_by": "אבישי",
-    "status": "pending_vp",
+    "status": "approved",
     "vendor_submitted": true,
     "id": "513978e6-5323-43e5-bb81-1fd2a01f6597",
     "quote_secure_token": "c75845c0-9004-4fdd-a2f0-8834bf702cc7",
     "created_at": "2026-04-15T07:05:41.062749+00:00",
-    "updated_at": "2026-04-15T07:08:09.841626+00:00",
+    "updated_at": "2026-04-23T14:10:57.754180+00:00",
     "quote_link_sent_at": "2026-04-15T07:06:31.862337",
     "amount": 10000.0,
     "description": "עיעכ",
     "vendor_submitted_at": "2026-04-15T07:07:04.402017+00:00",
     "handler_approved": true,
     "handler_approved_at": "2026-04-15T07:08:09.827Z",
-    "handler_approved_by": "אבישי"
+    "handler_approved_by": "אבישי",
+    "vp_approved": true,
+    "vp_approved_at": "2026-04-23T14:10:02.588Z",
+    "vp_approved_by": "רז ברטוב",
+    "procurement_manager_approved": true,
+    "procurement_manager_approved_at": "2026-04-23T14:10:57.714Z",
+    "procurement_manager_approved_by": "שי ברעם"
   }
 ]

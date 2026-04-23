@@ -13,7 +13,7 @@ load_dotenv()
 
 from routers import users, vendors, documents, receipts, cron, admin, auth_router, data_router
 
-app = FastAPI(title="Lovable Supplier Backend")
+app = FastAPI(title="OneClickSupplier Backend")
 
 # Include all routers
 app.include_router(users.router)
