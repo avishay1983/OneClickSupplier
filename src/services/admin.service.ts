@@ -62,5 +62,47 @@ export const adminService = {
             console.error('Error fetching stats:', error);
             throw error;
         }
+    },
+
+    // Send quote request email to vendor
+    sendQuoteRequest: async (data: { quoteId: string; vendorEmail: string; vendorName: string; handlerName: string }): Promise<any> => {
+        try {
+            const response = await fetch(`${API_CONFIG.ENDPOINTS.ADMIN.SEND_QUOTE_REQUEST}`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to send quote request');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error sending quote request:', error);
+            throw error;
+        }
+    },
+
+    // Send receipts link email to vendor
+    sendReceiptsLink: async (vendorRequestId: string): Promise<any> => {
+        try {
+            const response = await fetch(`${API_CONFIG.ENDPOINTS.ADMIN.SEND_RECEIPTS_LINK}`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ vendorRequestId }),
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || 'Failed to send receipts link');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error sending receipts link:', error);
+            throw error;
+        }
     }
 };

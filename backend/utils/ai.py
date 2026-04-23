@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 from typing import Optional, Dict, Any, List
 
 try:
@@ -7,7 +8,17 @@ try:
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
-    print("Warning: google-generativeai not installed. AI features will be disabled.")
+
+try:
+    from openai import AsyncOpenAI
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+
+# Configuration from environment variables
+DEFAULT_AI_PROVIDER = os.environ.get("AI_PROVIDER", "gemini").lower()
+DEFAULT_OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+DEFAULT_GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
 def configure_gemini():
     if not HAS_GENAI:
@@ -28,21 +39,17 @@ def clean_json_string(text: str) -> str:
         text = text.replace("```", "")
     return text.strip()
 
-async def generate_content(
+async def _generate_with_gemini(
     prompt: str, 
     image_data: Optional[bytes] = None, 
     mime_type: str = "image/jpeg",
-    model_name: str = "gemini-2.0-flash"
+    model_name: str = DEFAULT_GEMINI_MODEL
 ) -> Dict[str, Any]:
-    """
-    Generates content using Gemini. if image_data is provided, it performs multimodal generation.
-    Returns parsed JSON if possible, or a dict with 'text' key.
-    """
     if not HAS_GENAI:
         return {"error": "google-generativeai library not installed"}
         
     if not configure_gemini():
-        return {"error": "API key not configured"}
+        return {"error": "Gemini API key not configured"}
         
     try:
         model = genai.GenerativeModel(model_name)
@@ -58,7 +65,7 @@ async def generate_content(
             parts,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,
-                response_mime_type="application/json" # Ask for JSON directly
+                response_mime_type="application/json"
             )
         )
         
@@ -73,3 +80,78 @@ async def generate_content(
     except Exception as e:
         print(f"Gemini Error: {e}")
         return {"error": str(e)}
+
+async def _generate_with_openai(
+    prompt: str, 
+    image_data: Optional[bytes] = None, 
+    mime_type: str = "image/jpeg",
+    model_name: str = DEFAULT_OPENAI_MODEL
+) -> Dict[str, Any]:
+    if not HAS_OPENAI:
+        return {"error": "openai library not installed"}
+        
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return {"error": "OPENAI_API_KEY not found in environment"}
+        
+    try:
+        client = AsyncOpenAI(api_key=api_key)
+        
+        messages = []
+        content = [{"type": "text", "text": prompt}]
+        
+        if image_data:
+            base64_image = base64.b64encode(image_data).decode('utf-8')
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{mime_type};base64,{base64_image}"
+                }
+            })
+            
+        messages.append({"role": "user", "content": content})
+        
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        
+        text = response.choices[0].message.content
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return {"error": "Failed to parse JSON", "raw_text": text}
+            
+    except Exception as e:
+        print(f"OpenAI Error: {e}")
+        return {"error": str(e)}
+
+async def generate_content(
+    prompt: str, 
+    image_data: Optional[bytes] = None, 
+    mime_type: str = "image/jpeg",
+    model_name: Optional[str] = None,
+    provider: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Dispatcher for AI content generation.
+    """
+    target_provider = (provider or DEFAULT_AI_PROVIDER).lower()
+    
+    if target_provider == "openai":
+        return await _generate_with_openai(
+            prompt, 
+            image_data, 
+            mime_type, 
+            model_name or DEFAULT_OPENAI_MODEL
+        )
+    else:
+        # Default to gemini
+        return await _generate_with_gemini(
+            prompt, 
+            image_data, 
+            mime_type, 
+            model_name or DEFAULT_GEMINI_MODEL
+        )

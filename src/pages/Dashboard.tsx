@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen, Eye, UserCircle, LayoutGrid } from 'lucide-react';
+import { Plus, AlertTriangle, Settings, LogOut, Loader2, Clock, Users, Building2, FileSignature, Pen, Eye, UserCircle, LayoutGrid, Receipt } from 'lucide-react';
 import { VendorRequestsTable } from '@/components/dashboard/VendorRequestsTable';
-import { NewRequestDialog, NewRequestData, BulkVendorData } from '@/components/dashboard/NewRequestDialog';
+import { NewRequestDialog, NewRequestData } from '@/components/dashboard/NewRequestDialog';
 import { SettingsDialog } from '@/components/dashboard/SettingsDialog';
 import { PendingApprovalsDialog } from '@/components/dashboard/PendingApprovalsDialog';
 import { ManagerSignaturesView } from '@/components/dashboard/ManagerSignaturesView';
@@ -16,6 +16,18 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { adminService } from '@/services/admin.service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VendorRegistryView, CRMVendor, VendorRatingSummary } from '@/components/dashboard/VendorRegistryView';
+import { VendorQuotesView } from '@/components/crm/VendorQuotesView';
+import { AllReceiptsView } from '@/components/crm/AllReceiptsView';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAdmin, signOut } = useAuth();
@@ -37,6 +49,20 @@ export default function Dashboard() {
   const [showAllRequests, setShowAllRequests] = useState(false); // For admin toggle
   const [viewMode, setViewMode] = useState<'manager' | 'regular'>('manager'); // Manager view toggle
   const [pendingReceiptsCount, setPendingReceiptsCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('onboarding');
+  const [pendingQuotesCount, setPendingQuotesCount] = useState(0);
+
+  // CRM/Registry State
+  const [vendors, setVendors] = useState<CRMVendor[]>([]);
+  const [vendorRatings, setVendorRatings] = useState<Map<string, VendorRatingSummary>>(new Map());
+  const [isVendorsLoading, setIsVendorsLoading] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState<CRMVendor | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<CRMVendor>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Check if user is approved and get user name
   useEffect(() => {
@@ -124,6 +150,17 @@ export default function Dashboard() {
             return false;
           });
           setPendingSignatures(pendingForSignature);
+
+          // Find quotes pending this user's signature
+          const statusFilter = role === 'vp' ? 'pending_vp' : 'pending_procurement';
+          const { count: quoteCount, error: quoteError } = await supabase
+            .from('vendor_quotes')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', statusFilter);
+
+          if (!quoteError && quoteCount !== null) {
+            setPendingQuotesCount(quoteCount);
+          }
         }
       } catch (error) {
         console.error('Error checking manager role:', error);
@@ -166,8 +203,87 @@ export default function Dashboard() {
   useEffect(() => {
     if (user && isApproved) {
       fetchRequests();
+      fetchVendors();
     }
   }, [user, isApproved]);
+
+  const fetchVendors = async () => {
+    if (!isSupabaseConfigured || !user || !isApproved) return;
+    setIsVendorsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('vendor_requests')
+        .select('*')
+        .eq('status', 'approved')
+        .eq('procurement_manager_signed', true)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setVendors((data as CRMVendor[]) || []);
+
+      const { data: ratingsData } = await supabase.from('vendor_ratings').select('*');
+      const ratingsMap = new Map<string, VendorRatingSummary>();
+      
+      data?.forEach(v => {
+        const vendorRatings = (ratingsData || []).filter(r => r.vendor_request_id === v.id);
+        const userRating = vendorRatings.find(r => r.user_id === user?.id)?.rating || null;
+        const totalRatings = vendorRatings.length;
+        const average = totalRatings > 0 ? vendorRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings : null;
+        ratingsMap.set(v.id, { average, userRating, totalRatings });
+      });
+      setVendorRatings(ratingsMap);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    } finally {
+      setIsVendorsLoading(false);
+    }
+  };
+
+  const fetchHistory = async (vendorId: string) => {
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('crm_history')
+        .select('*')
+        .eq('vendor_request_id', vendorId)
+        .order('changed_at', { ascending: false });
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleEdit = (vendor: CRMVendor) => {
+    setSelectedVendor(vendor);
+    setEditForm({ ...vendor });
+    setEditDialogOpen(true);
+  };
+
+  const handleViewHistory = async (vendor: CRMVendor) => {
+    setSelectedVendor(vendor);
+    setHistoryDialogOpen(true);
+    await fetchHistory(vendor.id);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedVendor || !editForm) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('vendor_requests').update(editForm).eq('id', selectedVendor.id);
+      if (error) throw error;
+      toast({ title: 'השינויים נשמרו' });
+      setEditDialogOpen(false);
+      fetchVendors();
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast({ title: 'שגיאה', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Fetch pending receipts count
   useEffect(() => {
@@ -193,7 +309,10 @@ export default function Dashboard() {
 
   // Filter requests based on user role and toggle
   const filteredRequests = requests.filter(request => {
-    // If admin and showing all requests, return all
+    // Only show requests that are NOT fully approved in the onboarding tab
+    if (request.status === 'approved') return false;
+
+    // If admin and showing all requests, return all non-approved
     if (isAdmin && showAllRequests) {
       return true;
     }
@@ -242,84 +361,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleBulkCreateRequests = async (vendors: BulkVendorData[]) => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: 'שגיאה',
-        description: 'יש להפעיל את Lovable Cloud כדי ליצור בקשות',
-        variant: 'destructive',
-      });
-      return;
-    }
 
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const vendor of vendors) {
-      try {
-        const secureToken = crypto.randomUUID();
-        // Use milliseconds calculation to support fractional days
-        const expiresInMs = (vendor.expires_in_days || 7) * 24 * 60 * 60 * 1000;
-        const expiresAt = new Date(Date.now() + expiresInMs);
-
-        const { error } = await supabase
-          .from('vendor_requests')
-          .insert({
-            vendor_name: vendor.vendor_name,
-            vendor_email: vendor.vendor_email,
-            secure_token: secureToken,
-            status: 'with_vendor',
-            payment_terms: 'שוטף + 60',
-            expires_at: expiresAt.toISOString(),
-            handler_name: vendor.handler_name || currentUserName,
-            handler_email: user?.email || null,
-            vendor_type: vendor.vendor_type || 'general',
-            requires_vp_approval: vendor.requires_vp_approval ?? true,
-            requires_contract_signature: true,
-          });
-
-        if (error) {
-          console.error('Error creating request:', error);
-          failCount++;
-          continue;
-        }
-
-        // Send email to vendor
-        const secureLink = `${window.location.origin}/vendor/${secureToken}`;
-        try {
-          await supabase.functions.invoke('send-vendor-email', {
-            body: {
-              vendorName: vendor.vendor_name,
-              vendorEmail: vendor.vendor_email,
-              secureLink,
-            },
-          });
-          successCount++;
-        } catch (emailErr) {
-          console.error('Email send error:', emailErr);
-          successCount++; // Request was created, just email failed
-        }
-      } catch (err) {
-        console.error('Error processing vendor:', err);
-        failCount++;
-      }
-    }
-
-    if (successCount > 0) {
-      toast({
-        title: 'הבקשות נוצרו בהצלחה',
-        description: `${successCount} קישורים נשלחו לספקים${failCount > 0 ? `. ${failCount} נכשלו.` : ''}`,
-      });
-    } else {
-      toast({
-        title: 'שגיאה',
-        description: 'לא ניתן ליצור את הבקשות',
-        variant: 'destructive',
-      });
-    }
-
-    fetchRequests();
-  };
 
   // Show loading while checking auth or approval
   if (authLoading || checkingApproval) {
@@ -459,35 +501,20 @@ export default function Dashboard() {
                     className="gap-1.5 text-white data-[state=on]:bg-white data-[state=on]:text-[#1a2b5f] hover:bg-white/20 text-xs px-2"
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">נציג</span>
+                    <span className="hidden sm:inline">ניהול ספקים</span>
                   </ToggleGroupItem>
                 </ToggleGroup>
               )}
 
               <Button
                 variant="ghost"
-                onClick={() => navigate('/crm')}
-                className="text-white hover:bg-white/10 gap-2 relative"
+                size="icon"
+                onClick={() => setApprovalsOpen(true)}
+                className="text-white hover:bg-white/10"
+                title="בקשות הרשמה"
               >
-                <Building2 className="h-5 w-5" />
-                <span className="hidden sm:inline">CRM ספקים</span>
-                {pendingReceiptsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                    {pendingReceiptsCount > 99 ? '99+' : pendingReceiptsCount}
-                  </span>
-                )}
+                <Users className="h-5 w-5" />
               </Button>
-              {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setApprovalsOpen(true)}
-                  className="text-white hover:bg-white/10"
-                  title="בקשות הרשמה"
-                >
-                  <Users className="h-5 w-5" />
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -522,83 +549,154 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Manager Signatures View */}
+        {/* Role-Based Content Rendering */}
         {showManagerView && userManagerRole ? (
-          <ManagerSignaturesView
-            role={userManagerRole}
-            managerName={userManagerName}
-            pendingSignatures={pendingSignatures}
-            onRefresh={fetchRequests}
-          />
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <ManagerSignaturesView
+              role={userManagerRole}
+              managerName={userManagerName}
+              pendingSignatures={pendingSignatures}
+              onRefresh={fetchRequests}
+            />
+          </div>
         ) : (
-          <>
-            {/* Pending Signatures Banner for VP/Procurement Manager (when in regular view) */}
-            {userManagerRole && pendingSignatures.length > 0 && (
-              <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <FileSignature className="h-5 w-5 text-primary" />
-                    <span className="text-sm font-medium">
-                      {pendingSignatures.length === 1
-                        ? 'יש חוזה אחד ממתין לחתימתך'
-                        : `יש ${pendingSignatures.length} חוזים ממתינים לחתימתך`
-                      }
-                    </span>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+            <TabsList className="mb-8 grid grid-cols-4 w-full max-w-2xl mx-auto">
+              <TabsTrigger value="onboarding" className="gap-2">
+                <Plus className="h-4 w-4" />
+                בקשות הקמה
+              </TabsTrigger>
+              <TabsTrigger value="registry" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                מאגר ספקים
+              </TabsTrigger>
+              <TabsTrigger value="quotes" className="gap-2">
+                <FileSignature className="h-4 w-4" />
+                הצעות מחיר
+              </TabsTrigger>
+              <TabsTrigger value="receipts" className="gap-2 relative">
+                <Receipt className="h-4 w-4" />
+                קבלות
+                {pendingReceiptsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                    {pendingReceiptsCount}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="onboarding" className="animate-in fade-in duration-500">
+              {/* Pending Signatures Banner for VP/Procurement Manager (when in regular view) */}
+              {userManagerRole && (pendingSignatures.length > 0 || pendingQuotesCount > 0) && (
+                <div className="mb-6 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <FileSignature className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-medium">
+                        {(pendingSignatures.length + pendingQuotesCount) === 1
+                          ? 'יש פריט אחד ממתין לחתימתך'
+                          : `יש ${pendingSignatures.length + pendingQuotesCount} פריטים ממתינים לחתימתך`
+                        }
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setViewMode('manager')}
+                    >
+                      <Eye className="h-4 w-4" />
+                      עבור לתצוגת חתימות
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => setViewMode('manager')}
-                  >
-                    <Eye className="h-4 w-4" />
-                    עבור לתצוגת חתימות
+                </div>
+              )}
+
+              <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h2 className="text-2xl font-semibold">בקשות ספקים בהקמה</h2>
+                  <p className="text-muted-foreground">
+                    {isAdmin && showAllRequests
+                      ? 'צפה בכל הבקשות החדשות במערכת'
+                      : 'נהל את תהליך ההקמה של הספקים שלך'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 flex-wrap justify-end">
+                  {isAdmin && (
+                    <ToggleGroup
+                      type="single"
+                      size="sm"
+                      variant="outline"
+                      value={showAllRequests ? 'all' : 'mine'}
+                      onValueChange={(value) => {
+                        if (!value) return;
+                        setShowAllRequests(value === 'all');
+                      }}
+                      className="flex-row-reverse bg-muted/50 rounded-lg p-1"
+                    >
+                      <ToggleGroupItem value="mine" className="gap-2 whitespace-nowrap">
+                        <UserCircle className="h-4 w-4" />
+                        הבקשות שלי
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="all" className="gap-2 whitespace-nowrap">
+                        <Eye className="h-4 w-4" />
+                        כל הבקשות
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  )}
+                  <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
+                    <Plus className="h-4 w-4" />
+                    בקשה חדשה
                   </Button>
                 </div>
               </div>
-            )}
 
-            <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h2 className="text-2xl font-semibold">בקשות ספקים</h2>
-                <p className="text-muted-foreground">
-                  {isAdmin && showAllRequests
-                    ? 'צפה בכל הבקשות במערכת'
-                    : 'צפה ונהל את הבקשות שלך'}
-                </p>
-              </div>
-              <div className="flex items-center gap-4 flex-wrap justify-end">
-                {isAdmin && (
-                  <ToggleGroup
-                    type="single"
-                    size="sm"
-                    variant="outline"
-                    value={showAllRequests ? 'all' : 'mine'}
-                    onValueChange={(value) => {
-                      if (!value) return;
-                      setShowAllRequests(value === 'all');
-                    }}
-                    className="flex-row-reverse bg-muted/50 rounded-lg p-1"
-                  >
-                    <ToggleGroupItem value="mine" className="gap-2 whitespace-nowrap">
-                      <UserCircle className="h-4 w-4" />
-                      הבקשות שלי
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="all" className="gap-2 whitespace-nowrap">
-                      <Eye className="h-4 w-4" />
-                      כל הבקשות
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                )}
-                <Button onClick={() => setDialogOpen(true)} className="gap-2" disabled={!isSupabaseConfigured}>
-                  <Plus className="h-4 w-4" />
-                  בקשה חדשה
-                </Button>
-              </div>
-            </div>
+              <VendorRequestsTable 
+                requests={filteredRequests} 
+                isLoading={isLoading} 
+                currentUserName={currentUserName} 
+                onRefresh={fetchRequests}
+              />
+            </TabsContent>
 
-            <VendorRequestsTable requests={filteredRequests} isLoading={isLoading} currentUserName={currentUserName} />
-          </>
+            <TabsContent value="registry" className="animate-in fade-in duration-300">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold">מאגר ספקים מאושרים</h2>
+                <p className="text-muted-foreground">ניהול שוטף, שינוי סטטוסים ודירוג ספקים פעילים</p>
+              </div>
+              <VendorRegistryView
+                vendors={vendors}
+                vendorRatings={vendorRatings}
+                isLoading={isVendorsLoading}
+                isAdmin={isAdmin}
+                currentUserName={currentUserName}
+                onRefresh={fetchVendors}
+                onEdit={handleEdit}
+                onViewHistory={handleViewHistory}
+              />
+            </TabsContent>
+
+            <TabsContent value="quotes" className="animate-in fade-in duration-300">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold">ניהול הצעות מחיר</h2>
+                <p className="text-muted-foreground">מעקב ובקרה אחר הצעות מחיר ואישורי מנהלים</p>
+              </div>
+              <VendorQuotesView 
+                currentUserName={currentUserName} 
+                currentUserEmail={user?.email}
+                isVP={userManagerRole === 'vp' || isAdmin}
+                isProcurementManager={userManagerRole === 'procurement' || isAdmin}
+              />
+            </TabsContent>
+
+            <TabsContent value="receipts" className="animate-in fade-in duration-300">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold">קבלות ותשלומים</h2>
+                <p className="text-muted-foreground">ריכוז כל הקבלות שהתקבלו מהספקים השונים</p>
+              </div>
+              <AllReceiptsView currentUserName={currentUserName} />
+            </TabsContent>
+          </Tabs>
         )}
       </main>
 
@@ -606,7 +704,6 @@ export default function Dashboard() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleCreateRequest}
-        onBulkSubmit={handleBulkCreateRequests}
       />
 
       <SettingsDialog
@@ -629,6 +726,71 @@ export default function Dashboard() {
           setContractDialogOpen(false);
         }}
       />
+
+      {/* Edit Vendor Dialog (Migrated from CRM) */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>עריכת פרטי ספק - {selectedVendor?.vendor_name}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>שם הספק</Label>
+              <Input value={editForm.vendor_name || ''} onChange={e => setEditForm({...editForm, vendor_name: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>אימייל</Label>
+              <Input value={editForm.vendor_email || ''} onChange={e => setEditForm({...editForm, vendor_email: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>ח.פ / ע.מ</Label>
+              <Input value={editForm.company_id || ''} onChange={e => setEditForm({...editForm, company_id: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>עיר</Label>
+              <Input value={editForm.city || ''} onChange={e => setEditForm({...editForm, city: e.target.value})} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>ביטול</Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? <Loader2 className="animate-spin h-4 w-4 ml-2" /> : 'שמור שינויים'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog (Migrated from CRM) */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>היסטוריית שינויים - {selectedVendor?.vendor_name}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {historyLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
+            ) : history.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">אין היסטוריית שינויים</div>
+            ) : (
+              <div className="space-y-4">
+                {history.map((item) => (
+                  <Card key={item.id}>
+                    <CardContent className="pt-4 text-right">
+                      <p className="font-medium">{item.action === 'status_change' ? 'שינוי סטטוס' : 'עדכון שדה'}</p>
+                      <p className="text-sm text-muted-foreground">שדה: {item.field_name}</p>
+                      <div className="flex gap-2 mt-2 text-sm">
+                        <Badge variant="outline" className="bg-red-50">מ: {item.old_value}</Badge>
+                        <Badge variant="outline" className="bg-green-50">ל: {item.new_value}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">{format(new Date(item.changed_at), 'dd/MM/yyyy HH:mm', { locale: he })}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
