@@ -177,7 +177,7 @@ async def protected_route(user = Depends(get_current_user)):
 # In production, the React app is built to ../dist/
 # FastAPI serves it as static files
 
-DIST_DIR = Path(__file__).parent.parent / "dist"
+DIST_DIR = Path(__file__).parent / "dist"
 
 if DIST_DIR.exists():
     # Serve static assets (JS, CSS, images)

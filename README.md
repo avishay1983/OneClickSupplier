@@ -14,8 +14,8 @@ OneClickSupplier is a comprehensive solution for managing the vendor lifecycle, 
 ## Architecture
 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS.
-- **Backend**: Python FastAPI.
-- **Database**: PostgreSQL (via Supabase).
+- **Backend**: Python FastAPI (Unified Repo).
+- **Database**: Local JSON Store (migrated from Supabase).
 
 ## Getting Started
 
@@ -23,26 +23,30 @@ OneClickSupplier is a comprehensive solution for managing the vendor lifecycle, 
 
 - Node.js (v18+)
 - Python 3.10+
-- Environment variables configured in `.env` and `backend/.env`.
+- Environment variables configured in `.env`.
 
 ### Local Development
 
-#### Frontend
+#### 1. Setup Backend
+```bash
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+#### 2. Setup Frontend
 ```bash
 npm install
 npm run dev
 ```
 
-#### Backend
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
+The frontend will run on [http://localhost:8080](http://localhost:8080) and the backend on [http://localhost:8000](http://localhost:8000).
+In production, the backend serves the built frontend from the `dist/` folder.
 
 ## License
 

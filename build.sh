@@ -18,7 +18,6 @@ ls -la dist/
 
 # Step 2: Install Python dependencies
 echo "--- Installing Python dependencies ---"
-cd backend
 pip install -r requirements.txt
 
 echo "=== Build complete ==="
